@@ -561,7 +561,8 @@ public:
       CONSTRAIN(transpose, -12, 12);
 
       // update scale?
-      update_scale(force_update_, display_scale_slot_, schedule_mask_rotate_);
+      if (update || schedule_scale_update_) 
+        update_scale(force_update_, display_scale_slot_, schedule_mask_rotate_);
 
       // internal CV source?
       if (source > DQ_CHANNEL_SOURCE_CV4)
