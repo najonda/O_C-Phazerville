@@ -530,7 +530,6 @@ public:
             // if scale changes, we have to update the root and transpose values, too; mask gets updated in update_scale
             root = get_root(display_scale_slot_);
             transpose = get_transpose(display_scale_slot_);
-            schedule_scale_update_ = true;
           break;
           case DQ_DEST_ROOT:
               root += (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 127) >> 8;
@@ -561,8 +560,7 @@ public:
       CONSTRAIN(transpose, -12, 12);
 
       // update scale?
-      if (update || schedule_scale_update_) 
-        update_scale(force_update_, display_scale_slot_, schedule_mask_rotate_);
+      update_scale(force_update_, display_scale_slot_, schedule_mask_rotate_);
 
       // internal CV source?
       if (source > DQ_CHANNEL_SOURCE_CV4)
