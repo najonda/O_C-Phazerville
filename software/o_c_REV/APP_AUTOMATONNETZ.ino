@@ -493,7 +493,7 @@ void AutomatonnetzState::update_trigger_out() {
 void Automatonnetz_loop() {
 }
 
-void FASTRUN Automatonnetz_isr() {
+void FASTRUN Automatonnetz_process(OC::IOFrame *) {
   // All user actions, etc. handled in ::Update
   automatonnetz_state.ISR();
 }

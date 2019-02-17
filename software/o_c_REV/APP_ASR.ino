@@ -840,7 +840,7 @@ void ASR_handleAppEvent(OC::AppEvent event) {
 void ASR_loop() {
 }
 
-void ASR_isr() {
+void ASR_process(OC::IOFrame *) {
   asr.update();
 }
 

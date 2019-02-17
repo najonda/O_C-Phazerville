@@ -2115,7 +2115,7 @@ void SEQ_handleAppEvent(OC::AppEvent event) {
 void SEQ_loop() {
 }
 
-void SEQ_isr() {
+void SEQ_process(OC::IOFrame *) {
 
   ticks_src1++; // src #1 ticks
   ticks_src2++; // src #2 ticks

@@ -1189,7 +1189,7 @@ void DQ_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void DQ_isr() {
+void DQ_process(OC::IOFrame *) {
   
   uint32_t triggers = OC::DigitalInputs::clocked();
 

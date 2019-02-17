@@ -24,47 +24,48 @@
 #include "OC_digital_inputs.h"
 #include "OC_autotune.h"
 
-#define DECLARE_APP(a, b, name, prefix, isr) \
-{ TWOCC<a,b>::value, name, \
+#define DECLARE_APP(id, name, prefix) \
+{ TWOCCS(id), \
+  name, \
   prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
   prefix ## _handleAppEvent, \
   prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
   prefix ## _handleButtonEvent, \
   prefix ## _handleEncoderEvent, \
-  isr \
+  prefix ## _process \
 }
 
 #ifdef BORING_APP_NAMES
 OC::App available_apps[] = {
-  DECLARE_APP('A','S', "ASR", ASR, ASR_isr),
-  DECLARE_APP('H','A', "Triads", H1200, H1200_isr),
-  DECLARE_APP('A','T', "Vectors", Automatonnetz, Automatonnetz_isr),
-  DECLARE_APP('Q','Q', "4x Quantizer", QQ, QQ_isr),
-  DECLARE_APP('D','Q', "2x Quantizer", DQ, DQ_isr),
-  DECLARE_APP('P','L', "Quadrature LFO", POLYLFO, POLYLFO_isr),
-  DECLARE_APP('L','R', "Lorenz", LORENZ, LORENZ_isr),
-  DECLARE_APP('E','G', "4x EG", ENVGEN, ENVGEN_isr),
-  DECLARE_APP('S','Q', "2x Sequencer", SEQ, SEQ_isr),
-  DECLARE_APP('B','B', "Balls", BBGEN, BBGEN_isr),
-  DECLARE_APP('B','Y', "Bytebeats", BYTEBEATGEN, BYTEBEATGEN_isr),
-  DECLARE_APP('C','Q', "Chords", CHORDS, CHORDS_isr),
-  DECLARE_APP('R','F', "Voltages", REFS, REFS_isr)
+  DECLARE_APP("AS", "ASR", ASR),
+  DECLARE_APP("HA", "Triads", H1200),
+  DECLARE_APP("AT", "Vectors", Automatonnetz),
+  DECLARE_APP("QQ", "4x Quantizer", QQ),
+  DECLARE_APP("DQ", "2x Quantizer", DQ),
+  DECLARE_APP("PL", "Quadrature LFO", POLYLFO),
+  DECLARE_APP("LR", "Lorenz", LORENZ),
+  DECLARE_APP("EG", "4x EG", ENVGEN),
+  DECLARE_APP("SQ", "2x Sequencer", SEQ),
+  DECLARE_APP("BB", "Balls", BBGEN),
+  DECLARE_APP("BY", "Bytebeats", BYTEBEATGEN),
+  DECLARE_APP("CQ", "Chords", CHORDS),
+  DECLARE_APP("RF", "Voltages", REFS)
 };
 #else 
 OC::App available_apps[] = {
-  DECLARE_APP('A','S', "CopierMaschine", ASR, ASR_isr),
-  DECLARE_APP('H','A', "Harrington 1200", H1200, H1200_isr),
-  DECLARE_APP('A','T', "Automatonnetz", Automatonnetz, Automatonnetz_isr),
-  DECLARE_APP('Q','Q', "Quantermain", QQ, QQ_isr),
-  DECLARE_APP('D','Q', "Meta-Q", DQ, DQ_isr),
-  DECLARE_APP('P','L', "Quadraturia", POLYLFO, POLYLFO_isr),
-  DECLARE_APP('L','R', "Low-rents", LORENZ, LORENZ_isr),
-  DECLARE_APP('E','G', "Piqued", ENVGEN, ENVGEN_isr),
-  DECLARE_APP('S','Q', "Sequins", SEQ, SEQ_isr),
-  DECLARE_APP('B','B', "Dialectic Ping Pong", BBGEN, BBGEN_isr),
-  DECLARE_APP('B','Y', "Viznutcracker sweet", BYTEBEATGEN, BYTEBEATGEN_isr),
-  DECLARE_APP('C','Q', "Acid Curds", CHORDS, CHORDS_isr),
-  DECLARE_APP('R','F', "References", REFS, REFS_isr)
+  DECLARE_APP("AS", "CopierMaschine", ASR),
+  DECLARE_APP("HA", "Harrington 1200", H1200),
+  DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
+  DECLARE_APP("QQ", "Quantermain", QQ),
+  DECLARE_APP("DQ", "Meta-Q", DQ),
+  DECLARE_APP("PL", "Quadraturia", POLYLFO),
+  DECLARE_APP("LR", "Low-rents", LORENZ),
+  DECLARE_APP("EG", "Piqued", ENVGEN),
+  DECLARE_APP("SQ", "Sequins", SEQ),
+  DECLARE_APP("BB", "Dialectic Ping Pong", BBGEN),
+  DECLARE_APP("BY", "Viznutcracker sweet", BYTEBEATGEN),
+  DECLARE_APP("CQ", "Acid Curds", CHORDS),
+  DECLARE_APP("RF", "References", REFS)
 };
 #endif
 

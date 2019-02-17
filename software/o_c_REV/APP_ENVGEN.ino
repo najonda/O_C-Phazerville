@@ -1244,6 +1244,6 @@ void ENVGEN_debug() {
 }
 #endif // ENVGEN_DEBUG
 
-void FASTRUN ENVGEN_isr() {
+void FASTRUN ENVGEN_process(OC::IOFrame *) {
   envgen.ISR();
 }
