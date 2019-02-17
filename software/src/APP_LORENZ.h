@@ -175,7 +175,7 @@ struct {
   menu::ScreenCursor<menu::kScreenLines> cursor;
 } lorenz_generator_state;
 
-void FASTRUN LORENZ_isr() {
+void FASTRUN LORENZ_process(OC::IOFrame *) {
 
   bool reset1_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
   bool reset2_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_2>();

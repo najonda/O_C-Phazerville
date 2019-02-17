@@ -75,97 +75,135 @@ namespace menu = OC::menu;
 #include "APP_Backup.h"
 #include "APP_SETTINGS.h"
 
-#define DECLARE_APP(a, b, name, prefix) \
-{ TWOCC<a,b>::value, name, \
+#define DECLARE_APP(id, name, prefix) \
+{ TWOCCS(id), \
+  name, \
   prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
   prefix ## _handleAppEvent, \
   prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
   prefix ## _handleButtonEvent, \
   prefix ## _handleEncoderEvent, \
-  prefix ## _isr \
+  prefix ## _process \
 }
+
+/*
+#ifdef BORING_APP_NAMES
+OC::App available_apps[] = {
+  DECLARE_APP("AS", "ASR", ASR),
+  DECLARE_APP("HA", "Triads", H1200),
+  DECLARE_APP("AT", "Vectors", Automatonnetz),
+  DECLARE_APP("QQ", "4x Quantizer", QQ),
+  DECLARE_APP("DQ", "2x Quantizer", DQ),
+  DECLARE_APP("PL", "Quadrature LFO", POLYLFO),
+  DECLARE_APP("LR", "Lorenz", LORENZ),
+  DECLARE_APP("EG", "4x EG", ENVGEN),
+  DECLARE_APP("SQ", "2x Sequencer", SEQ),
+  DECLARE_APP("BB", "Balls", BBGEN),
+  DECLARE_APP("BY", "Bytebeats", BYTEBEATGEN),
+  DECLARE_APP("CQ", "Chords", CHORDS),
+  DECLARE_APP("RF", "Voltages", REFS)
+};
+#else 
+OC::App available_apps[] = {
+  DECLARE_APP("AS", "CopierMaschine", ASR),
+  DECLARE_APP("HA", "Harrington 1200", H1200),
+  DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
+  DECLARE_APP("QQ", "Quantermain", QQ),
+  DECLARE_APP("DQ", "Meta-Q", DQ),
+  DECLARE_APP("PL", "Quadraturia", POLYLFO),
+  DECLARE_APP("LR", "Low-rents", LORENZ),
+  DECLARE_APP("EG", "Piqued", ENVGEN),
+  DECLARE_APP("SQ", "Sequins", SEQ),
+  DECLARE_APP("BB", "Dialectic Ping Pong", BBGEN),
+  DECLARE_APP("BY", "Viznutcracker sweet", BYTEBEATGEN),
+  DECLARE_APP("CQ", "Acid Curds", CHORDS),
+  DECLARE_APP("RF", "References", REFS)
+};
+#endif
+*/
 
 static constexpr OC::App available_apps[] = {
 
   #ifdef ENABLE_APP_CALIBR8OR
-  DECLARE_APP('C','8', "Calibr8or", Calibr8or),
+  DECLARE_APP("C8", "Calibr8or", Calibr8or),
   #endif
   #ifdef ENABLE_APP_SCENES
-  DECLARE_APP('S','X', "Scenes", ScenesApp),
+  DECLARE_APP("SX", "Scenes", ScenesApp),
   #endif
 
 #ifndef NO_HEMISPHERE
   #ifdef ARDUINO_TEENSY41
-  DECLARE_APP('Q','S', "Quadrants", QUADRANTS),
+  DECLARE_APP("QS", "Quadrants", QUADRANTS),
   #endif
-  DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
+  DECLARE_APP("HS", "Hemisphere", HEMISPHERE),
 #endif
+
   #ifdef ENABLE_APP_ASR
-  DECLARE_APP('A','S', "CopierMaschine", ASR),
+  DECLARE_APP("AS", "CopierMaschine", ASR),
   #endif
   #ifdef ENABLE_APP_H1200
-  DECLARE_APP('H','A', "Harrington 1200", H1200),
+  DECLARE_APP("HA", "Harrington 1200", H1200),
   #endif
   #ifdef ENABLE_APP_AUTOMATONNETZ
-  DECLARE_APP('A','T', "Automatonnetz", Automatonnetz),
+  DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
   #endif
   #ifdef ENABLE_APP_QUANTERMAIN
-  DECLARE_APP('Q','Q', "Quantermain", QQ),
+  DECLARE_APP("QQ", "Quantermain", QQ),
   #endif
   #ifdef ENABLE_APP_METAQ
-  DECLARE_APP('M','!', "Meta-Q", DQ),
+  DECLARE_APP("DQ", "Meta-Q", DQ),
   #endif
   #ifdef ENABLE_APP_POLYLFO
-  DECLARE_APP('P','L', "Quadraturia", POLYLFO),
+  DECLARE_APP("PL", "Quadraturia", POLYLFO),
   #endif
   #ifdef ENABLE_APP_LORENZ
-  DECLARE_APP('L','R', "Low-rents", LORENZ),
+  DECLARE_APP("LR", "Low-rents", LORENZ),
   #endif
   #ifdef ENABLE_APP_PIQUED
-  DECLARE_APP('E','G', "Piqued", ENVGEN),
+  DECLARE_APP("EG", "Piqued", ENVGEN),
   #endif
   #ifdef ENABLE_APP_SEQUINS
-  DECLARE_APP('S','Q', "Sequins", SEQ),
+  DECLARE_APP("SQ", "Sequins", SEQ),
   #endif
   #ifdef ENABLE_APP_BBGEN
-  DECLARE_APP('B','B', "Dialectic Pong", BBGEN),
+  DECLARE_APP("BB", "Dialectic Pong", BBGEN),
   #endif
   #ifdef ENABLE_APP_BYTEBEATGEN
-  DECLARE_APP('B','Y', "Viznutcracker", BYTEBEATGEN),
+  DECLARE_APP("BY", "Viznutcracker", BYTEBEATGEN),
   #endif
   #ifdef ENABLE_APP_CHORDS
-  DECLARE_APP('A','C', "Acid Curds", CHORDS),
+  DECLARE_APP("AC", "Acid Curds", CHORDS),
   #endif
   #ifdef ENABLE_APP_FPART
-  DECLARE_APP('F','P', "4 Parts", FPART),
+  DECLARE_APP("FP", "4 Parts", FPART),
   #endif
   #ifdef ENABLE_APP_PASSENCORE
   // boring name version
-  // DECLARE_APP('P','Q', "Tension", PASSENCORE),
-  DECLARE_APP('P','Q', "Passencore", PASSENCORE),
+  // DECLARE_APP("PQ", "Tension", PASSENCORE),
+  DECLARE_APP("PQ", "Passencore", PASSENCORE),
   #endif
   #ifdef ENABLE_APP_MIDI
-  DECLARE_APP('M','I', "Captain MIDI", MIDI),
+  DECLARE_APP("MI", "Captain MIDI", MIDI),
   #endif
   #ifdef ENABLE_APP_DARKEST_TIMELINE
-  DECLARE_APP('D','2', "Darkest Timeline", TheDarkestTimeline),
+  DECLARE_APP("D2", "Darkest Timeline", TheDarkestTimeline),
   #endif
   #ifdef ENABLE_APP_ENIGMA
-  DECLARE_APP('E','N', "Enigma", EnigmaTMWS),
+  DECLARE_APP("EN", "Enigma", EnigmaTMWS),
   #endif
   #ifdef ENABLE_APP_NEURAL_NETWORK
-  DECLARE_APP('N','N', "Neural Net", NeuralNetwork),
+  DECLARE_APP("NN", "Neural Net", NeuralNetwork),
   #endif
-  DECLARE_APP('S','C', "Scale Editor", SCALEEDITOR),
-  DECLARE_APP('W','A', "Waveform Editor", WaveformEditor),
+  DECLARE_APP("SC", "Scale Editor", SCALEEDITOR),
+  DECLARE_APP("WA", "Waveform Editor", WaveformEditor),
   #ifdef ENABLE_APP_PONG
-  DECLARE_APP('P','O', "Pong", PONGGAME),
+  DECLARE_APP("PO", "Pong", PONGGAME),
   #endif
   #ifdef ENABLE_APP_REFERENCES
-  DECLARE_APP('R','F', "References", REFS),
+  DECLARE_APP("RF", "References", REFS),
   #endif
-  DECLARE_APP('B','R', "Backup / Restore", Backup),
-  DECLARE_APP('S','E', "Setup / About", Settings),
+  DECLARE_APP("BR", "Backup / Restore", Backup),
+  DECLARE_APP("SE", "Setup / About", Settings),
 };
 
 static constexpr int NUM_AVAILABLE_APPS = ARRAY_SIZE(available_apps);

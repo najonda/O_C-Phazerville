@@ -94,7 +94,7 @@ static constexpr size_t Settings_storageSize() {return 0;}
 static size_t Settings_save(void *storage) {return 0;}
 static size_t Settings_restore(const void *storage) {return 0;}
 
-void Settings_isr() {
+void Settings_process(OC::IOFrame *) {
 #ifdef PEWPEWPEW
   Settings_instance.Controller();
 #endif

@@ -556,7 +556,7 @@ static size_t TheDarkestTimeline_restore(const void *storage) {
     return TheDarkestTimeline_instance.Restore(storage);
 }
 
-void TheDarkestTimeline_isr() {
+void TheDarkestTimeline_process(OC::IOFrame *) {
 	return TheDarkestTimeline_instance.BaseController();
 }
 

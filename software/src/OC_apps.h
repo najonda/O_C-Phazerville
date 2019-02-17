@@ -26,6 +26,7 @@
 #include "UI/ui_events.h"
 #include "util/util_turing.h"
 #include "util/util_misc.h"
+#include "OC_io.h"
 
 namespace OC {
 
@@ -58,13 +59,13 @@ struct App {
   void (*HandleAppEvent)(AppEvent); // Generic event handler
 
   void (*loop)(); // main loop function
-  void (*DrawMenu)(); 
+  void (*DrawMenu)();
   void (*DrawScreensaver)();
 
   void (*HandleButtonEvent)(const UI::Event &);
   void (*HandleEncoderEvent)(const UI::Event &);
 
-  void (*isr)();
+  void (*Process)(IOFrame *io_frame);
 };
 
 namespace apps {
@@ -73,10 +74,10 @@ namespace apps {
 
   void Init(bool reset_settings);
 
-  inline void ISR() __attribute__((always_inline));
-  inline void ISR() {
-    if (current_app && current_app->isr)
-      current_app->isr();
+  inline void Process(IOFrame *io_frame) __attribute__((always_inline));
+  inline void Process(IOFrame *io_frame) {
+    if (current_app && current_app->Process)
+      current_app->Process(io_frame);
   }
 
   const App *find(uint16_t id);

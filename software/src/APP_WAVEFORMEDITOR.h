@@ -381,7 +381,7 @@ static constexpr size_t WaveformEditor_storageSize() {return 0;}
 static size_t WaveformEditor_save(void *storage) {return 0;}
 static size_t WaveformEditor_restore(const void *storage) {return 0;}
 
-void WaveformEditor_isr() {
+void WaveformEditor_process(OC::IOFrame *) {
     return WaveformEditor_instance.BaseController();
 }
 

@@ -1249,7 +1249,7 @@ void QQ_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void QQ_isr() {
+void QQ_process(OC::IOFrame *) {
   uint32_t triggers = OC::DigitalInputs::clocked();
   quantizer_channels[0].Update(triggers, DAC_CHANNEL_A);
   quantizer_channels[1].Update(triggers, DAC_CHANNEL_B);

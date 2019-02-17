@@ -929,7 +929,7 @@ static size_t HEMISPHERE_restore(const void *storage) {
     return used;
 }
 
-void FASTRUN HEMISPHERE_isr() {
+void FASTRUN HEMISPHERE_process(OC::IOFrame *) {
     manager.BaseController();
 }
 

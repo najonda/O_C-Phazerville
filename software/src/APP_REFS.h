@@ -369,7 +369,7 @@ static size_t REFS_restore(const void *storage) {
   return used;
 }
 
-void REFS_isr() {
+void REFS_process(OC::IOFrame *) {
   return references_app.ISR();
 }
 

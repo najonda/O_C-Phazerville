@@ -1045,7 +1045,7 @@ void H1200_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void H1200_isr() {
+void H1200_process(OC::IOFrame *) {
   uint32_t triggers = OC::DigitalInputs::clocked();
 
   while (h1200_state.ui_actions.readable()) {

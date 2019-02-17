@@ -1004,7 +1004,7 @@ static size_t PASSENCORE_save(void *storage) {
   return passencore_instance.Save(storage);
 }
 
-void PASSENCORE_isr() {
+void PASSENCORE_process(OC::IOFrame *) {
   return passencore_instance.ISR();
 }
 

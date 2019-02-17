@@ -1196,7 +1196,7 @@ static size_t EnigmaTMWS_restore(const void *storage) {
     return EnigmaTMWS_instance.Restore(storage);
 }
 
-void EnigmaTMWS_isr() {
+void EnigmaTMWS_process(OC::IOFrame *) {
 	return EnigmaTMWS_instance.BaseController();
 }
 

@@ -308,7 +308,7 @@ static size_t PONGGAME_restore(const void *storage) {
 	return 0;
 }
 
-void PONGGAME_isr() {
+void PONGGAME_process(OC::IOFrame *) {
 	pong_instance.ISR();
 }
 

@@ -533,7 +533,7 @@ static size_t ScenesApp_restore(const void *storage) {
     return used;
 }
 
-void ScenesApp_isr() { return ScenesApp_instance.BaseController(); }
+void ScenesApp_process(OC::IOFrame *) { return ScenesApp_instance.BaseController(); }
 
 void ScenesApp_handleAppEvent(OC::AppEvent event) {
     switch (event) {

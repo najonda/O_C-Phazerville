@@ -871,7 +871,7 @@ static size_t MIDI_restore(const void *storage) {
     return s;
 }
 
-void MIDI_isr() {
+void MIDI_process(OC::IOFrame *) {
 	return captain_midi_instance.BaseController();
 }
 

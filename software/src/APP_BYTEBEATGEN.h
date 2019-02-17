@@ -599,7 +599,7 @@ void BYTEBEATGEN_screensaver() {
   }
 }
 
-void FASTRUN BYTEBEATGEN_isr() {
+void FASTRUN BYTEBEATGEN_process(OC::IOFrame *) {
   bytebeatgen.ISR();
 }
 

@@ -51,6 +51,7 @@ unsigned long LAST_REDRAW_TIME = 0;
 uint_fast8_t MENU_REDRAW = true;
 OC::UiMode ui_mode = OC::UI_MODE_MENU;
 const bool DUMMY = false;
+OC::IOFrame io_frame;
 
 /*  ------------------------ UI timer ISR ---------------------------   */
 
@@ -93,7 +94,7 @@ void FASTRUN CORE_timer_ISR() {
 
   ++OC::CORE::ticks;
   if (OC::CORE::app_isr_enabled)
-    OC::apps::ISR();
+    OC::apps::Process(&io_frame);
 
   OC_DEBUG_RESET_CYCLES(OC::CORE::ticks, 16384, OC::DEBUG::ISR_cycles);
 }

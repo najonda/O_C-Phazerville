@@ -694,7 +694,7 @@ static size_t Calibr8or_restore(const void *storage) {
     return used;
 }
 
-void Calibr8or_isr() {
+void Calibr8or_process(OC::IOFrame *) {
     if (Calibr8or_instance.autotuner.active()) {
       Calibr8or_instance.autotuner.ISR();
       return;

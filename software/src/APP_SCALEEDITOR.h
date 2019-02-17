@@ -354,7 +354,7 @@ static constexpr size_t SCALEEDITOR_storageSize() {return 0;}
 static size_t SCALEEDITOR_save(void *storage) {return 0;}
 static size_t SCALEEDITOR_restore(const void *storage) {return 0;}
 
-void SCALEEDITOR_isr() {
+void SCALEEDITOR_process(OC::IOFrame *) {
 	return scale_editor_instance.BaseController();
 }
 
