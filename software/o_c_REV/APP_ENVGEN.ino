@@ -775,14 +775,14 @@ public:
     ui.euclidean_edit_length = false;
   }
 
-  void ISR() {
+  void Process(OC::IOFrame *ioframe) {
     cv1.push(OC::ADC::value<ADC_CHANNEL_1>());
     cv2.push(OC::ADC::value<ADC_CHANNEL_2>());
     cv3.push(OC::ADC::value<ADC_CHANNEL_3>());
     cv4.push(OC::ADC::value<ADC_CHANNEL_4>());
 
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
-    uint32_t triggers = OC::DigitalInputs::clocked();
+    uint32_t triggers = ioframe->digital_inputs.triggered();
 
     uint32_t internal_trigger_mask =
         envelopes_[0].internal_trigger_mask() |
@@ -1244,6 +1244,6 @@ void ENVGEN_debug() {
 }
 #endif // ENVGEN_DEBUG
 
-void FASTRUN ENVGEN_process(OC::IOFrame *) {
-  envgen.ISR();
+void FASTRUN ENVGEN_process(OC::IOFrame *ioframe) {
+  envgen.Process(ioframe);
 }
