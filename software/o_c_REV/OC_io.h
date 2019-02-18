@@ -44,7 +44,7 @@ struct IOFrame {
 
   struct {
     uint32_t rising_edges; // Rising edge detected since last frame
-    uint32_t state_mask;   // Last read state
+    uint32_t raised_mask;   // Last read state
 
     inline uint32_t triggered() const { return rising_edges; }
 
@@ -54,9 +54,9 @@ struct IOFrame {
     inline uint32_t triggered(DigitalInput input) const { return rising_edges & DIGITAL_INPUT_MASK(input); }
 
     template <DigitalInput input>
-    inline bool read_immediate() const { return state_mask & DIGITAL_INPUT_MASK(input); }
+    inline bool raised() const { return raised_mask & DIGITAL_INPUT_MASK(input); }
 
-    inline bool read_immediate(DigitalInput input) const { return state_mask & DIGITAL_INPUT_MASK(input); }
+    inline bool raised(DigitalInput input) const { return raised_mask & DIGITAL_INPUT_MASK(input); }
 
   } digital_inputs;
 

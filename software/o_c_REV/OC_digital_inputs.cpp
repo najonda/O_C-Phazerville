@@ -10,7 +10,7 @@ uint32_t OC::DigitalInputs::clocked_mask_;
 /*static*/
 volatile uint32_t OC::DigitalInputs::clocked_[DIGITAL_INPUT_LAST];
 
-void FASTRUN tr1_ISR() {  
+void FASTRUN tr1_ISR() {
   OC::DigitalInputs::clock<OC::DIGITAL_INPUT_1>();
 }  // main clock
 
@@ -87,11 +87,11 @@ void OC::DigitalInputs::Read(IOFrame *ioframe) {
   ioframe->digital_inputs.rising_edges = clocked_mask;
   clocked_mask_ = clocked_mask;
 
-  uint32_t state_mask = 0;
-  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
-  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
-  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
-  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
+  uint32_t raised_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) raised_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) raised_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) raised_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) raised_mask |= DIGITAL_INPUT_4_MASK;
 
-  ioframe->digital_inputs.state_mask = state_mask;
+  ioframe->digital_inputs.raised_mask = raised_mask;
 }
