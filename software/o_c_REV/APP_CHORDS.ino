@@ -1087,9 +1087,9 @@ void CHORDS_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void CHORDS_process(OC::IOFrame *) {
-  
-  uint32_t triggers = OC::DigitalInputs::clocked();
+void CHORDS_process(OC::IOFrame *ioframe) {
+
+  uint32_t triggers = ioframe->digital_inputs.triggered();
   chords.Update(triggers);
 }
 

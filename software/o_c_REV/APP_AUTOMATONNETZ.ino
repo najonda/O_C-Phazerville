@@ -265,7 +265,7 @@ public:
 
   // End of settings
 
-  void ISR();
+  void Process(OC::IOFrame *ioframe);
   void Reset();
 
   inline void AddUserAction(UserAction action) {
@@ -357,10 +357,10 @@ size_t Automatonnetz_storageSize() {
     GRID_CELLS * TransformCell::storageSize();
 }
 
-void FASTRUN AutomatonnetzState::ISR() {
+void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
   update_trigger_out();
 
-  uint32_t triggers = OC::DigitalInputs::clocked();
+  uint32_t triggers = ioframe->digital_inputs.triggered();
   triggers = trigger_delays_.Process(triggers, OC::trigger_delay_ticks[get_trigger_delay()]);
 
   bool reset = false;
@@ -375,7 +375,7 @@ void FASTRUN AutomatonnetzState::ISR() {
     }
   }
 
-  if ((triggers & TRIGGER_MASK_GRID) && OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_3>())
+  if ((triggers & TRIGGER_MASK_GRID) && ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_3>())
     reset = true;
 
   bool update = false;
@@ -420,7 +420,7 @@ void FASTRUN AutomatonnetzState::ISR() {
     strum_inhibit_ = false;
   } else if ((triggers & TRIGGER_MASK_ARP) &&
              !reset &&
-             !OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_4>()) {
+             !ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_4>()) {
     ++arp_index_;
     if (arp_index_ >= 3) {
       arp_index_ = 0;
@@ -493,9 +493,9 @@ void AutomatonnetzState::update_trigger_out() {
 void Automatonnetz_loop() {
 }
 
-void FASTRUN Automatonnetz_process(OC::IOFrame *) {
+void FASTRUN Automatonnetz_process(OC::IOFrame *ioframe) {
   // All user actions, etc. handled in ::Update
-  automatonnetz_state.ISR();
+  automatonnetz_state.Process(ioframe);
 }
 
 static const weegfx::coord_t kGridXStart = 0;

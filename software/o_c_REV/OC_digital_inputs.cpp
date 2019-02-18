@@ -77,10 +77,21 @@ void OC::DigitalInputs::reInit() {
 }
 
 /*static*/
-void OC::DigitalInputs::Scan() {
-  clocked_mask_ =
+void OC::DigitalInputs::Read(IOFrame *ioframe) {
+  uint32_t clocked_mask =
     ScanInput<DIGITAL_INPUT_1>() |
     ScanInput<DIGITAL_INPUT_2>() |
     ScanInput<DIGITAL_INPUT_3>() |
     ScanInput<DIGITAL_INPUT_4>();
+
+  ioframe->digital_inputs.rising_edges = clocked_mask;
+  clocked_mask_ = clocked_mask;
+
+  uint32_t state_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
+
+  ioframe->digital_inputs.state_mask = state_mask;
 }

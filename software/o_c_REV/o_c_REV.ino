@@ -79,7 +79,7 @@ void FASTRUN CORE_timer_ISR() {
 
   // Pin changes are tracked in separate ISRs, so depending on prio it might
   // need extra precautions.
-  OC::DigitalInputs::Scan();
+  OC::DigitalInputs::Read(&io_frame);
 
 #ifndef OC_UI_SEPARATE_ISR
   TODO needs a counter
