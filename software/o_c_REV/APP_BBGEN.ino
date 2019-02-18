@@ -151,7 +151,7 @@ public:
     s[2] = SCALE8_16(static_cast<int32_t>(get_initial_amplitude()));
     s[3] = SCALE8_16(static_cast<int32_t>(get_initial_velocity()));
     s[4] = SCALE8_16(static_cast<int32_t>(get_retrigger_bounces()));
-    
+
     apply_cv_mapping(BB_SETTING_CV1, cvs, s);
     apply_cv_mapping(BB_SETTING_CV2, cvs, s);
     apply_cv_mapping(BB_SETTING_CV3, cvs, s);
@@ -162,8 +162,8 @@ public:
     s[2] = USAT16(s[2]);
     s[3] = USAT16(s[3]);
     s[4] = USAT16(s[4]);
-    
-    bb_.Configure(s) ; 
+
+    bb_.Configure(s) ;
 
     // hard reset forces the bouncing ball to start at level_[0] on rising gate.
     bb_.set_hard_reset(get_hard_reset());
@@ -207,7 +207,7 @@ const char* const bb_cv_mapping_names[BB_CV_MAPPING_LAST] = {
 SETTINGS_DECLARE(BouncingBall, BB_SETTING_LAST) {
   { 128, 0, 255, "Gravity", NULL, settings::STORAGE_TYPE_U8 },
   { 96, 0, 255, "Bounce loss", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Amplitude", NULL, settings::STORAGE_TYPE_U8 }, 
+  { 0, 0, 255, "Amplitude", NULL, settings::STORAGE_TYPE_U8 },
   { 228, 0, 255, "Velocity", NULL, settings::STORAGE_TYPE_U8 },
   { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U8 },
   { 0, 0, 255, "Retrigger", NULL, settings::STORAGE_TYPE_U8 },
@@ -344,7 +344,7 @@ void BBGEN_topButton() {
 
 void BBGEN_lowerButton() {
   auto &selected_bb = bbgen.selected();
-  selected_bb.change_value(BB_SETTING_GRAVITY + bbgen.ui.selected_segment, -32); 
+  selected_bb.change_value(BB_SETTING_GRAVITY + bbgen.ui.selected_segment, -32);
 }
 
 void BBGEN_handleButtonEvent(const UI::Event &event) {

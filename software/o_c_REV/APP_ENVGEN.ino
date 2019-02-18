@@ -141,7 +141,7 @@ public:
   static constexpr int kEuclideanParams = 3;
   static constexpr int kDelayParams = 1;
   static constexpr int kAmplitudeParams = 2; // incremented to 2 to cover the MAX_LOOPS parameter
-  static constexpr size_t kMaxDelayedTriggers = 24; 
+  static constexpr size_t kMaxDelayedTriggers = 24;
 
   struct DelayedTrigger {
     uint32_t delay;
@@ -368,7 +368,7 @@ public:
       *settings++ = ENV_SETTING_TRIGGER_DELAY_MILLISECONDS;
       *settings++ = ENV_SETTING_TRIGGER_DELAY_SECONDS;
     }
-    
+
     *settings++ = ENV_SETTING_EUCLIDEAN_LENGTH;
     if (get_euclidean_length()) {
       //*settings++ = ENV_SETTING_EUCLIDEAN_FILL;
@@ -468,7 +468,7 @@ public:
 
     // set the amplitude
     env_.set_amplitude(s[CV_MAPPING_AMPLITUDE], is_amplitude_sampled()) ;
-    
+
     if (type != last_type_) {
       last_type_ = type;
       env_.reset();
@@ -501,7 +501,7 @@ public:
     } else {
       const int trigger_channel = TriggerSettingToChannel(trigger_input);
       const IntTriggerType trigger_type = TriggerSettingToType(trigger_input, trigger_channel);
-  
+
       triggered = (internal_trigger_mask >> (trigger_setting_to_channel_index(trigger_channel) * 8)) & (0x1 << trigger_type);
       gate_raised = triggered;
     }
@@ -532,7 +532,7 @@ public:
     s_euclidean_length_ = euclidean_length;
     s_euclidean_fill_ = euclidean_fill;
     s_euclidean_offset_ = euclidean_offset;
-      
+
     if (triggered) {
       TriggerDelayMode delay_mode = get_trigger_delay_mode();
       // uint32_t delay = get_trigger_delay_ms() * 1000U;
@@ -558,7 +558,7 @@ public:
     uint8_t gate_state = 0;
     if (triggered)
       gate_state |= peaks::CONTROL_GATE_RISING;
- 
+
     if (gate_raised || get_gate_high())
       gate_state |= peaks::CONTROL_GATE;
     else if (gate_raised_)
@@ -567,12 +567,12 @@ public:
 
     // TODO Scale range or offset?
     uint32_t value ;
-    if (!is_inverted()) 
+    if (!is_inverted())
       value = OC::DAC::get_zero_offset(dac_channel) + env_.ProcessSingleSample(gate_state);
     else
       value = OC::DAC::get_zero_offset(dac_channel) + 32767 - env_.ProcessSingleSample(gate_state);
 
-      OC::DAC::set<dac_channel>(value);   
+      OC::DAC::set<dac_channel>(value);
   }
 
   uint16_t RenderPreview(int16_t *values, uint16_t *segment_start_points, uint16_t *loop_points, uint16_t &current_phase) const {
@@ -616,7 +616,7 @@ public:
 private:
 
   int channel_index_;
- 
+
   peaks::MultistageEnvelope env_;
   EnvelopeType last_type_;
   bool gate_raised_;
@@ -626,8 +626,8 @@ private:
   // debug/live-view only
   uint8_t s_euclidean_length_;
   uint8_t s_euclidean_fill_;
-  uint8_t s_euclidean_offset_;  
-  
+  uint8_t s_euclidean_offset_;
+
   DelayedTrigger delayed_triggers_[kMaxDelayedTriggers];
   size_t delayed_triggers_free_;
   size_t delayed_triggers_next_;
@@ -679,7 +679,7 @@ void EnvelopeGenerator::Init(OC::DigitalInput default_trigger) {
   gate_raised_ = false;
   euclidean_counter_ = 0;
   euclidean_reset_counter_ = 0;
-  
+
   memset(delayed_triggers_, 0, sizeof(delayed_triggers_));
   delayed_triggers_free_ = delayed_triggers_next_ = 0;
 
@@ -958,7 +958,7 @@ void ENVGEN_menu_settings() {
   menu::SettingsListItem list_item;
 
   while (settings_list.available()) {
-    const int setting = 
+    const int setting =
       env.enabled_setting_at(settings_list.Next(list_item));
     const int value = env.get_value(setting);
     const settings::value_attr &attr = EnvelopeGenerator::value_attr(setting);
@@ -1079,7 +1079,7 @@ void ENVGEN_topButton() {
 
 void ENVGEN_lowerButton() {
   auto &selected_env = envgen.selected();
-  selected_env.change_value(ENV_SETTING_SEG1_VALUE + envgen.ui.selected_segment, -32); 
+  selected_env.change_value(ENV_SETTING_SEG1_VALUE + envgen.ui.selected_segment, -32);
 }
 
 void ENVGEN_rightButton() {
@@ -1141,7 +1141,7 @@ void ENVGEN_handleEncoderEvent(const UI::Event &event) {
             envgen.selected().apply_value(ENV_SETTING_EUCLIDEAN_OFFSET, length);
         }
       } else {
-        // constrain k: 
+        // constrain k:
         if (envgen.selected().get_euclidean_fill() <= envgen.selected().get_euclidean_length())
           envgen.selected().change_value(ENV_SETTING_EUCLIDEAN_FILL, event.value);
         else if (event.value < 0)
@@ -1171,7 +1171,7 @@ void ENVGEN_handleEncoderEvent(const UI::Event &event) {
         EnvelopeSettings setting = selected_env.enabled_setting_at(envgen.ui.cursor.cursor_pos());
 
         if (ENV_SETTING_EUCLIDEAN_OFFSET == setting) {
-          // constrain offset 
+          // constrain offset
           if (selected_env.get_euclidean_offset() < selected_env.get_euclidean_length())
             selected_env.change_value(ENV_SETTING_EUCLIDEAN_OFFSET, event.value);
           else if (event.value < 0)
@@ -1180,7 +1180,7 @@ void ENVGEN_handleEncoderEvent(const UI::Event &event) {
         else {
            selected_env.change_value(setting, event.value);
         }
-        
+
         if (ENV_SETTING_TRIGGER_DELAY_MODE == setting || ENV_SETTING_EUCLIDEAN_LENGTH == setting)
           selected_env.update_enabled_settings();
           envgen.ui.cursor.AdjustEnd(selected_env.num_enabled_settings() - 1);
@@ -1230,10 +1230,10 @@ void ENVGEN_screensaver() {
 #endif
 }
 
-#ifdef ENVGEN_DEBUG  
+#ifdef ENVGEN_DEBUG
 void ENVGEN_debug() {
-  for (int i = 0; i < 4; ++i) { 
-    uint8_t ypos = 10*(i + 1) + 2 ; 
+  for (int i = 0; i < 4; ++i) {
+    uint8_t ypos = 10*(i + 1) + 2 ;
     graphics.setPrintPos(2, ypos);
     graphics.print(envgen.envelopes_[i].get_amplitude_value()) ;
     graphics.setPrintPos(50, ypos);

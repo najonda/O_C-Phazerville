@@ -73,7 +73,7 @@ enum ByteBeatCVMapping {
   BYTEBEAT_CV_MAPPING_PITCH,
   BYTEBEAT_CV_MAPPING_LAST,
   BYTEBEAT_CV_MAPPING_FIRST=BYTEBEAT_CV_MAPPING_EQUATION
-  
+
 };
 
 class ByteBeat : public settings::SettingsBase<ByteBeat, BYTEBEAT_SETTING_LAST> {
@@ -161,31 +161,31 @@ public:
   }
 
   int32_t get_s(uint8_t param) {
-    return s_[param]; 
+    return s_[param];
   }
 
   uint32_t get_t() {
-    return static_cast<uint32_t>(bytebeat_.get_t()); 
+    return static_cast<uint32_t>(bytebeat_.get_t());
   }
 
   uint32_t get_eqn_num() {
-    return static_cast<uint32_t>(bytebeat_.get_eqn_num()); 
+    return static_cast<uint32_t>(bytebeat_.get_eqn_num());
   }
 
   uint32_t get_phase() {
-    return static_cast<uint32_t>(bytebeat_.get_phase()); 
+    return static_cast<uint32_t>(bytebeat_.get_phase());
   }
 
   uint32_t get_instance_loop_start() {
-    return static_cast<uint32_t>(bytebeat_.get_loop_start()); 
+    return static_cast<uint32_t>(bytebeat_.get_loop_start());
   }
 
   uint32_t get_instance_loop_end() {
-    return static_cast<uint32_t>(bytebeat_.get_loop_end()); 
+    return static_cast<uint32_t>(bytebeat_.get_loop_end());
   }
 
   uint16_t get_bytepitch() {
-    return static_cast<uint16_t>(bytebeat_.get_bytepitch()); 
+    return static_cast<uint16_t>(bytebeat_.get_bytepitch());
   }
 
   // Begin conditional menu items infrastructure
@@ -295,8 +295,8 @@ public:
       s[i] = USAT16(s[i]) ;
       s_[i] = s[i] ;
     }
-       
-    bytebeat_.Configure(s, get_step_mode(), get_loop_mode()) ; 
+
+    bytebeat_.Configure(s, get_step_mode(), get_loop_mode()) ;
 
     OC::DigitalInput trigger_input = get_trigger_input();
     uint8_t gate_state = 0;
@@ -350,23 +350,23 @@ void ByteBeat::Init(OC::DigitalInput default_trigger) {
 }
 
 const char* const bytebeat_cv_mapping_names[BYTEBEAT_CV_MAPPING_LAST] = {
-  "off", "equ", "spd", "p0", "p1", "p2", "beg++", "beg+", "beg", "end++", "end+", "end","pitch"  
+  "off", "equ", "spd", "p0", "p1", "p2", "beg++", "beg+", "beg", "end++", "end+", "end","pitch"
 };
 
 SETTINGS_DECLARE(ByteBeat, BYTEBEAT_SETTING_LAST) {
   { 0, 0, 15, "Equation", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
   { 255, 0, 255, "Speed", NULL, settings::STORAGE_TYPE_U8 },
   { 1, 1, 255, "Pitch", NULL, settings::STORAGE_TYPE_U8 },
-  { 126, 0, 255, "Parameter 0", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 126, 0, 255, "Parameter 1", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 127, 0, 255, "Parameter 2", NULL, settings::STORAGE_TYPE_U8 }, 
+  { 126, 0, 255, "Parameter 0", NULL, settings::STORAGE_TYPE_U8 },
+  { 126, 0, 255, "Parameter 1", NULL, settings::STORAGE_TYPE_U8 },
+  { 127, 0, 255, "Parameter 2", NULL, settings::STORAGE_TYPE_U8 },
   { 0, 0, 1, "Loop mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Loop begin ++", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 255, "Loop begin +", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 255, "Loop begin", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 255, "Loop end ++", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 1, 0, 255, "Loop end +", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 255, 0, 255, "Loop end", NULL, settings::STORAGE_TYPE_U8 }, 
+  { 0, 0, 255, "Loop begin ++", NULL, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 255, "Loop begin +", NULL, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 255, "Loop begin", NULL, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 255, "Loop end ++", NULL, settings::STORAGE_TYPE_U8 },
+  { 1, 0, 255, "Loop end +", NULL, settings::STORAGE_TYPE_U8 },
+  { 255, 0, 255, "Loop end", NULL, settings::STORAGE_TYPE_U8 },
   { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U4 },
   { 0, 0, 1, "Step mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
   { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV1 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
@@ -484,7 +484,7 @@ void BYTEBEATGEN_loop() {
 }
 
 void BYTEBEATGEN_menu() {
-  
+
   menu::QuadTitleBar::Draw();
   for (uint_fast8_t i = 0; i < 4; ++i) {
     menu::QuadTitleBar::SetColumn(i);
@@ -512,7 +512,7 @@ void BYTEBEATGEN_topButton() {
 
 void BYTEBEATGEN_lowerButton() {
   auto &selected_bytebeat = bytebeatgen.selected();
-  selected_bytebeat.change_value(BYTEBEAT_SETTING_EQUATION + bytebeatgen.ui.selected_segment, -1); 
+  selected_bytebeat.change_value(BYTEBEAT_SETTING_EQUATION + bytebeatgen.ui.selected_segment, -1);
 }
 
 void BYTEBEATGEN_handleButtonEvent(const UI::Event &event) {
@@ -561,8 +561,8 @@ void BYTEBEATGEN_handleEncoderEvent(const UI::Event &event) {
 
 #ifdef BYTEBEAT_DEBUG
 void BYTEBEATGEN_debug() {
-  for (int i = 0; i < 4; ++i) { 
-    uint8_t ypos = 10*(i + 1) + 2 ; 
+  for (int i = 0; i < 4; ++i) {
+    uint8_t ypos = 10*(i + 1) + 2 ;
     graphics.setPrintPos(2, ypos);
     graphics.print(i) ;
     graphics.setPrintPos(12, ypos);

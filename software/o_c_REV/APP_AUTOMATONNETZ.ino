@@ -27,7 +27,7 @@
 // linearly on each clock, at vector (dx, dy) is used to determine the next
 // cell. The cell coordinates use fixed-point internally with a configurable
 // sub-step accuracy.
-// 
+//
 // Since the grid is 5x5 and the sub-step accuracy a power-of-two, they might
 // not align correctly so there is a cumulative error. As a work-around, the
 // grid is given an epsilon and the selectable steps are restricted. Using odd
@@ -467,7 +467,7 @@ void AutomatonnetzState::update_outputs(bool chord_changed, int transpose, int i
     case OUTPUTA_MODE_ARP:
       OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(arp_index_ + 1), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
     case OUTPUTA_MODE_STRUM:
-      if (!strum_inhibit_) 
+      if (!strum_inhibit_)
           OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(arp_index_ + 1), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
       break;
     case OUTPUTA_MODE_LAST:
@@ -588,7 +588,7 @@ void Automatonnetz_menu() {
   }
 
   const vec2<size_t> current_pos = automatonnetz_state.grid.current_pos();
-  graphics.invertRect(kGridXStart + current_pos.x * kGridW + 1, 
+  graphics.invertRect(kGridXStart + current_pos.x * kGridW + 1,
                       kGridYStart + current_pos.y * kGridH + 1,
                       kGridW - 2, kGridH - 2);
 
@@ -665,7 +665,7 @@ void Automatonnetz_handleAppEvent(OC::AppEvent event) {
     case OC::APP_EVENT_SCREENSAVER_ON:
     case OC::APP_EVENT_SCREENSAVER_OFF:
       break;
-  }   
+  }
 }
 
 void Automatonnetz_rightButton() {
@@ -681,7 +681,7 @@ void Automatonnetz_handleButtonEvent(const UI::Event &event) {
         automatonnetz_state.AddUserAction(USER_ACTION_CLOCK);
         break;
       case OC::CONTROL_BUTTON_L:
-        automatonnetz_state.ui.edit_cell = !automatonnetz_state.ui.edit_cell;       
+        automatonnetz_state.ui.edit_cell = !automatonnetz_state.ui.edit_cell;
         break;
       case OC::CONTROL_BUTTON_R:
         if (automatonnetz_state.ui.edit_cell)
