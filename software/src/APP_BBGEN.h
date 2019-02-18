@@ -240,14 +240,14 @@ public:
     ui.cursor.Init(BB_SETTING_GRAVITY, BB_SETTING_LAST - 1);
   }
 
-  void ISR() {
+  void Process(OC::IOFrame *ioframe) {
     cv1.push(OC::ADC::value<ADC_CHANNEL_1>());
     cv2.push(OC::ADC::value<ADC_CHANNEL_2>());
     cv3.push(OC::ADC::value<ADC_CHANNEL_3>());
     cv4.push(OC::ADC::value<ADC_CHANNEL_4>());
 
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
-    uint32_t triggers = OC::DigitalInputs::clocked();
+    uint32_t triggers = ioframe->digital_inputs.triggered();
 
     balls_[0].Update(triggers, cvs, DAC_CHANNEL_A);
     balls_[1].Update(triggers, cvs, DAC_CHANNEL_B);
@@ -401,8 +401,8 @@ void BBGEN_screensaver() {
   OC::scope_render();
 }
 
-void FASTRUN BBGEN_process(OC::IOFrame *) {
-  bbgen.ISR();
+void FASTRUN BBGEN_process(OC::IOFrame *ioframe) {
+  bbgen.Process(ioframe);
 }
 
 #endif // ENABLE_APP_BBGEN

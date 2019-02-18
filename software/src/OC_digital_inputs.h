@@ -5,18 +5,9 @@
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_gpio.h"
+#include "OC_io.h"
 
 namespace OC {
-
-enum DigitalInput {
-  DIGITAL_INPUT_1,
-  DIGITAL_INPUT_2,
-  DIGITAL_INPUT_3,
-  DIGITAL_INPUT_4,
-  DIGITAL_INPUT_LAST
-};
-
-#define DIGITAL_INPUT_MASK(x) (0x1 << (x))
 
 static constexpr uint32_t DIGITAL_INPUT_1_MASK = DIGITAL_INPUT_MASK(DIGITAL_INPUT_1);
 static constexpr uint32_t DIGITAL_INPUT_2_MASK = DIGITAL_INPUT_MASK(DIGITAL_INPUT_2);
@@ -43,10 +34,10 @@ public:
 
   static void reInit();
 
-  static void Scan();
+  static void Read(IOFrame *ioframe);
 
-  // @return mask of all pins cloked since last call (does not reset state)
-  static inline uint32_t clocked() {
+  // @return mask of all pins cloked since last call
+  [[deprecated]] static inline uint32_t clocked() {
     return clocked_mask_;
   }
 

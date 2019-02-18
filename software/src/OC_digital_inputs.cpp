@@ -79,19 +79,26 @@ void OC::DigitalInputs::reInit() {
 }
 
 /*static*/
-void OC::DigitalInputs::Scan() {
-  clocked_mask_ =
+void OC::DigitalInputs::Read(IOFrame *ioframe) {
+  uint32_t clocked_mask =
     ScanInput<DIGITAL_INPUT_1>() |
     ScanInput<DIGITAL_INPUT_2>() |
     ScanInput<DIGITAL_INPUT_3>() |
     ScanInput<DIGITAL_INPUT_4>();
+  ioframe->digital_inputs.rising_edges = clocked_mask;
+  clocked_mask_ = clocked_mask;
+
+  uint32_t state_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
+  ioframe->digital_inputs.state_mask = state_mask;
 }
 
 #endif // Teensy 3.2
 
-
 #if defined(__IMXRT1062__) // Teensy 4.0 or 4.1
-
 uint8_t OC::DigitalInputs::clocked_mask_;
 IMXRT_GPIO_t * OC::DigitalInputs::port[DIGITAL_INPUT_LAST];
 uint32_t  OC::DigitalInputs::bitmask[DIGITAL_INPUT_LAST];
@@ -131,7 +138,7 @@ void OC::DigitalInputs::Init() {
   }
 }
 
-void OC::DigitalInputs::Scan() {
+void OC::DigitalInputs::Read(IOFrame *ioframe) {
   uint32_t mask[4];
   noInterrupts();
   mask[0] = port[0]->ISR & bitmask[0];
@@ -148,7 +155,16 @@ void OC::DigitalInputs::Scan() {
   if (mask[1]) new_clocked_mask |= 0x02;
   if (mask[2]) new_clocked_mask |= 0x04;
   if (mask[3]) new_clocked_mask |= 0x08;
+  ioframe->digital_inputs.rising_edges = new_clocked_mask;
   clocked_mask_ = new_clocked_mask;
+
+  uint32_t state_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
+  ioframe->digital_inputs.state_mask = state_mask;
+
   #if 0
   if (clocked_mask_) {
     static elapsedMicros usec;

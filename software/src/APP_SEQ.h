@@ -2126,13 +2126,13 @@ void SEQ_handleAppEvent(OC::AppEvent event) {
 void SEQ_loop() {
 }
 
-void SEQ_process(OC::IOFrame *) {
+void SEQ_process(OC::IOFrame *ioframe) {
 
   ticks_src1++; // src #1 ticks
   ticks_src2++; // src #2 ticks
   copy_timeout++;
 
-  uint32_t triggers = OC::DigitalInputs::clocked();
+  uint32_t triggers = ioframe->digital_inputs.triggered();
 
   if (triggers & (1 << OC::DIGITAL_INPUT_1)) {
     ext_frequency[SEQ_CHANNEL_TRIGGER_TR1] = ticks_src1;

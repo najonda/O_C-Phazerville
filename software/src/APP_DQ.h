@@ -1221,9 +1221,9 @@ void DQ_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void DQ_process(OC::IOFrame *) {
-  
-  uint32_t triggers = OC::DigitalInputs::clocked();
+void DQ_process(OC::IOFrame *ioframe) {
+
+  uint32_t triggers = ioframe->digital_inputs.triggered();
 
   dq_quantizer_channels[0].Update(triggers, DAC_CHANNEL_A, DAC_CHANNEL_C);
   dq_quantizer_channels[1].Update(triggers, DAC_CHANNEL_B, DAC_CHANNEL_D);
