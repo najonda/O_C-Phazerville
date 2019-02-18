@@ -85,15 +85,16 @@ void OC::DigitalInputs::Read(IOFrame *ioframe) {
     ScanInput<DIGITAL_INPUT_2>() |
     ScanInput<DIGITAL_INPUT_3>() |
     ScanInput<DIGITAL_INPUT_4>();
+
   ioframe->digital_inputs.rising_edges = clocked_mask;
   clocked_mask_ = clocked_mask;
 
-  uint32_t state_mask = 0;
-  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
-  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
-  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
-  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
-  ioframe->digital_inputs.state_mask = state_mask;
+  uint32_t raised_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) raised_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) raised_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) raised_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) raised_mask |= DIGITAL_INPUT_4_MASK;
+  ioframe->digital_inputs.raised_mask = raised_mask;
 }
 
 #endif // Teensy 3.2
@@ -158,12 +159,12 @@ void OC::DigitalInputs::Read(IOFrame *ioframe) {
   ioframe->digital_inputs.rising_edges = new_clocked_mask;
   clocked_mask_ = new_clocked_mask;
 
-  uint32_t state_mask = 0;
-  if (read_immediate<DIGITAL_INPUT_1>()) state_mask |= DIGITAL_INPUT_1_MASK;
-  if (read_immediate<DIGITAL_INPUT_2>()) state_mask |= DIGITAL_INPUT_2_MASK;
-  if (read_immediate<DIGITAL_INPUT_3>()) state_mask |= DIGITAL_INPUT_3_MASK;
-  if (read_immediate<DIGITAL_INPUT_4>()) state_mask |= DIGITAL_INPUT_4_MASK;
-  ioframe->digital_inputs.state_mask = state_mask;
+  uint32_t raised_mask = 0;
+  if (read_immediate<DIGITAL_INPUT_1>()) raised_mask |= DIGITAL_INPUT_1_MASK;
+  if (read_immediate<DIGITAL_INPUT_2>()) raised_mask |= DIGITAL_INPUT_2_MASK;
+  if (read_immediate<DIGITAL_INPUT_3>()) raised_mask |= DIGITAL_INPUT_3_MASK;
+  if (read_immediate<DIGITAL_INPUT_4>()) raised_mask |= DIGITAL_INPUT_4_MASK;
+  ioframe->digital_inputs.raised_mask = raised_mask;
 
   #if 0
   if (clocked_mask_) {
