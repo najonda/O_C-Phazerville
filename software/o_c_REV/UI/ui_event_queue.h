@@ -52,14 +52,9 @@ public:
     return events_.readable();
   }
 
-  inline void PushEvent(EventType t, uint16_t c, int16_t v) {
-    // TODO EmplaceWrite?
-    events_.Write(Event(t, c, v, 0));
-    Poke();
-  }
-
-  inline void PushEvent(EventType t, uint16_t c, int16_t v, uint16_t m) {
-    events_.Write(Event(t, c, v, m));
+  template <class... Args>
+  inline void PushEvent(Args&&... args) {
+    events_.EmplaceWrite(args...);
     Poke();
   }
 

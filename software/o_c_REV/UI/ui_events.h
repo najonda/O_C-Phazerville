@@ -43,6 +43,11 @@ struct Event {
   Event() { }
   Event(EventType t, uint16_t c, int16_t v, uint16_t m)
   : type(t), control(c), value(v), mask(m) { }
+
+  Event(const Event&)            = default;
+  Event(Event&&)                 = default;
+  Event& operator=(const Event&) = default;
+  Event& operator=(Event&&)      = default;
 };
 
 }; // namespace UI
