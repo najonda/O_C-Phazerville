@@ -77,8 +77,8 @@ public:
   UiMode DispatchEvents(const OC::App *app);
 
   void Poll();
-  void _Poke();
-  void _preemptScreensaver(bool v);
+  void Poke();
+  void preempt_screensaver(bool v);
 
   inline bool read_immediate(UiControl control) {
     return button_state_ & control;

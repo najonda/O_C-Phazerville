@@ -64,6 +64,13 @@ public:
     poke_ptr_ = write_ptr_ = write_ptr + 1;
   }
 
+  template <class... Args>
+  inline void EmplaceWrite(Args&&... args) {
+    size_t write_ptr = write_ptr_;
+    buffer_[write_ptr_ & (size -1)] = T{args...};
+    write_ptr_ = write_ptr + 1;
+  }
+
   inline void Flush() {
     write_ptr_ = read_ptr_ = 0;
   }

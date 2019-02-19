@@ -74,11 +74,11 @@ void Ui::set_screensaver_timeout(uint32_t seconds) {
   event_queue_.Poke();
 }
 
-void FASTRUN Ui::_Poke() {
+void FASTRUN Ui::Poke() {
   event_queue_.Poke();
 }
 
-void Ui::_preemptScreensaver(bool v) {
+void Ui::preempt_screensaver(bool v) {
   preempt_screensaver_ = v;
 }
 
