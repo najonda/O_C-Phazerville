@@ -635,7 +635,7 @@ void ScaleEditor<Owner>::BeginEditing(bool mode) {
   if (mode) { // == meta-Q
     edit_this_scale_ = owner_->get_scale_select();
     mask_ = owner_->get_scale_mask(edit_this_scale_);
-    OC::ui._preemptScreensaver(true);
+    OC::ui.preempt_screensaver(true);
   }
   else { 
     mask_ = owner_->get_scale_mask(DUMMY); 
@@ -645,7 +645,7 @@ void ScaleEditor<Owner>::BeginEditing(bool mode) {
 template <typename Owner>
 void ScaleEditor<Owner>::Close() {
   ui.SetButtonIgnoreMask();
-  OC::ui._preemptScreensaver(false);
+  OC::ui.preempt_screensaver(false);
   owner_ = nullptr;
   edit_this_scale_ = 0;
   edit_page_ = _SCALE;
