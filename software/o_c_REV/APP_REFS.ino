@@ -489,7 +489,7 @@ public:
     }
   }
  
-  void Update() {
+  void Update(OC::IOFrame *ioframe) {
 
     if (autotuner_) {
       autotune_updateDAC();
@@ -511,9 +511,9 @@ public:
       mod_offset_ = 0;
     }
 
-    int32_t semitone = get_semitone();
-    OC::DAC::set(dac_channel_, OC::DAC::semitone_to_scaled_voltage_dac(dac_channel_, semitone, octave, OC::DAC::get_voltage_scaling(dac_channel_)));
-    last_pitch_ = (semitone + octave * 12) << 7;       
+    int32_t pitch = OC::PitchUtils::PitchFromSemitone(get_semitone(), octave);
+    last_pitch_ = pitch;
+    ioframe->set_output_value(dac_channel_, pitch, OC::OUTPUT_MODE_PITCH);
   }
 
   int num_enabled_settings() const {
@@ -630,10 +630,10 @@ public:
     autotuner.Init();
   }
 
-  void ISR() {
+  void Process(OC::IOFrame *ioframe) {
       
     for (auto &channel : channels_)
-      channel.Update();
+      channel.Update(ioframe);
 
     uint8_t _autotuner_active_channel = 0x0;
     for (auto &channel : channels_)
@@ -762,8 +762,8 @@ size_t REFS_restore(const void *storage) {
   return used;
 }
 
-void REFS_process(OC::IOFrame *) {
-  return references_app.ISR();
+void REFS_process(OC::IOFrame *ioframe) {
+  return references_app.Process(ioframe);
 }
 
 void REFS_handleAppEvent(OC::AppEvent event) {

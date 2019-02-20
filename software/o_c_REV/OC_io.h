@@ -26,10 +26,13 @@
 #ifndef OC_IO_H_
 #define OC_IO_H_
 
+#include <array>
+#include <stdint.h>
 #include "util/util_math.h"
 
 namespace OC {
 
+// The dependency here is weird.
 enum DigitalInput {
   DIGITAL_INPUT_1,
   DIGITAL_INPUT_2,
@@ -40,7 +43,19 @@ enum DigitalInput {
 
 #define DIGITAL_INPUT_MASK(x) (0x1 << (x))
 
+// Output value types
+enum OutputMode {
+  OUTPUT_MODE_PITCH,
+  OUTPUT_MODE_RAW
+};
+
+// Processing for apps works on a per-sample basis. An IOFrame encapuslates the
+// IO data for a given frame, plus some helper functions to mimic the available
+// functions in the direct drivers.
+//
 struct IOFrame {
+
+  static constexpr size_t kMaxOutputChannels = 4;
 
   struct {
     uint32_t rising_edges; // Rising edge detected since last frame
@@ -60,8 +75,28 @@ struct IOFrame {
 
   } digital_inputs;
 
+
+  std::array<int32_t, kMaxOutputChannels> output_values;
+  std::array<OutputMode, kMaxOutputChannels> output_modes;
+
+  void Reset();
+
+  template <typename T>
+  void set_output_values(const T& src)
+  {
+    std::copy(src, src + kMaxOutputChannels, std::begin(output_values));
+  }
+
+  void set_output_mode(OutputMode output_mode);
+
+  void set_output_value(size_t i, int32_t value, OutputMode output_mode)
+  {
+    output_values[i] = value;
+    output_modes[i] = output_mode;
+  }
+
 };
 
-}; // namespace OC
+} // namespace OC
 
 #endif // OC_IO_H_

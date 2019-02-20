@@ -63,6 +63,7 @@
 #include "tonnetz/tonnetz_state.h"
 #include "OC_bitmaps.h"
 #include "OC_menus.h"
+#include "OC_pitch_utils.h"
 #include "OC_trigger_delays.h"
 
 #define FRACTIONAL_BITS 24
@@ -207,6 +208,8 @@ public:
     cell_transpose_ = cell_inversion_ = 0;
     user_actions_.Init();
     critical_section_.Init();
+
+    std::fill(output_values_, output_values_ + 4, 0);
   }
 
   void ClearGrid() {
@@ -310,6 +313,8 @@ private:
 
   util::RingBuffer<uint32_t, 4> user_actions_;
   util::CriticalSection critical_section_;
+
+  int32_t output_values_[4];
 
   void update_trigger_out();
   void update_outputs(bool chord_changed, int transpose, int inversion);
@@ -430,6 +435,9 @@ void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
 
   if ((triggers & TRIGGER_MASK_GRID) || (triggers & TRIGGER_MASK_ARP))
     update_outputs(chord_changed, cell_transpose_, cell_inversion_);
+
+  ioframe->set_output_values(output_values_);
+  ioframe->set_output_mode(OC::OUTPUT_MODE_PITCH);
 }
 
 void AutomatonnetzState::Reset() {
@@ -456,28 +464,28 @@ void AutomatonnetzState::update_outputs(bool chord_changed, int transpose, int i
 
   switch (output_mode()) {
     case OUTPUTA_MODE_ROOT:
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(0), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
+      output_values_[DAC_CHANNEL_A] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), octave());
       break;
     case OUTPUTA_MODE_TRIG:
       if (chord_changed) {
         trigger_out_ticks_ = kTriggerOutTicks;
-        OC::DAC::set_octave(DAC_CHANNEL_A, 5);
+        output_values_[DAC_CHANNEL_A] = OC::PitchUtils::PitchFromOctave(5);
       }
       break;
     case OUTPUTA_MODE_ARP:
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(arp_index_ + 1), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
+      output_values_[DAC_CHANNEL_A] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(arp_index_ + 1), octave());
     case OUTPUTA_MODE_STRUM:
       if (!strum_inhibit_)
-          OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(arp_index_ + 1), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
+        output_values_[DAC_CHANNEL_A] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(arp_index_ + 1), octave());
       break;
     case OUTPUTA_MODE_LAST:
     default:
       break;
   }
 
-  OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_B>(tonnetz_state.outputs(1), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_B));
-  OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_C>(tonnetz_state.outputs(2), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_C));
-  OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_D>(tonnetz_state.outputs(3), octave(), OC::DAC::get_voltage_scaling(DAC_CHANNEL_D));
+  output_values_[DAC_CHANNEL_B] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(1), octave());
+  output_values_[DAC_CHANNEL_C] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(2), octave());
+  output_values_[DAC_CHANNEL_D] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(3), octave());
 }
 
 void AutomatonnetzState::update_trigger_out() {
@@ -485,7 +493,7 @@ void AutomatonnetzState::update_trigger_out() {
     uint32_t ticks = trigger_out_ticks_;
     --ticks;
     if (!ticks)
-      OC::DAC::set_octave(DAC_CHANNEL_A, 0);
+      output_values_[DAC_CHANNEL_A] = 0;
     trigger_out_ticks_ = ticks;
   }
 }

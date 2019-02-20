@@ -73,10 +73,20 @@ void DAC::Init(CalibrationData *calibration_data) {
 }
 
 /*static*/
+void DAC::Write(const IOFrame *ioframe)
+{
+  IOFrameToChannel<DAC_CHANNEL_A>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_B>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_C>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_D>(ioframe);
+}
+
+/*static*/
 uint8_t DAC::calibration_data_used(uint8_t channel_id) {
   const OC::Autotune_data &autotune_data = OC::AUTOTUNE::GetAutotune_data(channel_id);
   return autotune_data.use_auto_calibration_;
 }
+
 /*static*/
 void DAC::set_auto_channel_calibration_data(uint8_t channel_id) {
   
@@ -95,6 +105,7 @@ void DAC::set_auto_channel_calibration_data(uint8_t channel_id) {
     } 
   }
 }
+
 /*static*/
 void DAC::set_default_channel_calibration_data(uint8_t channel_id) {
   
@@ -113,6 +124,7 @@ void DAC::set_default_channel_calibration_data(uint8_t channel_id) {
       autotune_data->use_auto_calibration_ = 0x00;
   }
 }
+
 /*static*/
 void DAC::update_auto_channel_calibration_data(uint8_t channel_id, int8_t octave, uint32_t pitch_data) {
   
@@ -130,6 +142,7 @@ void DAC::update_auto_channel_calibration_data(uint8_t channel_id, int8_t octave
       }
    }
 }
+
 /*static*/
 void DAC::reset_auto_channel_calibration_data(uint8_t channel_id) {
   
@@ -142,11 +155,13 @@ void DAC::reset_auto_channel_calibration_data(uint8_t channel_id) {
       autotune_data->auto_calibrated_octaves[i] = OC::calibration_data.dac.calibrated_octaves[channel_id][i];
   }
 }
+
 /*static*/
 void DAC::reset_all_auto_channel_calibration_data(){
    for (int i = 0; i < DAC_CHANNEL_LAST; i++)
       reset_auto_channel_calibration_data(i);
 }
+
 /*static*/
 void DAC::choose_calibration_data() {
   
@@ -166,16 +181,19 @@ void DAC::choose_calibration_data() {
     // ... else use default calibration
   }
 }
+
 /*static*/
 OutputVoltageScaling DAC::get_voltage_scaling(uint8_t channel_id) {
   return scaling_[channel_id];
 }
+
 /*static*/
 void DAC::set_scaling(OutputVoltageScaling scaling, uint8_t channel_id) {
 
   if (channel_id < DAC_CHANNEL_LAST)
     scaling_[channel_id] = scaling;
 }
+
 /*static*/
 void DAC::restore_scaling(uint32_t scaling) {
   
@@ -185,6 +203,7 @@ void DAC::restore_scaling(uint32_t scaling) {
     set_scaling(static_cast<OutputVoltageScaling>(s), i);
   }
 }
+
 uint32_t DAC::store_scaling() {
 
   uint32_t _scaling = 0;
@@ -193,14 +212,19 @@ uint32_t DAC::store_scaling() {
     _scaling |= (scaling_[i] << (i * 8)); 
   return _scaling;
 }
+
 /*static*/
 DAC::CalibrationData *DAC::calibration_data_ = nullptr;
+
 /*static*/
 uint32_t DAC::values_[DAC_CHANNEL_LAST];
+
 /*static*/
 uint16_t DAC::history_[DAC_CHANNEL_LAST][DAC::kHistoryDepth];
+
 /*static*/ 
 volatile size_t DAC::history_tail_;
+
 /*static*/ 
 OutputVoltageScaling DAC::scaling_[DAC_CHANNEL_LAST];
 }; // namespace OC

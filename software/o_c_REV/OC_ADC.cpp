@@ -112,6 +112,11 @@ void ADC::Init_DMA() {
   }
 }
 
+/*static*/
+void ADC::Read(IOFrame *io_frame)
+{
+}
+
 /*static*/ void ADC::CalibratePitch(int32_t c2, int32_t c4) {
   // This is the method used by the Mutable Instruments calibration and
   // extrapolates from two octaves. I guess an alternative would be to get the

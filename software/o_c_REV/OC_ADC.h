@@ -3,6 +3,7 @@
 
 #include "src/drivers/ADC/OC_util_ADC.h"
 #include "OC_config.h"
+#include "OC_io.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -49,6 +50,8 @@ public:
   static void Init_DMA();
   static void DMA_ISR();
   static void Scan_DMA();
+
+  static void Read(IOFrame *io_frame);
 
   template <ADC_CHANNEL channel>
   static int32_t value() {
