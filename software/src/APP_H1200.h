@@ -26,6 +26,7 @@
 #ifdef ENABLE_APP_H1200
 
 #include "OC_bitmaps.h"
+#include "OC_pitch_utils.h"
 #include "OC_strings.h"
 #include "OC_trigger_delays.h"
 #include "tonnetz/tonnetz_state.h"
@@ -533,7 +534,8 @@ public:
     h_euclidean_length_ = 8;
     h_euclidean_fill_ = 0;
     h_euclidean_offset_ = 0;
-    
+
+    std::fill(output_values_, output_values_ + 4, 0);
   }
 
   void map_euclidean_cv(uint8_t cv_mapping, int channel_cv) {
@@ -628,17 +630,17 @@ public:
 
     switch (output_mode) {
     case OUTPUT_CHORD_VOICING: {
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(0), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_B>(tonnetz_state.outputs(1), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_B));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_C>(tonnetz_state.outputs(2), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_C));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_D>(tonnetz_state.outputs(3), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_D));
+      output_values_[0] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), 0);
+      output_values_[1] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(1), 0);
+      output_values_[2] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(2), 0);
+      output_values_[3] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(3), 0);
     }
     break;
     case OUTPUT_TUNE: {
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_A>(tonnetz_state.outputs(0), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_B>(tonnetz_state.outputs(0), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_B));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_C>(tonnetz_state.outputs(0), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_C));
-      OC::DAC::set_voltage_scaled_semitone<DAC_CHANNEL_D>(tonnetz_state.outputs(0), 0, OC::DAC::get_voltage_scaling(DAC_CHANNEL_D));
+      output_values_[0] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), 0);
+      output_values_[1] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), 0);
+      output_values_[2] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), 0);
+      output_values_[3] = OC::PitchUtils::PitchFromSemitone(tonnetz_state.outputs(0), 0);
     }
     break;
     default: break;
@@ -678,7 +680,8 @@ public:
   uint8_t h_euclidean_length_  ;
   uint8_t h_euclidean_fill_  ;
   uint8_t h_euclidean_offset_  ;
- 
+
+  int32_t output_values_[4];
 };
 
 H1200State h1200_state;
@@ -1003,7 +1006,8 @@ void FASTRUN H1200_clock(uint32_t triggers) {
  }
 
   // Finally, we're ready to actually render the triad transformation!
-  if (triggers || (h1200_settings.get_cv_sampling() == H1200_CV_SAMPLING_CONT)) h1200_state.Render(root_, inversion_, octave_, h1200_settings.output_mode());
+  if (triggers || (h1200_settings.get_cv_sampling() == H1200_CV_SAMPLING_CONT))
+    h1200_state.Render(root_, inversion_, octave_, h1200_settings.output_mode());
 
   if (triggers)
     MENU_REDRAW = 1;
@@ -1062,6 +1066,9 @@ void H1200_process(OC::IOFrame *ioframe) {
   }
 
   H1200_clock(triggers);
+ 
+  ioframe->set_output_values(h1200_state.output_values_);
+  ioframe->set_output_mode(OC::OUTPUT_MODE_PITCH);
 }
 
 void H1200_loop() {

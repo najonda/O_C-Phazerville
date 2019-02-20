@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "OC_config.h"
+#include "OC_io.h"
 #include "OC_options.h"
 #include "OC_gpio.h"
 #include "util/util_math.h"
@@ -73,6 +74,8 @@ public:
   static void DAC8568_Vref_enable();
   #endif
 
+  static void Write(const IOFrame *ioframe);
+
   static uint8_t calibration_data_used(uint8_t channel_id);
   static void set_auto_channel_calibration_data(uint8_t channel_id);
   static void set_default_channel_calibration_data(uint8_t channel_id);
@@ -105,22 +108,16 @@ public:
     return values_[index];
   }
 
-  // Calculate DAC value from semitone, where 0 = C1 = 0V, C2 = 12 = 1V
-  // Expected semitone resolution is 12 bit.
+  // Calculate DAC value from pitch value with 12 * 128 bit per octave for a specific channel.
+  // 0 = C1 = 0V, C2 = 24 << 7 = 1V etc.
+  // Respects channel's current scaling settings and calibration data.
   //
   // @return DAC output value
-  static int32_t semitone_to_dac(DAC_CHANNEL channel, int32_t semi, int32_t octave_offset) {
-    return pitch_to_dac(channel, semi << 7, octave_offset);
-  }
-
-
-  // Calculate DAC value from pitch value with 12 * 128 bit per octave.
-  // 0 = C1 = 0V, C2 = 24 << 7 = 1V etc. Automatically shifts for LUT range.
-  //
-  // @return DAC output value
-  static int32_t pitch_to_dac(DAC_CHANNEL channel, int32_t pitch, int32_t octave_offset) {
-    pitch += (kOctaveZero + octave_offset) * 12 << 7;
-    
+  template <DAC_CHANNEL channel>
+  static int32_t PitchToDAC(int32_t pitch)
+  {
+    pitch = Scale<channel>(pitch);
+    pitch += kOctaveZero * 12 << 7;
     CONSTRAIN(pitch, 0, (120 << 7));
 
     const int32_t octave = pitch / (12 << 7);
@@ -135,12 +132,46 @@ public:
     return sample;
   }
 
+  // Scale output value given channel scaling
+  template <DAC_CHANNEL channel>
+  static int32_t Scale(int32_t pitch)
+  {
+    switch (scaling_[channel]) {
+      case VOLTAGE_SCALING_1V_PER_OCT:    // 1V/oct
+          break;
+      case VOLTAGE_SCALING_CARLOS_ALPHA:  // Wendy Carlos alpha scale - scale by 0.77995
+          pitch = (pitch * 25548) >> 15;  // 2^15 * 0.77995 = 25547.571
+          break;
+      case VOLTAGE_SCALING_CARLOS_BETA:   // Wendy Carlos beta scale - scale by 0.63833 
+          pitch = (pitch * 20917) >> 15;  // 2^15 * 0.63833 = 20916.776
+          break;
+      case VOLTAGE_SCALING_CARLOS_GAMMA:  // Wendy Carlos gamma scale - scale by 0.35099
+          pitch = (pitch * 11501) >> 15;  // 2^15 * 0.35099 = 11501.2403
+          break;
+      case VOLTAGE_SCALING_BOHLEN_PIERCE: // Bohlen-Pierce macrotonal scale - scale by 1.585
+          pitch = (pitch * 25969) >> 14;  // 2^14 * 1.585 = 25968.64
+          break;
+      case VOLTAGE_SCALING_QUARTERTONE:   // Quartertone scaling (just down-scales to 0.5V/oct)
+          pitch = pitch >> 1;
+          break;
+      #ifdef BUCHLA_SUPPORT
+      case VOLTAGE_SCALING_1_2V_PER_OCT:  // 1.2V/oct
+          pitch = (pitch * 19661) >> 14;  // 2^14 * 1.2 = 19660,8
+          break;
+      case VOLTAGE_SCALING_2V_PER_OCT:    // 2V/oct
+          pitch = pitch << 1;
+          break;
+      #endif    
+      default: 
+          break;
+    }
+
+    return pitch;
+  }
+
+
   // Specialised versions with voltage scaling
 
-  static int32_t semitone_to_scaled_voltage_dac(DAC_CHANNEL channel, int32_t semi, int32_t octave_offset, uint8_t voltage_scaling) {
-    return pitch_to_scaled_voltage_dac(channel, semi << 7, octave_offset, voltage_scaling);
-  }
-  
   static int32_t pitch_to_scaled_voltage_dac(DAC_CHANNEL channel, int32_t pitch, int32_t octave_offset, uint8_t voltage_scaling) {
     pitch += (octave_offset * 12) << 7;
 
@@ -190,23 +221,6 @@ public:
     }
 
     return sample;
-  }
-    
-  // Set channel to semitone value
-  template <DAC_CHANNEL channel>
-  static void set_semitone(int32_t semitone, int32_t octave_offset) {
-    set<channel>(semitone_to_dac(channel, semitone, octave_offset));
-  }
-
-  // Set channel to semitone value
-  template <DAC_CHANNEL channel>
-  static void set_voltage_scaled_semitone(int32_t semitone, int32_t octave_offset, uint8_t voltage_scaling) {
-    set<channel>(semitone_to_scaled_voltage_dac(channel, semitone, octave_offset, voltage_scaling));
-  }
-
-  // Set channel to pitch value
-  static void set_pitch(DAC_CHANNEL channel, int32_t pitch, int32_t octave_offset) {
-    set(channel, pitch_to_dac(channel, pitch, octave_offset));
   }
 
   // Set integer voltage value, where 0 = 0V, 1 = 1V
@@ -276,6 +290,17 @@ private:
   static uint16_t history_[DAC_CHANNEL_LAST][kHistoryDepth];
   static volatile size_t history_tail_;
   static OutputVoltageScaling scaling_[DAC_CHANNEL_LAST];
+
+  template <DAC_CHANNEL channel>
+  static void IOFrameToChannel(const IOFrame *ioframe)
+  {
+    if (OUTPUT_MODE_PITCH == ioframe->output_modes[channel]) {
+      set<channel>(PitchToDAC<channel>(ioframe->output_values[channel]));
+    } else {
+      // TODO[PLD]
+    }
+  }
+
 };
 
 }; // namespace OC

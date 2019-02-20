@@ -115,9 +115,11 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
 
 #ifdef OC_ADC_ENABLE_DMA_INTERRUPT
 /*static*/ void ADC::DMA_ISR() {
+
   ADC::ready_ = true;
+  dma0->TCD->DADDR = &adcbuffer_0[0];
   dma0->clearInterrupt();
-  /* restart DMA in ADC::Scan_DMA() */
+  /* restart DMA in ADC::Read() */
 }
 #endif
 
@@ -446,7 +448,7 @@ static void Init_Teensy41_ADC33131D_chip() {
 
 
 #if defined(__MK20DX256__)
-/*static*/void FASTRUN ADC::Scan_DMA() {
+/*static*/void FASTRUN ADC::Read(OC::IOFrame *) {
 
 #ifdef OC_ADC_ENABLE_DMA_INTERRUPT
   if (ADC::ready_)  {
@@ -481,7 +483,7 @@ static void Init_Teensy41_ADC33131D_chip() {
 }
 
 #elif defined(__IMXRT1062__)
-/*static*/void FASTRUN ADC::Scan_DMA() {
+/*static*/void FASTRUN ADC::Read(OC::IOFrame *) {
   static int ratelimit = 0;
   if (++ratelimit < 3) return; // emulate update 180us update rate of Teensy 3.2
   ratelimit = 0;

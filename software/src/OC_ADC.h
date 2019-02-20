@@ -4,6 +4,7 @@
 #include "src/drivers/ADC/OC_util_ADC.h"
 #include "OC_config.h"
 #include "OC_options.h"
+#include "OC_io.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 // If enabled, use an interrupt to track DMA completion; otherwise use polling
 //#define OC_ADC_ENABLE_DMA_INTERRUPT
 
+//#define ENABLE_ADC_DEBUG
 
 enum ADC_CHANNEL {
   ADC_CHANNEL_1,
@@ -61,6 +63,8 @@ public:
   static void Init_DMA();
   static void DMA_ISR();
   static void Scan_DMA();
+
+  static void Read(IOFrame *io_frame);
 
   template <ADC_CHANNEL channel>
   static int32_t value() {

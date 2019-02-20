@@ -82,14 +82,17 @@ void FASTRUN CORE_timer_ISR() {
 
   // see OC_ADC.h for details; empirically (with current parameters), Scan_DMA() picks up new samples @ 5.55kHz
   OC::ADC::Scan_DMA();
+  OC::ADC::Read(&io_frame);
 
   // Pin changes are tracked in separate ISRs, so depending on prio it might
   // need extra precautions.
   OC::DigitalInputs::Read(&io_frame);
 
   ++OC::CORE::ticks;
-  if (OC::CORE::app_isr_enabled)
+  if (OC::CORE::app_isr_enabled) {
     OC::apps::Process(&io_frame);
+    OC::DAC::Write(&io_frame);
+  }
 
   OC_DEBUG_RESET_CYCLES(OC::CORE::ticks, 16384, OC::DEBUG::ISR_cycles);
 }
@@ -151,6 +154,8 @@ void setup() {
   OC::menu::Init();
   OC::ui.Init();
   OC::ui.configure_encoders(OC::calibration_data.encoder_config());
+
+  io_frame.Reset();
 
   SERIAL_PRINTLN("* CORE ISR @%luus", OC_CORE_TIMER_RATE);
   CORE_timer.begin(CORE_timer_ISR, OC_CORE_TIMER_RATE);
