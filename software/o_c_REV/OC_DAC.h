@@ -58,9 +58,9 @@ public:
   static void reset_auto_channel_calibration_data(uint8_t channel_id);
   static void reset_all_auto_channel_calibration_data();
   static void choose_calibration_data();
-  static void set_scaling(uint8_t scaling, uint8_t channel_id);
+  static void set_scaling(OutputVoltageScaling scaling, uint8_t channel_id);
   static void restore_scaling(uint32_t scaling);
-  static uint8_t get_voltage_scaling(uint8_t channel_id);
+  static OutputVoltageScaling get_voltage_scaling(uint8_t channel_id);
   static uint32_t store_scaling();
   
   static void set_all(uint32_t value) {
@@ -241,7 +241,7 @@ private:
   static uint32_t values_[DAC_CHANNEL_LAST];
   static uint16_t history_[DAC_CHANNEL_LAST][kHistoryDepth];
   static volatile size_t history_tail_;
-  static uint8_t DAC_scaling[DAC_CHANNEL_LAST];
+  static OutputVoltageScaling scaling_[DAC_CHANNEL_LAST];
 };
 
 }; // namespace OC

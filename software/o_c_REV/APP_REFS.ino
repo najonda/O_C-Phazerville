@@ -297,7 +297,7 @@ public:
         auto_freq_count_ = 0;
         _f_result = true;
         ticks_since_last_freq_ = 0x0;
-        OC::ui._Poke();
+        OC::ui.Poke();
         for (auto &sh : history_)
           sh.Update();
       }

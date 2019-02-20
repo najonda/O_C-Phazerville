@@ -167,22 +167,22 @@ void DAC::choose_calibration_data() {
   }
 }
 /*static*/
-uint8_t DAC::get_voltage_scaling(uint8_t channel_id) {
-  return DAC_scaling[channel_id];
+OutputVoltageScaling DAC::get_voltage_scaling(uint8_t channel_id) {
+  return scaling_[channel_id];
 }
 /*static*/
-void DAC::set_scaling(uint8_t scaling, uint8_t channel_id) {
+void DAC::set_scaling(OutputVoltageScaling scaling, uint8_t channel_id) {
 
   if (channel_id < DAC_CHANNEL_LAST)
-    DAC_scaling[channel_id] = scaling;
+    scaling_[channel_id] = scaling;
 }
 /*static*/
 void DAC::restore_scaling(uint32_t scaling) {
   
   // restore scaling from global settings
   for (int i = 0; i < DAC_CHANNEL_LAST; i++) {
-    uint8_t _scaling = (scaling >> (i * 8)) & 0xFF;
-    set_scaling(_scaling, i);
+    auto s = (scaling >> (i * 8)) & 0xFF;
+    set_scaling(static_cast<OutputVoltageScaling>(s), i);
   }
 }
 uint32_t DAC::store_scaling() {
@@ -190,7 +190,7 @@ uint32_t DAC::store_scaling() {
   uint32_t _scaling = 0;
   // merge values into uint32_t : 
   for (int i = 0; i < DAC_CHANNEL_LAST; i++)
-    _scaling |= (DAC_scaling[i] << (i * 8)); 
+    _scaling |= (scaling_[i] << (i * 8)); 
   return _scaling;
 }
 /*static*/
@@ -202,7 +202,7 @@ uint16_t DAC::history_[DAC_CHANNEL_LAST][DAC::kHistoryDepth];
 /*static*/ 
 volatile size_t DAC::history_tail_;
 /*static*/ 
-uint8_t DAC::DAC_scaling[DAC_CHANNEL_LAST];
+OutputVoltageScaling DAC::scaling_[DAC_CHANNEL_LAST];
 }; // namespace OC
 
 void set8565_CHA(uint32_t data) {
