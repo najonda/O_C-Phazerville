@@ -1826,51 +1826,41 @@ public:
    num_enabled_settings_ = settings - enabled_settings_;
   }
 
-  template <DAC_CHANNEL dacChannel>
-  void update_main_channel() {
-    int32_t _output = OC::DAC::pitch_to_scaled_voltage_dac(dacChannel, get_step_pitch(), 0, OC::DAC::get_voltage_scaling(dacChannel));
-    OC::DAC::set<dacChannel>(_output);
-
+  template <DAC_CHANNEL dac_channel>
+  void update_main_channel(OC::IOFrame *ioframe)
+  {
+    ioframe->outputs.set_pitch_value(dac_channel, get_step_pitch());
   }
 
-  template <DAC_CHANNEL dacChannel>
-  void update_aux_channel()
+  template <DAC_CHANNEL dac_channel>
+  void update_aux_channel(OC::IOFrame *ioframe)
   {
-
-      int8_t _mode = get_aux_mode();
-      uint32_t _output = 0;
-
-      switch (_mode) {
-
+      //uint32_t _output = 0;
+      switch (get_aux_mode()) {
         case GATE: // gate
-          #ifdef BUCHLA_4U
-          _output = (get_step_gate() == ON) ? OC::DAC::get_octave_offset(dacChannel, OCTAVES - OC::DAC::kOctaveZero - 0x2) : OC::DAC::get_zero_offset(dacChannel);
-          #else
-          _output = (get_step_gate() == ON) ? OC::DAC::get_octave_offset(dacChannel, OCTAVES - OC::DAC::kOctaveZero - 0x1) : OC::DAC::get_zero_offset(dacChannel);
-          #endif
+        ioframe->outputs.set_gate_value(dac_channel, get_step_gate() == ON);
         break;
         case COPY: // copy
-          _output = OC::DAC::pitch_to_scaled_voltage_dac(dacChannel, get_step_pitch_aux(), 0, OC::DAC::get_voltage_scaling(dacChannel));
+        ioframe->outputs.set_pitch_value(dac_channel, get_step_pitch_aux());
         break;
         // code to process envelopes here
-        case  ENV_AD:
+        case ENV_AD:
         case ENV_ADR:
         case ENV_ADSR:
-          env_gate_state_ = 0;
-          env_gate_raised_ = (get_step_gate() == ON);
-          if (env_gate_raised_ && !prev_gate_raised_)
-             env_gate_state_ |= peaks::CONTROL_GATE_RISING;
-          if (env_gate_raised_)
-             env_gate_state_ |= peaks::CONTROL_GATE;
-          else if (prev_gate_raised_)
-            env_gate_state_ |= peaks::CONTROL_GATE_FALLING;
-          prev_gate_raised_ = env_gate_raised_;
-          _output = OC::DAC::get_zero_offset(dacChannel) + env_.ProcessSingleSample(env_gate_state_);
-        break;
-        default:
-        break;
-      }
-      OC::DAC::set<dacChannel>(_output);
+        env_gate_state_ = 0;
+        env_gate_raised_ = (get_step_gate() == ON);
+        if (env_gate_raised_ && !prev_gate_raised_)
+         env_gate_state_ |= peaks::CONTROL_GATE_RISING;
+       if (env_gate_raised_)
+         env_gate_state_ |= peaks::CONTROL_GATE;
+       else if (prev_gate_raised_)
+        env_gate_state_ |= peaks::CONTROL_GATE_FALLING;
+      prev_gate_raised_ = env_gate_raised_;
+      ioframe->outputs.set_unipolar_value(dac_channel, env_.ProcessSingleSample(env_gate_state_));
+      break;
+      default:
+      break;
+    }
   }
 
   void RenderScreensaver() const;
@@ -2136,11 +2126,11 @@ void SEQ_process(OC::IOFrame *ioframe) {
   seq_channel[0].Update(triggers, DAC_CHANNEL_A);
   seq_channel[1].Update(triggers, DAC_CHANNEL_B);
   // update DAC channels A, B:
-  seq_channel[0].update_main_channel<DAC_CHANNEL_A>();
-  seq_channel[1].update_main_channel<DAC_CHANNEL_B>();
+  seq_channel[0].update_main_channel<DAC_CHANNEL_A>(ioframe);
+  seq_channel[1].update_main_channel<DAC_CHANNEL_B>(ioframe);
   // update DAC channels C, D:
-  seq_channel[0].update_aux_channel<DAC_CHANNEL_C>();
-  seq_channel[1].update_aux_channel<DAC_CHANNEL_D>();
+  seq_channel[0].update_aux_channel<DAC_CHANNEL_C>(ioframe);
+  seq_channel[1].update_aux_channel<DAC_CHANNEL_D>(ioframe);
 }
 
 void SEQ_handleButtonEvent(const UI::Event &event) {

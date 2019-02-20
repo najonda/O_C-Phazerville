@@ -172,7 +172,7 @@ struct {
   menu::ScreenCursor<menu::kScreenLines> cursor;
 } lorenz_generator_state;
 
-void FASTRUN LORENZ_process(OC::IOFrame *) {
+void FASTRUN LORENZ_process(OC::IOFrame *ioframe) {
 
   bool reset1_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
   bool reset2_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_2>();
@@ -225,10 +225,10 @@ void FASTRUN LORENZ_process(OC::IOFrame *) {
   if (!freeze && !lorenz_generator.frozen())
     lorenz_generator.lorenz.Process(freq1, freq2, reset1_phase, reset2_phase, lorenz_generator.get_freq_range1(), lorenz_generator.get_freq_range2());
 
-  OC::DAC::set<DAC_CHANNEL_A>(lorenz_generator.lorenz.dac_code(0));
-  OC::DAC::set<DAC_CHANNEL_B>(lorenz_generator.lorenz.dac_code(1));
-  OC::DAC::set<DAC_CHANNEL_C>(lorenz_generator.lorenz.dac_code(2));
-  OC::DAC::set<DAC_CHANNEL_D>(lorenz_generator.lorenz.dac_code(3));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_A, lorenz_generator.lorenz.dac_code(0));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_B, lorenz_generator.lorenz.dac_code(1));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_C, lorenz_generator.lorenz.dac_code(2));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_D, lorenz_generator.lorenz.dac_code(3));
 }
 
 void LORENZ_init() {

@@ -270,7 +270,7 @@ public:
   }
 
   template <DAC_CHANNEL dac_channel>
-  void Update(uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST]) {
+  void Update(OC::IOFrame *ioframe, uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST]) {
 
     int32_t s[kMaxByteBeatParameters];
     s[0] = SCALE8_16(static_cast<int32_t>(get_equation() << 4));
@@ -310,15 +310,16 @@ public:
       gate_state |= peaks::CONTROL_GATE_FALLING;
     gate_raised_ = gate_raised;
 
-    // TODO Scale range or offset?
+    // TODO[PLD] Scale range or offset?
     uint16_t b = bytebeat_.ProcessSingleSample(gate_state);
+/*
     #ifdef BUCHLA_4U
       uint32_t value = OC::DAC::get_zero_offset(dac_channel) + b;
     #else
       uint32_t value = OC::DAC::get_zero_offset(dac_channel) + (int16_t)b;
     #endif
-    OC::DAC::set<dac_channel>(value);
-
+*/
+    ioframe->outputs.set_raw_value(dac_channel, b);
 
     b >>= 8;
     if (b != history_.last()) // This make the effect a bit different
@@ -407,10 +408,10 @@ public:
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
     uint32_t triggers = ioframe->digital_inputs.triggered();
 
-    bytebeats_[0].Update<DAC_CHANNEL_A>(triggers, cvs);
-    bytebeats_[1].Update<DAC_CHANNEL_B>(triggers, cvs);
-    bytebeats_[2].Update<DAC_CHANNEL_C>(triggers, cvs);
-    bytebeats_[3].Update<DAC_CHANNEL_D>(triggers, cvs);
+    bytebeats_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, cvs);
+    bytebeats_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
+    bytebeats_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
+    bytebeats_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
   }
 
   enum LeftEditMode {

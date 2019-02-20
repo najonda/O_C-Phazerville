@@ -144,7 +144,7 @@ public:
   }
 
   template <DAC_CHANNEL dac_channel>
-  void Update(uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST]) {
+  void Update(OC::IOFrame *ioframe, uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST]) {
 
     s[0] = SCALE8_16(static_cast<int32_t>(get_gravity()));
     s[1] = SCALE8_16(static_cast<int32_t>(get_bounce_loss()));
@@ -180,9 +180,9 @@ public:
       gate_state |= peaks::CONTROL_GATE_FALLING;
     gate_raised_ = gate_raised;
 
-    // TODO Scale range or offset?
-    uint32_t value = OC::DAC::get_zero_offset(dac_channel) + bb_.ProcessSingleSample(gate_state, OC::DAC::MAX_VALUE - OC::DAC::get_zero_offset(dac_channel));
-    OC::DAC::set<dac_channel>(value);
+    // TODO[PLD] Scale range or offset?
+    ioframe->outputs.set_unipolar_value(dac_channel, bb_.ProcessSingleSample(gate_state, 32767));
+    //uint32_t value = OC::DAC::get_zero_offset(dac_channel) + bb_.ProcessSingleSample(gate_state, OC::DAC::MAX_VALUE - OC::DAC::get_zero_offset(dac_channel));
   }
 
 
@@ -248,10 +248,10 @@ public:
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
     uint32_t triggers = ioframe->digital_inputs.triggered();
 
-    balls_[0].Update<DAC_CHANNEL_A>(triggers, cvs);
-    balls_[1].Update<DAC_CHANNEL_B>(triggers, cvs);
-    balls_[2].Update<DAC_CHANNEL_C>(triggers, cvs);
-    balls_[3].Update<DAC_CHANNEL_D>(triggers, cvs);
+    balls_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, cvs);
+    balls_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
+    balls_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
+    balls_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
   }
 
   enum LeftEditMode {

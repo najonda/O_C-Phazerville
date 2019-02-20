@@ -48,6 +48,11 @@ public:
     return (semi + octave * 12) << 7;
   }
 
+  static constexpr int32_t PitchAddOctaves(int32_t pitch, int32_t octave)
+  {
+    return pitch + (octave * 12 << 7);
+  }
+
 };
 
 } // namespace OC

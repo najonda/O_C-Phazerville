@@ -462,6 +462,8 @@ public:
   
   void autotune_updateDAC() {
 
+    // TODO[PLD]
+
     switch(autotuner_step_) {
 
       case OC::DAC_VOLT_0_ARM: 
@@ -513,7 +515,7 @@ public:
 
     int32_t pitch = OC::PitchUtils::PitchFromSemitone(get_semitone(), octave);
     last_pitch_ = pitch;
-    ioframe->set_output_value(dac_channel_, pitch, OC::OUTPUT_MODE_PITCH);
+    ioframe->outputs.set_pitch_value(dac_channel_, pitch);
   }
 
   int num_enabled_settings() const {

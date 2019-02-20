@@ -418,7 +418,7 @@ public:
   }
 
   template <DAC_CHANNEL dac_channel>
-  void Update(uint32_t triggers, uint32_t internal_trigger_mask, const int32_t cvs[ADC_CHANNEL_LAST]) {
+  void Update(OC::IOFrame *ioframe, uint32_t triggers, uint32_t internal_trigger_mask, const int32_t cvs[ADC_CHANNEL_LAST]) {
     int32_t s[CV_MAPPING_LAST];
     s[CV_MAPPING_NONE] = 0; // unused, but needs a placeholder to align with enum CVMapping
     s[CV_MAPPING_SEG1] = SCALE8_16(static_cast<int32_t>(get_segment_value(0)));
@@ -566,13 +566,11 @@ public:
     gate_raised_ = gate_raised;
 
     // TODO Scale range or offset?
-    uint32_t value ;
-    if (!is_inverted())
-      value = OC::DAC::get_zero_offset(dac_channel) + env_.ProcessSingleSample(gate_state);
-    else
-      value = OC::DAC::get_zero_offset(dac_channel) + 32767 - env_.ProcessSingleSample(gate_state);
+    uint32_t value = env_.ProcessSingleSample(gate_state);
+    if (is_inverted())
+      value = 32767 - value;
 
-      OC::DAC::set<dac_channel>(value);
+    ioframe->outputs.set_unipolar_value(dac_channel, value);
   }
 
   uint16_t RenderPreview(int16_t *values, uint16_t *segment_start_points, uint16_t *loop_points, uint16_t &current_phase) const {
@@ -790,10 +788,10 @@ public:
         envelopes_[2].internal_trigger_mask() << 16 |
         envelopes_[3].internal_trigger_mask() << 24;
 
-    envelopes_[0].Update<DAC_CHANNEL_A>(triggers, internal_trigger_mask, cvs);
-    envelopes_[1].Update<DAC_CHANNEL_B>(triggers, internal_trigger_mask, cvs);
-    envelopes_[2].Update<DAC_CHANNEL_C>(triggers, internal_trigger_mask, cvs);
-    envelopes_[3].Update<DAC_CHANNEL_D>(triggers, internal_trigger_mask, cvs);
+    envelopes_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, internal_trigger_mask, cvs);
+    envelopes_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, internal_trigger_mask, cvs);
+    envelopes_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, internal_trigger_mask, cvs);
+    envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
   }
 
   bool euclidean_edit_active() const {

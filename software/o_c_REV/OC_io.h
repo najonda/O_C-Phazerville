@@ -46,7 +46,14 @@ enum DigitalInput {
 // Output value types
 enum OutputMode {
   OUTPUT_MODE_PITCH,
+  OUTPUT_MODE_GATE,
   OUTPUT_MODE_RAW
+};
+
+static constexpr size_t kMaxOutputChannels = 4;
+
+struct IOConfig {
+  std::array<OutputMode, kMaxOutputChannels> output_modes;
 };
 
 // Processing for apps works on a per-sample basis. An IOFrame encapuslates the
@@ -55,7 +62,7 @@ enum OutputMode {
 //
 struct IOFrame {
 
-  static constexpr size_t kMaxOutputChannels = 4;
+  void Reset();
 
   struct {
     uint32_t rising_edges; // Rising edge detected since last frame
@@ -75,25 +82,40 @@ struct IOFrame {
 
   } digital_inputs;
 
+  struct {
+    std::array<int32_t, kMaxOutputChannels> values;
+    std::array<OutputMode, kMaxOutputChannels> modes;
 
-  std::array<int32_t, kMaxOutputChannels> output_values;
-  std::array<OutputMode, kMaxOutputChannels> output_modes;
+    template <typename T>
+    void set_pitch_values(const T& src)
+    {
+      std::copy(src, src + kMaxOutputChannels, std::begin(values));
+      std::fill(std::begin(modes), std::end(modes), OUTPUT_MODE_PITCH);  
+    }
 
-  void Reset();
+    void set_pitch_value(size_t channel, int32_t value)
+    {
+      values[channel] = value;
+      modes[channel] = OUTPUT_MODE_PITCH;
+    }
 
-  template <typename T>
-  void set_output_values(const T& src)
-  {
-    std::copy(src, src + kMaxOutputChannels, std::begin(output_values));
-  }
+    void set_gate_value(size_t channel, bool raised)
+    {
+      values[channel] = raised ? 1 : 0;
+      modes[channel] = OUTPUT_MODE_GATE;
+    }
 
-  void set_output_mode(OutputMode output_mode);
+    void set_unipolar_value(size_t channel, int32_t value)
+    {
+      values[channel] = value;
+    }
 
-  void set_output_value(size_t i, int32_t value, OutputMode output_mode)
-  {
-    output_values[i] = value;
-    output_modes[i] = output_mode;
-  }
+    void set_raw_value(size_t channel, uint32_t value)
+    {
+      values[channel] = value;
+    }
+
+  } outputs;
 
 };
 

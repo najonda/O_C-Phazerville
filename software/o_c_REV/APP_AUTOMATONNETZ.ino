@@ -436,8 +436,7 @@ void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
   if ((triggers & TRIGGER_MASK_GRID) || (triggers & TRIGGER_MASK_ARP))
     update_outputs(chord_changed, cell_transpose_, cell_inversion_);
 
-  ioframe->set_output_values(output_values_);
-  ioframe->set_output_mode(OC::OUTPUT_MODE_PITCH);
+  ioframe->outputs.set_pitch_values(output_values_);
 }
 
 void AutomatonnetzState::Reset() {

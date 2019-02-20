@@ -544,8 +544,9 @@ public:
   }
 
 
-  inline void Update(uint32_t triggers) {
-
+  inline void Update(OC::IOFrame *ioframe)
+  {
+    uint32_t triggers = ioframe->digital_inputs.triggered();
     bool triggered = triggers & DIGITAL_INPUT_MASK(0x0);
 
     trigger_delay_.Update();
@@ -554,7 +555,6 @@ public:
     triggered = trigger_delay_.triggered();
 
     int32_t sample_a = last_sample_;
-    int32_t temp_sample = 0;
 
     if (triggered) {
 
@@ -800,7 +800,7 @@ public:
 
       int32_t quantized = quantizer_.Process(pitch, root << 7, transpose);
       // main sample, S/H:
-      sample_a = temp_sample = OC::DAC::pitch_to_scaled_voltage_dac(DAC_CHANNEL_A, quantized, octave + OC::inversion[_inversion][0], OC::DAC::get_voltage_scaling(DAC_CHANNEL_A));
+      sample_a = OC::PitchUtils::PitchAddOctaves(quantized, octave + OC::inversion[_inversion][0]);
 
       // now derive chords ...
       transpose += OC::qualities[_quality][1];
@@ -811,14 +811,14 @@ public:
       int32_t sample_d  = quantizer_.Process(pitch, root << 7, transpose);
 
       //todo voicing for root note
-      sample_b = OC::DAC::pitch_to_scaled_voltage_dac(DAC_CHANNEL_B, sample_b, octave + OC::voicing[_voicing][1] + OC::inversion[_inversion][1], OC::DAC::get_voltage_scaling(DAC_CHANNEL_B));
-      sample_c = OC::DAC::pitch_to_scaled_voltage_dac(DAC_CHANNEL_C, sample_c, octave + OC::voicing[_voicing][2] + OC::inversion[_inversion][2], OC::DAC::get_voltage_scaling(DAC_CHANNEL_C));
-      sample_d = OC::DAC::pitch_to_scaled_voltage_dac(DAC_CHANNEL_D, sample_d, octave + OC::voicing[_voicing][3] + OC::inversion[_inversion][3], OC::DAC::get_voltage_scaling(DAC_CHANNEL_D));
+      sample_b = OC::PitchUtils::PitchAddOctaves(sample_b, octave + OC::voicing[_voicing][1] + OC::inversion[_inversion][1]);
+      sample_c = OC::PitchUtils::PitchAddOctaves(sample_c, octave + OC::voicing[_voicing][2] + OC::inversion[_inversion][2]);
+      sample_d = OC::PitchUtils::PitchAddOctaves(sample_d, octave + OC::voicing[_voicing][3] + OC::inversion[_inversion][3]);
 
-      OC::DAC::set<DAC_CHANNEL_A>(sample_a);
-      OC::DAC::set<DAC_CHANNEL_B>(sample_b);
-      OC::DAC::set<DAC_CHANNEL_C>(sample_c);
-      OC::DAC::set<DAC_CHANNEL_D>(sample_d);
+      ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, sample_a);
+      ioframe->outputs.set_pitch_value(DAC_CHANNEL_B, sample_b);
+      ioframe->outputs.set_pitch_value(DAC_CHANNEL_C, sample_c);
+      ioframe->outputs.set_pitch_value(DAC_CHANNEL_D, sample_d);
     }
 
     bool changed = (last_sample_ != sample_a);
@@ -1088,9 +1088,7 @@ void CHORDS_handleAppEvent(OC::AppEvent event) {
 }
 
 void CHORDS_process(OC::IOFrame *ioframe) {
-
-  uint32_t triggers = ioframe->digital_inputs.triggered();
-  chords.Update(triggers);
+  chords.Update(ioframe);
 }
 
 void CHORDS_loop() {
