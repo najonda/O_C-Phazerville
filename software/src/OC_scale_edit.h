@@ -442,9 +442,9 @@ void ScaleEditor<Owner>::move_cursor(int offset) {
     break;
     case _SCALING:
     {
-      int8_t scaling = OC::DAC::get_voltage_scaling(scaling_cursor_pos_) + offset;
+      auto scaling = OC::DAC::get_voltage_scaling(scaling_cursor_pos_) + offset;
       CONSTRAIN(scaling, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 0x1);
-      OC::DAC::set_scaling(scaling, scaling_cursor_pos_);
+      OC::DAC::set_scaling(static_cast<OutputVoltageScaling>(scaling), scaling_cursor_pos_);
     }
     break;
     default:
