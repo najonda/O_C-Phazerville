@@ -425,9 +425,10 @@ public:
     instant_update_ = !instant_update_;
   }
 
-  inline void Update(uint32_t triggers, DAC_CHANNEL dac_channel) {
-
-    uint8_t index = channel_index_;
+  inline void Update(OC::IOFrame *ioframe, DAC_CHANNEL dac_channel)
+  {
+    auto triggers = ioframe->digital_inputs.triggered();
+    auto index = channel_index_;
 
     ChannelSource source = get_source();
     ChannelTriggerSource trigger_source = get_trigger_source();
@@ -504,14 +505,14 @@ public:
               // directly instead of changing to pitch first.
               int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - scaled + get_transpose()) + (get_root() << 7);
-              sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, pitch, get_octave(), OC::DAC::get_voltage_scaling(dac_channel));
+              sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
               history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
             } else {
               // Scale range by 128, so 12 steps = 1V
               // We dont' need a calibrated value here, really.
               uint32_t scaled = multiply_u32xu32_rshift(range << 7, shift_register, get_turing_length());
               scaled += get_transpose() << 7;
-              sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, scaled, get_octave(), OC::DAC::get_voltage_scaling(dac_channel));
+              sample = OC::PitchUtils::PitchAddOctaves(scaled, get_octave());
               history_sample = scaled + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
              }
           }
@@ -568,7 +569,7 @@ public:
                 // directly instead of changing to pitch first.
                 int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - scaled + get_transpose()) + (get_root() << 7);
-                sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, pitch, get_octave(), OC::DAC::get_voltage_scaling(dac_channel));
+                sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
                 history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
               } else {
                 // We dont' need a calibrated value here, really
@@ -609,7 +610,7 @@ public:
               // See above, may need tweaking
               int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - logistic_scaled + get_transpose()) + (get_root() << 7);
-              sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, pitch, get_octave(), OC::DAC::get_voltage_scaling(dac_channel));
+              sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
               history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
             } else {
               int octave = get_octave();
@@ -709,7 +710,7 @@ public:
                 // directly instead of changing to pitch first.
                 int32_t pitch =
                   quantizer_.Lookup(64 + range_ / 2 - scaled + get_transpose()) + (get_root() << 7);
-                sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, pitch, get_octave(), OC::DAC::get_voltage_scaling(dac_channel));
+                sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
                 history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
               } else {
                 // We dont' need a calibrated value here, really
@@ -774,7 +775,7 @@ public:
             CONSTRAIN(transpose, -12, 12);
 
             int32_t quantized = quantizer_.Process(pitch, root << 7, transpose);
-            sample = temp_sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, quantized, octave + continuous_offset_, OC::DAC::get_voltage_scaling(dac_channel));
+            sample = temp_sample = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_);
 
             // continuous mode needs special treatment to give useful results.
             // basically, update on note change only
@@ -841,7 +842,7 @@ public:
               if (_re_quantize)
                 quantized = quantizer_.Process(pitch, root << 7, transpose);
               if (_re_quantize || _trigger_update)
-                sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, quantized, octave + continuous_offset_, OC::DAC::get_voltage_scaling(dac_channel));
+                sample = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_);
             }
             // end special treatment
 
@@ -857,7 +858,7 @@ public:
       last_sample_ = continuous ? temp_sample : sample;
     }
 
-    OC::DAC::set(dac_channel, sample + get_fine());
+    ioframe->outputs.set_pitch_value(dac_channel, sample + get_fine());
 
     if (triggered || (continuous && changed)) {
       scrolling_history_.Push(history_sample);
@@ -1250,11 +1251,10 @@ void QQ_handleAppEvent(OC::AppEvent event) {
 }
 
 void QQ_process(OC::IOFrame *ioframe) {
-  uint32_t triggers = ioframe->digital_inputs.triggered();
-  quantizer_channels[0].Update(triggers, DAC_CHANNEL_A);
-  quantizer_channels[1].Update(triggers, DAC_CHANNEL_B);
-  quantizer_channels[2].Update(triggers, DAC_CHANNEL_C);
-  quantizer_channels[3].Update(triggers, DAC_CHANNEL_D);
+  quantizer_channels[0].Update(ioframe, DAC_CHANNEL_A);
+  quantizer_channels[1].Update(ioframe, DAC_CHANNEL_B);
+  quantizer_channels[2].Update(ioframe, DAC_CHANNEL_C);
+  quantizer_channels[3].Update(ioframe, DAC_CHANNEL_D);
 }
 
 void QQ_loop() {

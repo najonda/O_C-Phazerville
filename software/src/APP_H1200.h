@@ -1066,9 +1066,7 @@ void H1200_process(OC::IOFrame *ioframe) {
   }
 
   H1200_clock(triggers);
- 
-  ioframe->set_output_values(h1200_state.output_values_);
-  ioframe->set_output_mode(OC::OUTPUT_MODE_PITCH);
+  ioframe->outputs.set_pitch_values(h1200_state.output_values_);
 }
 
 void H1200_loop() {

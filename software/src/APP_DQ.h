@@ -438,8 +438,9 @@ public:
     schedule_scale_update_ = true;
   }
 
-  inline void Update(uint32_t triggers, DAC_CHANNEL dac_channel, DAC_CHANNEL aux_channel) {
-
+  inline void Update(OC::IOFrame *ioframe, DAC_CHANNEL dac_channel, DAC_CHANNEL aux_channel)
+  {
+    uint32_t triggers = ioframe->digital_inputs.triggered();
     ticks_++;
 
     DQ_ChannelTriggerSource trigger_source = get_trigger_source();
@@ -623,7 +624,7 @@ public:
       }
 
       // the output, thus far:
-      sample = temp_sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, quantized, octave + continuous_offset_, OC::DAC::get_voltage_scaling(dac_channel));
+      sample = temp_sample = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_);
 
       // special treatment, continuous update -- only update the modulation values if/when the quantized input changes:
       bool _continuous_update = continuous && last_sample_ != sample;
@@ -707,7 +708,7 @@ public:
           if (_re_quantize)
             quantized = quantizer_.Process(pitch, root << 7, transpose);
           if (_re_quantize || _trigger_update)
-            sample = OC::DAC::pitch_to_scaled_voltage_dac(dac_channel, quantized, octave + continuous_offset_, OC::DAC::get_voltage_scaling(dac_channel));
+            sample = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_);
           // update ASR?
           update_asr_ = (aux_mode == DQ_ASR && last_sample_ != sample);
 
@@ -722,13 +723,13 @@ public:
 
         case DQ_COPY:
         // offset the quantized value:
-          aux_sample_ = OC::DAC::pitch_to_scaled_voltage_dac(aux_channel, quantized, octave + continuous_offset_ + get_aux_octave(), OC::DAC::get_voltage_scaling(aux_channel));
+          aux_sample_ = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_ + get_aux_octave());
         break;
         case DQ_ASR:
         {
           if (update_asr_) {
             update_asr_ = false;
-            aux_sample_ = OC::DAC::pitch_to_scaled_voltage_dac(aux_channel, last_aux_sample_, octave + continuous_offset_ + get_aux_octave(), OC::DAC::get_voltage_scaling(aux_channel));
+            aux_sample_ = OC::PitchUtils::PitchAddOctaves(last_aux_sample_, octave + continuous_offset_ + get_aux_octave());
             last_aux_sample_ = quantized;
           }
         }
@@ -836,19 +837,21 @@ public:
              }
          }
       }
+/*
       // scale gate
       #ifdef BUCHLA_4U
         aux_sample = (aux_sample_ == ON) ? OC::DAC::get_octave_offset(aux_channel, OCTAVES - OC::DAC::kOctaveZero - 0x2) : OC::DAC::get_zero_offset(aux_channel);
       #else
         aux_sample = (aux_sample_ == ON) ? OC::DAC::get_octave_offset(aux_channel, OCTAVES - OC::DAC::kOctaveZero - 0x1) : OC::DAC::get_zero_offset(aux_channel);
       #endif
+*/
       break;
       default:
       break;
     }
 
-    OC::DAC::set(dac_channel, sample);
-    OC::DAC::set(aux_channel, aux_sample);
+    ioframe->outputs.set_pitch_value(dac_channel, sample);
+    ioframe->outputs.set_pitch_value(aux_channel, aux_sample); // TODO[PLD] Depends on aux_mode
 
     if (triggered || (continuous && changed)) {
       scrolling_history_.Push(history_sample);
@@ -1222,11 +1225,8 @@ void DQ_handleAppEvent(OC::AppEvent event) {
 }
 
 void DQ_process(OC::IOFrame *ioframe) {
-
-  uint32_t triggers = ioframe->digital_inputs.triggered();
-
-  dq_quantizer_channels[0].Update(triggers, DAC_CHANNEL_A, DAC_CHANNEL_C);
-  dq_quantizer_channels[1].Update(triggers, DAC_CHANNEL_B, DAC_CHANNEL_D);
+  dq_quantizer_channels[0].Update(ioframe, DAC_CHANNEL_A, DAC_CHANNEL_C);
+  dq_quantizer_channels[1].Update(ioframe, DAC_CHANNEL_B, DAC_CHANNEL_D);
 }
 
 void DQ_loop() {

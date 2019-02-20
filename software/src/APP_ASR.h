@@ -27,6 +27,7 @@
 #include "util/util_integer_sequences.h"
 #include "OC_DAC.h"
 #include "OC_menus.h"
+#include "OC_pitch_utils.h"
 #include "OC_scales.h"
 #include "OC_scale_edit.h"
 #include "OC_strings.h"
@@ -444,9 +445,9 @@ public:
       *(_asr_buf + DAC_CHANNEL_D) = _ASR.Poke(_offset++);
   }
 
-  inline void update() {
+  inline void update(OC::IOFrame *ioframe) {
 
-     bool update = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
+     bool update = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_1>();
      clock_display_.Update(1, update);
 
      trigger_delay_.Update();
@@ -683,15 +684,13 @@ public:
              }
 
              _sample = quantizer_.Process(_sample, _root << 7, _transpose);
-             _sample = OC::DAC::pitch_to_scaled_voltage_dac(static_cast<DAC_CHANNEL>(i), _sample, _octave, OC::DAC::get_voltage_scaling(i));
+             _sample = OC::PitchUtils::PitchAddOctaves(_sample, _octave);
              scrolling_history_[i].Push(_sample);
              _asr_buffer[i] = _sample;
          }
 
         // ... and write to DAC
-        for (int i = 0; i < NUM_ASR_CHANNELS; ++i)
-          OC::DAC::set(static_cast<DAC_CHANNEL>(i), _asr_buffer[i]);
-
+        ioframe->outputs.set_pitch_values(_asr_buffer);       
         MENU_REDRAW = 0x1;
       }
       for (auto &sh : scrolling_history_)
@@ -843,8 +842,8 @@ void ASR_handleAppEvent(OC::AppEvent event) {
 void ASR_loop() {
 }
 
-void ASR_process(OC::IOFrame *) {
-  asr.update();
+void ASR_process(OC::IOFrame *ioframe) {
+  asr.update(ioframe);
 }
 
 void ASR_topButton() {

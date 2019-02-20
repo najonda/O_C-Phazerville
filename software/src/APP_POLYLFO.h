@@ -267,11 +267,11 @@ struct {
 
 } poly_lfo_state;
 
-void FASTRUN POLYLFO_process(OC::IOFrame *) {
+void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
 
-  bool reset_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
-  bool freeze = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_2>();
-  bool tempo_sync = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_3>();
+  bool reset_phase = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_1>();
+  bool freeze = ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_2>();
+  bool tempo_sync = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_3>();
  
   poly_lfo.cv_freq.push(OC::ADC::value<ADC_CHANNEL_1>());
   poly_lfo.cv_shape.push(OC::ADC::value<ADC_CHANNEL_2>());
@@ -366,10 +366,11 @@ void FASTRUN POLYLFO_process(OC::IOFrame *) {
   if (!freeze && !poly_lfo.frozen())
     poly_lfo.lfo.Render(freq, reset_phase, tempo_sync, freq_mult);
 
-  OC::DAC::set<DAC_CHANNEL_A>(poly_lfo.lfo.dac_code(0));
-  OC::DAC::set<DAC_CHANNEL_B>(poly_lfo.lfo.dac_code(1));
-  OC::DAC::set<DAC_CHANNEL_C>(poly_lfo.lfo.dac_code(2));
-  OC::DAC::set<DAC_CHANNEL_D>(poly_lfo.lfo.dac_code(3));
+  // TODO[PLD] Ranges & offsets
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_A, poly_lfo.lfo.dac_code(0));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_B, poly_lfo.lfo.dac_code(1));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_C, poly_lfo.lfo.dac_code(2));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_D, poly_lfo.lfo.dac_code(3));
 }
 
 void POLYLFO_init() {

@@ -54,6 +54,8 @@ public:
   static constexpr size_t kHistoryDepth = 8;
   static constexpr uint16_t MAX_VALUE = 65535; // DAC fullscale 
 
+  static constexpr int32_t kGateVoltage = 5;
+
   #ifdef BUCHLA_4U
     static constexpr int kOctaveZero = 0;
   #elif defined(VOR) 
@@ -128,7 +130,6 @@ public:
       int32_t span = calibration_data_->calibrated_octaves[channel][octave + 1] - sample;
       sample += (fractional * span) / (12 << 7);
     }
-
     return sample;
   }
 
@@ -167,60 +168,6 @@ public:
     }
 
     return pitch;
-  }
-
-
-  // Specialised versions with voltage scaling
-
-  static int32_t pitch_to_scaled_voltage_dac(DAC_CHANNEL channel, int32_t pitch, int32_t octave_offset, uint8_t voltage_scaling) {
-    pitch += (octave_offset * 12) << 7;
-
- 
-    switch (voltage_scaling) {
-      case VOLTAGE_SCALING_1V_PER_OCT:    // 1V/oct
-          // do nothing
-          break;
-      case VOLTAGE_SCALING_CARLOS_ALPHA:  // Wendy Carlos alpha scale - scale by 0.77995
-          pitch = (pitch * 25548) >> 15;  // 2^15 * 0.77995 = 25547.571
-          break;
-      case VOLTAGE_SCALING_CARLOS_BETA:   // Wendy Carlos beta scale - scale by 0.63833 
-          pitch = (pitch * 20917) >> 15;  // 2^15 * 0.63833 = 20916.776
-          break;
-      case VOLTAGE_SCALING_CARLOS_GAMMA:  // Wendy Carlos gamma scale - scale by 0.35099
-          pitch = (pitch * 11501) >> 15;  // 2^15 * 0.35099 = 11501.2403
-          break;
-      case VOLTAGE_SCALING_BOHLEN_PIERCE: // Bohlen-Pierce macrotonal scale - scale by 1.585
-          pitch = (pitch * 25969) >> 14;  // 2^14 * 1.585 = 25968.64
-          break;
-      case VOLTAGE_SCALING_QUARTERTONE:   // Quartertone scaling (just down-scales to 0.5V/oct)
-          pitch = pitch >> 1;
-          break;
-      #ifdef BUCHLA_SUPPORT
-      case VOLTAGE_SCALING_1_2V_PER_OCT:  // 1.2V/oct
-          pitch = (pitch * 19661) >> 14;
-          break;
-      case VOLTAGE_SCALING_2V_PER_OCT:    // 2V/oct
-          pitch = pitch << 1;
-          break;
-      #endif    
-      default: 
-          break;
-    }
-
-    pitch += (kOctaveZero * 12) << 7;
-   
-    CONSTRAIN(pitch, 0, (120 << 7));
-
-    const int32_t octave = pitch / (12 << 7);
-    const int32_t fractional = pitch - octave * (12 << 7);
-
-    int32_t sample = calibration_data_->calibrated_octaves[channel][octave];
-    if (fractional) {
-      int32_t span = calibration_data_->calibrated_octaves[channel][octave + 1] - sample;
-      sample += (fractional * span) / (12 << 7);
-    }
-
-    return sample;
   }
 
   // Set integer voltage value, where 0 = 0V, 1 = 1V
@@ -294,8 +241,8 @@ private:
   template <DAC_CHANNEL channel>
   static void IOFrameToChannel(const IOFrame *ioframe)
   {
-    if (OUTPUT_MODE_PITCH == ioframe->output_modes[channel]) {
-      set<channel>(PitchToDAC<channel>(ioframe->output_values[channel]));
+    if (OUTPUT_MODE_PITCH == ioframe->outputs.modes[channel]) {
+      set<channel>(PitchToDAC<channel>(ioframe->outputs.values[channel]));
     } else {
       // TODO[PLD]
     }

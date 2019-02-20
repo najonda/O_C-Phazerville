@@ -419,7 +419,7 @@ public:
     return false;
   }
 
-  void Update(uint32_t triggers, uint32_t internal_trigger_mask, const int32_t cvs[ADC_CHANNEL_LAST], DAC_CHANNEL dac_channel) {
+  void Update(OC::IOFrame *ioframe, uint32_t triggers, uint32_t internal_trigger_mask, const int32_t cvs[ADC_CHANNEL_LAST], DAC_CHANNEL dac_channel) {
     int32_t s[CV_MAPPING_LAST];
     s[CV_MAPPING_NONE] = 0; // unused, but needs a placeholder to align with enum CVMapping
     s[CV_MAPPING_SEG1] = SCALE8_16(static_cast<int32_t>(get_segment_value(0)));
@@ -582,7 +582,7 @@ public:
     // scale value
     value = offset + (value * (max_val - offset) / 32767);
 
-    OC::DAC::set(dac_channel, value);
+    ioframe->outputs.set_unipolar_value(dac_channel, value);
   }
 
   uint16_t RenderPreview(int16_t *values, uint16_t *segment_start_points, uint16_t *loop_points, uint16_t &current_phase) const {
@@ -801,10 +801,10 @@ public:
         envelopes_[2].internal_trigger_mask() << 16 |
         envelopes_[3].internal_trigger_mask() << 24;
 
-    envelopes_[0].Update(triggers, internal_trigger_mask, cvs, DAC_CHANNEL_A);
-    envelopes_[1].Update(triggers, internal_trigger_mask, cvs, DAC_CHANNEL_B);
-    envelopes_[2].Update(triggers, internal_trigger_mask, cvs, DAC_CHANNEL_C);
-    envelopes_[3].Update(triggers, internal_trigger_mask, cvs, DAC_CHANNEL_D);
+    envelopes_[0].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_A);
+    envelopes_[1].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_B);
+    envelopes_[2].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_C);
+    envelopes_[3].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_D);
   }
 
   bool euclidean_edit_active() const {

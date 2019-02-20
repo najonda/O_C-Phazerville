@@ -272,7 +272,7 @@ public:
      segments[mapping - BYTEBEAT_CV_MAPPING_FIRST] += (cvs[cv_setting - BYTEBEAT_SETTING_CV1] * 65536) >> bytebeat_cv_rshift;
   }
 
-  void Update(uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST], DAC_CHANNEL dac_channel) {
+  void Update(OC::IOFrame *ioframe, uint32_t triggers, const int32_t cvs[ADC_CHANNEL_LAST], DAC_CHANNEL dac_channel) {
 
     int32_t s[kMaxByteBeatParameters];
     s[0] = SCALE8_16(static_cast<int32_t>(get_equation() << 4));
@@ -312,15 +312,16 @@ public:
       gate_state |= peaks::CONTROL_GATE_FALLING;
     gate_raised_ = gate_raised;
 
-    // TODO Scale range or offset?
+    // TODO[PLD] Scale range or offset?
     uint16_t b = bytebeat_.ProcessSingleSample(gate_state);
+/*
     #ifdef BUCHLA_4U
       uint32_t value = OC::DAC::get_zero_offset(dac_channel) + b;
     #else
       uint32_t value = OC::DAC::get_zero_offset(dac_channel) + (int16_t)b;
     #endif
-    OC::DAC::set(dac_channel, value);
-
+*/
+    ioframe->outputs.set_raw_value(dac_channel, b);
 
     b >>= 8;
     if (b != history_.last()) // This make the effect a bit different
@@ -410,10 +411,10 @@ public:
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
     uint32_t triggers = ioframe->digital_inputs.triggered();
 
-    bytebeats_[0].Update(triggers, cvs, DAC_CHANNEL_A);
-    bytebeats_[1].Update(triggers, cvs, DAC_CHANNEL_B);
-    bytebeats_[2].Update(triggers, cvs, DAC_CHANNEL_C);
-    bytebeats_[3].Update(triggers, cvs, DAC_CHANNEL_D);
+    bytebeats_[0].Update(ioframe, triggers, cvs, DAC_CHANNEL_A);
+    bytebeats_[1].Update(ioframe, triggers, cvs, DAC_CHANNEL_B);
+    bytebeats_[2].Update(ioframe, triggers, cvs, DAC_CHANNEL_C);
+    bytebeats_[3].Update(ioframe, triggers, cvs, DAC_CHANNEL_D);
   }
 
   enum LeftEditMode {
