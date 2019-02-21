@@ -51,6 +51,7 @@ enum OutputMode {
 };
 
 static constexpr size_t kMaxOutputChannels = 4;
+static constexpr size_t kMaxInputChannels  = 4;
 
 struct IOConfig {
   std::array<OutputMode, kMaxOutputChannels> output_modes;
@@ -81,6 +82,21 @@ struct IOFrame {
     inline bool raised(DigitalInput input) const { return raised_mask & DIGITAL_INPUT_MASK(input); }
 
   } digital_inputs;
+
+  struct {
+    std::array<int32_t, kMaxInputChannels> values;       // 10V = 2^12
+    std::array<int32_t, kMaxInputChannels> pitch_values; // 1V = 12 << 7 = 1536
+
+    // Get CV value mapped for a given number of steps across the range
+    // Round up/offset to move window and avoid "busy" toggling around 0
+    template <int32_t steps>
+    constexpr int32_t Value(size_t channel) const {
+      // TODO[PLD] Ensure positive range allows for all values?
+      // TODO[PLD] Rounding
+      return (values[channel] * steps + (4096 / steps / 2 - 1)) >> 12;
+    }
+
+  } cv;
 
   struct {
     std::array<int32_t, kMaxOutputChannels> values;
