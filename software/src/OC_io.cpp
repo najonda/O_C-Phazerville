@@ -30,6 +30,10 @@ namespace OC {
 void IOFrame::Reset()
 {
   digital_inputs.rising_edges = digital_inputs.raised_mask = 0U;
+
+  std::fill(std::begin(cv.values), std::end(cv.values), 0);
+  std::fill(std::begin(cv.pitch_values), std::end(cv.pitch_values), 0);
+
   std::fill(std::begin(outputs.values), std::end(outputs.values), 0);
   std::fill(std::begin(outputs.modes), std::end(outputs.modes), OUTPUT_MODE_PITCH);
 }
