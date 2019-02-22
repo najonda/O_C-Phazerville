@@ -13,6 +13,7 @@
 #include "OC_version.h"
 #include "OC_options.h"
 #include "src/drivers/display.h"
+#include "OC_io_config_menu.h"
 
 extern uint_fast8_t MENU_REDRAW;
 
@@ -38,6 +39,8 @@ void Ui::Init() {
   encoder_left_.Init(OC_GPIO_ENC_PINMODE);
 
   event_queue_.Init();
+
+  io_config_menu_.Init();
 }
 
 void Ui::configure_encoders(EncoderConfig encoder_config) {
@@ -114,10 +117,8 @@ UiMode Ui::DispatchEvents(App *app) {
         app->HandleButtonEvent(event);
         break;
       case UI::EVENT_BUTTON_LONG_PRESS:
-        if (OC::CONTROL_BUTTON_UP == event.control) {
-          if (!preempt_screensaver_) 
-            screensaver_ = true;
-        }
+        if (OC::CONTROL_BUTTON_UP == event.control)
+          return UI_MODE_APP_IO_CONFIG;
         else if (OC::CONTROL_BUTTON_R == event.control)
           return UI_MODE_APP_SETTINGS;
         else

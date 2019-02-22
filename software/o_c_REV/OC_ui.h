@@ -6,6 +6,7 @@
 #include "UI/ui_button.h"
 #include "UI/ui_encoder.h"
 #include "UI/ui_event_queue.h"
+#include "OC_io_config_menu.h"
 
 namespace OC {
 
@@ -36,6 +37,7 @@ enum UiMode {
   UI_MODE_SCREENSAVER,
   UI_MODE_MENU,
   UI_MODE_APP_SETTINGS,
+  UI_MODE_APP_IO_CONFIG,
   UI_MODE_CALIBRATE
 };
 
@@ -53,6 +55,7 @@ public:
   void DebugStats();
   void Calibrate();
   void AppSettings();
+  UiMode AppIOConfig(OC::App *app);
   UiMode DispatchEvents(OC::App *app);
 
   void Poll();
@@ -120,6 +123,8 @@ private:
   UI::Encoder<encL1, encL2> encoder_left_;
 
   UI::EventQueue<kEventQueueDepth> event_queue_;
+
+  IOConfigMenu io_config_menu_;
 
   inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
 #ifdef OC_UI_DEBUG
