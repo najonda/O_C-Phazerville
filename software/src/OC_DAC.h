@@ -116,7 +116,7 @@ public:
   //
   // @return DAC output value
   template <DAC_CHANNEL channel>
-  static int32_t PitchToDAC(int32_t pitch)
+  static int32_t PitchToScaledDAC(int32_t pitch)
   {
     pitch = Scale<channel>(pitch);
     pitch += kOctaveZero * 12 << 7;
@@ -242,7 +242,7 @@ private:
   static void IOFrameToChannel(const IOFrame *ioframe)
   {
     if (OUTPUT_MODE_PITCH == ioframe->outputs.modes[channel]) {
-      set<channel>(PitchToDAC<channel>(ioframe->outputs.values[channel]));
+      set<channel>(PitchToScaledDAC<channel>(ioframe->outputs.values[channel]));
     } else {
       // TODO[PLD]
     }

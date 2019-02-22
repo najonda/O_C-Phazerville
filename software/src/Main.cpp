@@ -198,6 +198,10 @@ void FASTRUN loop() {
       ui_mode = OC::UI_MODE_MENU;
     }
 
+    if (OC::UI_MODE_APP_IO_CONFIG == ui_mode) {
+      ui_mode = OC::ui.AppIOConfig(OC::apps::current_app);
+    }
+
     // Refresh display
     if (MENU_REDRAW) {
       GRAPHICS_BEGIN_FRAME(false); // Don't busy wait
