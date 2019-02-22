@@ -112,6 +112,9 @@ enum ChannelSource {
   CHANNEL_SOURCE_CV2,
   CHANNEL_SOURCE_CV3,
   CHANNEL_SOURCE_CV4,
+  CHANNEL_SOURCE_OUT1, // only other channels selectable
+  CHANNEL_SOURCE_OUT2,
+  CHANNEL_SOURCE_OUT3,
   CHANNEL_SOURCE_TURING,
   CHANNEL_SOURCE_LOGISTIC_MAP,
   CHANNEL_SOURCE_BYTEBEAT,
@@ -411,6 +414,15 @@ public:
     instant_update_ = (~instant_update_) & 1u;
   }
 
+  int source_to_output_channel(ChannelSource source) const
+  {
+    int i = source - CHANNEL_SOURCE_OUT1;
+    if (i < channel_index_)
+      return i;
+    else
+      return i + 1;
+  }
+
   inline void Update(OC::IOFrame *ioframe, DAC_CHANNEL dac_channel)
   {
     auto triggers = ioframe->digital_inputs.triggered();
@@ -450,11 +462,10 @@ public:
     int32_t temp_sample = 0;
     int32_t history_sample = 0;
 
-
     switch (source) {
       case CHANNEL_SOURCE_TURING: {
           // this doesn't make sense when continuously quantizing; should be hidden via the menu ...
-          if (continuous)
+          if (continuous) // TODO[PLD] Fix this mess
             break;
 
           turing_machine_.set_length(get_turing_length());
@@ -714,14 +725,16 @@ public:
 
       default: {
           if (update) {
-
             int32_t transpose = get_transpose() + prev_transpose_cv_;
             int octave = get_octave() + prev_octave_cv_;
             int root = get_root() + prev_root_cv_;
 
-            int32_t pitch = quantizer_.enabled()
-                ? OC::ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(source))
-                : OC::ADC::pitch_value(static_cast<ADC_CHANNEL>(source));
+            int32_t pitch;
+            if (source <= CHANNEL_SOURCE_CV4) {
+              pitch = ioframe->cv.pitch_values[source];
+            } else {
+              pitch = ioframe->outputs.values[source_to_output_channel(source)];
+            }
 
             // repurpose channel CV input? --
             uint8_t _aux_cv_destination = get_aux_cv_dest();
@@ -947,6 +960,11 @@ public:
         if (get_source() != get_channel_index())
          *settings++ = CHANNEL_SETTING_AUX_SOURCE_DEST;
       break;
+      case CHANNEL_SOURCE_OUT1:
+      case CHANNEL_SOURCE_OUT2:
+      case CHANNEL_SOURCE_OUT3:
+         *settings++ = CHANNEL_SETTING_AUX_SOURCE_DEST;
+      break;
       case CHANNEL_SOURCE_TURING:
         *settings++ = CHANNEL_SETTING_TURING_LENGTH;
         if (OC::Scales::SCALE_NONE != get_scale(DUMMY))
@@ -1105,7 +1123,7 @@ private:
 };
 
 const char* const channel_input_sources[CHANNEL_SOURCE_LAST] = {
-  "CV1", "CV2", "CV3", "CV4", "Turing", "Lgstc", "ByteB", "IntSq"
+  "CV1", "CV2", "CV3", "CV4", "AAA", "BBB", "CCC", "Turing", "Lgstc", "ByteB", "IntSq"
 };
 
 const char* const aux_cv_dest[5] = {
@@ -1294,22 +1312,34 @@ void QQ_menu() {
       }
         break;
       case CHANNEL_SETTING_SOURCE:
-        if (CHANNEL_SOURCE_TURING == channel.get_source()) {
+        switch(channel.get_source()) {
+        case CHANNEL_SOURCE_TURING: {
           int turing_length = channel.get_turing_length();
           int w = turing_length >= 16 ? 16 * 3 : turing_length * 3;
 
           menu::DrawMask<true, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_shift_register(), turing_length);
           list_item.valuex = menu::kDisplayWidth - w - 1;
           list_item.DrawNoValue<true>(value, attr);
-          break;
-          // Fall through if not Turing
-        }
+        } break;
+        case CHANNEL_SOURCE_OUT1:
+        case CHANNEL_SOURCE_OUT2:
+        case CHANNEL_SOURCE_OUT3: {
+          char s[] = "OutA";
+          s[3] += channel.source_to_output_channel(channel.get_source());
+          list_item.DrawDefault(s, value, attr);
+        } break;
+        default:
+        // TODO[PLD] What's this for? \sa encoder events
+        if (channel.get_trigger_source() > CHANNEL_TRIGGER_TR4)
+          list_item.DrawValueMax(value, attr, CHANNEL_TRIGGER_TR4);
+        else
+          list_item.DrawDefault(value, attr);
+      } break;
+
       default:
         if (QuantizerChannel::indentSetting(static_cast<ChannelSetting>(setting)))
           list_item.x += menu::kIndentDx;
-        if (setting == CHANNEL_SETTING_SOURCE && channel.get_trigger_source() > CHANNEL_TRIGGER_TR4)
-          list_item.DrawValueMax(value, attr, CHANNEL_TRIGGER_TR4);
-        else list_item.DrawDefault(value, attr);
+        list_item.DrawDefault(value, attr);
       break;
     }
   }
