@@ -10,6 +10,9 @@ namespace OC {
 /*static*/ uint32_t ADC::raw_[ADC_CHANNEL_LAST];
 /*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_LAST];
 /*static*/ volatile bool ADC::ready_;
+/*static*/ ADC::ChannelStats ADC::channel_stats_[ADC_CHANNEL_LAST];
+/*static*/ uint32_t ADC::stats_ticks_ = 0;
+
 
 constexpr uint16_t ADC::SCA_CHANNEL_ID[DMA_NUM_CH]; // ADCx_SCA register channel numbers
 DMAChannel* dma0 = new DMAChannel(false); // dma0 channel, fills adcbuffer_0
@@ -28,6 +31,8 @@ DMAMEM static volatile uint16_t __attribute__((aligned(DMA_BUF_SIZE+0))) adcbuff
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, 0);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, 0);
   std::fill(adcbuffer_0, adcbuffer_0 + DMA_BUF_SIZE, 0);
+  for (auto &stats: channel_stats_)
+    stats.Reset();
   
   adc_.enableDMA();
 }
@@ -89,6 +94,7 @@ void ADC::Init_DMA() {
   if (ADC::ready_) 
   {  
     ADC::ready_ = false;
+    ++stats_ticks_;
     
     /* 
      *  collect  results from adcbuffer_0; as things are, there's DMA_BUF_SIZE = 16 samples in the buffer. 

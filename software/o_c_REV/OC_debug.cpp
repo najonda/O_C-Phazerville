@@ -110,6 +110,16 @@ static void debug_menu_adc() {
 //      graphics.setPrintPos(2, 52); graphics.print(ADC::fail_flag1());
 }
 
+static void debug_menu_adc2() {
+  weegfx::coord_t y = 12;
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    auto &stats = ADC::get_channel_stats(static_cast<ADC_CHANNEL>(channel));
+    graphics.setPrintPos(2, y);
+    graphics.printf("CV%d %5d %5d", channel + 1, stats.min, stats.max);
+    y += 10;
+  }
+}
+
 struct DebugMenu {
   const char *title;
   void (*display_fn)();
@@ -119,6 +129,7 @@ static const DebugMenu debug_menus[] = {
   { " CORE", debug_menu_core },
   { " GFX", debug_menu_gfx },
   { " ADC", debug_menu_adc },
+  { " ADC min/max", debug_menu_adc2 },
 #ifdef POLYLFO_DEBUG  
   { " POLYLFO", POLYLFO_debug },
 #endif // POLYLFO_DEBUG
