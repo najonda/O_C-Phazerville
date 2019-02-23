@@ -1,13 +1,23 @@
 #ifndef OC_DIGITAL_INPUTS_H_
 #define OC_DIGITAL_INPUTS_H_
 
+#include <Arduino.h>
 #include <stdint.h>
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_gpio.h"
-#include "OC_io.h"
 
 namespace OC {
+
+enum DigitalInput {
+  DIGITAL_INPUT_1,
+  DIGITAL_INPUT_2,
+  DIGITAL_INPUT_3,
+  DIGITAL_INPUT_4,
+  DIGITAL_INPUT_LAST
+};
+
+#define DIGITAL_INPUT_MASK(x) (0x1 << (x))
 
 static constexpr uint32_t DIGITAL_INPUT_1_MASK = DIGITAL_INPUT_MASK(DIGITAL_INPUT_1);
 static constexpr uint32_t DIGITAL_INPUT_2_MASK = DIGITAL_INPUT_MASK(DIGITAL_INPUT_2);
@@ -34,21 +44,16 @@ public:
 
   static void reInit();
 
-  static void Read(IOFrame *ioframe);
+  static void Scan();
 
   // @return mask of all pins cloked since last call
-  [[deprecated]] static inline uint32_t clocked() {
-    return clocked_mask_;
+  static inline uint32_t rising_edges() {
+    return rising_edges_;
   }
 
-  // @return mask if pin clocked since last call (does not reset state)
-  template <DigitalInput input> static inline uint32_t clocked() {
-    return clocked_mask_ & (0x1 << input);
-  }
-
-  // @return mask if pin clocked since last call (does not reset state)
-  static inline uint32_t clocked(DigitalInput input) {
-    return clocked_mask_ & (0x1 << input);
+  // @return mask of all pins that are raised (at last Scan)
+  static inline uint32_t raised_mask() {
+    return raised_mask_;
   }
 
   template <DigitalInput input> static inline bool read_immediate() {
@@ -59,14 +64,8 @@ public:
     return !digitalReadFast(InputPinMap(input));
   }
 
-private:
-  // clock() only called from interrupt functions
-  friend void tr1_ISR();
-  friend void tr2_ISR();
-  friend void tr3_ISR();
-  friend void tr4_ISR();
-  template <DigitalInput input> static inline void clock() {
-    clocked_[input] = 1;
+  template <DigitalInput input> static inline void capture() {
+    captures_[input] = 1;
   }
 
 private:
@@ -82,13 +81,14 @@ private:
     return 0;
   }
 
-  static uint32_t clocked_mask_;
-  static volatile uint32_t clocked_[DIGITAL_INPUT_LAST];
+  static uint32_t rising_edges_;
+  static uint32_t raised_mask_;
+  static volatile uint32_t captures_[DIGITAL_INPUT_LAST];
 
   template <DigitalInput input>
   static uint32_t ScanInput() {
-    if (clocked_[input]) {
-      clocked_[input] = 0;
+    if (captures_[input]) {
+      captures_[input] = 0;
       return DIGITAL_INPUT_MASK(input);
     } else {
       return 0;

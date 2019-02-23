@@ -26,6 +26,7 @@
 #include <Arduino.h>
 
 #include "OC_config.h"
+#include "OC_apps.h"
 #include "OC_core.h"
 #include "OC_menus.h"
 #include "OC_strings.h"
@@ -33,24 +34,6 @@
 #include "OC_io_config_menu.h"
 
 namespace OC {
-
-SETTINGS_DECLARE(OC::InputSettings, OC::INPUT_SETTING_LAST) {
-  { 19, 0, 40 - 1, "CV1 input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV2 input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV3 input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV4 input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "CV1 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV2 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV3 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV4 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-};
-
-SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
-  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "A scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
-  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "B scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
-  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "C scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
-  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "D scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
-};
 
 void IOConfigMenu::Page::Init(const char *n, int start, int end)
 {
@@ -65,8 +48,14 @@ void IOConfigMenu::Init()
   pages_[INPUT_FILTER_PAGE].Init("Filt", INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV4_FILTER);
   pages_[OUTPUT_SCALING_PAGE].Init("Outs", OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_LAST - 1);
 
-  input_settings_.InitDefaults();
-  output_settings_.InitDefaults();
+  input_settings_ = nullptr;
+  output_settings_ = nullptr;
+}
+
+void IOConfigMenu::Edit(InputSettings &input_settings, OutputSettings &output_settings)
+{
+  input_settings_ = &input_settings;
+  output_settings_ = &output_settings;
 }
 
 void IOConfigMenu::Draw() const
@@ -97,7 +86,7 @@ void IOConfigMenu::DrawInputSettingsPage() const
   
   while (settings_list.available()) {
     const int setting = settings_list.Next(list_item);
-    const int value = input_settings_.get_value(setting);
+    const int value = input_settings_->get_value(setting);
     const settings::value_attr &attr = InputSettings::value_attr(setting); 
     list_item.DrawDefault(value, attr);
   }
@@ -111,7 +100,7 @@ void IOConfigMenu::DrawOutputScalingPage() const
   
   while (settings_list.available()) {
     const int setting = settings_list.Next(list_item);
-    const int value = output_settings_.get_value(setting);
+    const int value = output_settings_->get_value(setting);
     const settings::value_attr &attr = OutputSettings::value_attr(setting); 
     list_item.DrawDefault(value, attr);
   }
@@ -134,9 +123,9 @@ void IOConfigMenu::DispatchEvent(const UI::Event &event)
     case CONTROL_ENCODER_R:
     if (pages_[current_page_].cursor.editing()) {
       if (OUTPUT_SCALING_PAGE == current_page_)
-        output_settings_.change_value(pages_[current_page_].cursor.cursor_pos(), event.value);
+        output_settings_->change_value(pages_[current_page_].cursor.cursor_pos(), event.value);
       else
-        input_settings_.change_value(pages_[current_page_].cursor.cursor_pos(), event.value);
+        input_settings_->change_value(pages_[current_page_].cursor.cursor_pos(), event.value);
     } else {
       pages_[current_page_].cursor.Scroll(event.value);
     }
@@ -147,6 +136,8 @@ void IOConfigMenu::DispatchEvent(const UI::Event &event)
 
 UiMode Ui::AppIOConfig(OC::App *app)
 {
+  io_config_menu_.Edit(app->input_settings, app->output_settings);
+
   bool exit_loop = false;
   while (!exit_loop) {
     GRAPHICS_BEGIN_FRAME(false);

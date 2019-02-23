@@ -1,5 +1,6 @@
 #include "OC_ADC.h"
 #include "OC_gpio.h"
+#include "OC_io.h"
 #include "DMAChannel.h"
 #include <algorithm>
 
@@ -451,7 +452,15 @@ void ADC::Read(IOFrame *ioframe)
     // On Teensy 3.2, this runs every 180us (every 3rd call from 60us timer)
     dma0->clearComplete();
     dma0->TCD->DADDR = &adcbuffer_0[0];
+  }
 
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
+  }
+} 
+
+/*static*/void FASTRUN ADC::Scan_DMA() {
   if (ADC::ready_) 
   {  
     ADC::ready_ = false;
@@ -477,17 +486,10 @@ void ADC::Read(IOFrame *ioframe)
     /* restart */
     dma0->enable();
   }
-
-  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
-    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
-    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
-  }
 }
 
 #elif defined(__IMXRT1062__)
-/*static*/
-void ADC::Read(IOFrame *ioframe)
-{
+/*static*/void FASTRUN ADC::Scan_DMA() {
   static int ratelimit = 0;
   if (++ratelimit < 3) return; // emulate update 180us update rate of Teensy 3.2
   ratelimit = 0;
@@ -565,7 +567,11 @@ void ADC::Read(IOFrame *ioframe)
     update<ADC_CHANNEL_4>(sum[3] * mult / count);
     old_idx = idx;
   }
+}
 
+/*static*/
+void ADC::Read(IOFrame *ioframe)
+{
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
     ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
     ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));

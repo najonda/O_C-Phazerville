@@ -27,21 +27,13 @@
 #define OC_IO_H_
 
 #include <array>
-#include <stdint.h>
-#include "util/util_math.h"
+
+#include "OC_ADC.h"
+#include "OC_DAC.h"
+#include "OC_digital_inputs.h"
+#include "util/util_settings.h"
 
 namespace OC {
-
-// The dependency here is weird.
-enum DigitalInput {
-  DIGITAL_INPUT_1,
-  DIGITAL_INPUT_2,
-  DIGITAL_INPUT_3,
-  DIGITAL_INPUT_4,
-  DIGITAL_INPUT_LAST
-};
-
-#define DIGITAL_INPUT_MASK(x) (0x1 << (x))
 
 // Output value types
 enum OutputMode {
@@ -51,11 +43,27 @@ enum OutputMode {
   OUTPUT_MODE_RAW,
 };
 
-static constexpr size_t kMaxOutputChannels = 4;
-static constexpr size_t kMaxInputChannels  = 4;
+enum INPUT_SETTINGS {
+  INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV2_GAIN, INPUT_SETTING_CV3_GAIN, INPUT_SETTING_CV4_GAIN,
+  INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV2_FILTER, INPUT_SETTING_CV3_FILTER, INPUT_SETTING_CV4_FILTER,
+  INPUT_SETTING_LAST
+};
 
-struct IOConfig {
-  std::array<OutputMode, kMaxOutputChannels> output_modes;
+enum OUTPUT_SETTINGS {
+  OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_B_SCALING, OUTPUT_SETTING_C_SCALING, OUTPUT_SETTING_D_SCALING,
+  OUTPUT_SETTING_LAST
+};
+
+class InputSettings : public settings::SettingsBase<InputSettings, INPUT_SETTING_LAST> { };
+class OutputSettings: public settings::SettingsBase<OutputSettings, OUTPUT_SETTING_LAST> { };
+
+struct IOFrame;
+
+class IO {
+public:
+  static void ReadDigitalInputs(IOFrame *);
+  static void ReadADC(IOFrame *, const InputSettings &);
+  static void WriteDAC(IOFrame *, const OutputSettings &);
 };
 
 // Processing for apps works on a per-sample basis. An IOFrame encapuslates the
@@ -85,8 +93,8 @@ struct IOFrame {
   } digital_inputs;
 
   struct {
-    std::array<int32_t, kMaxInputChannels> values;       // 10V = 2^12
-    std::array<int32_t, kMaxInputChannels> pitch_values; // 1V = 12 << 7 = 1536
+    std::array<int32_t, ADC_CHANNEL_LAST> values;       // 10V = 2^12
+    std::array<int32_t, ADC_CHANNEL_LAST> pitch_values; // 1V = 12 << 7 = 1536
 
     // Get CV value mapped for a given number of steps across the range
     // Round up/offset to move window and avoid "busy" toggling around 0
@@ -101,13 +109,13 @@ struct IOFrame {
   } cv;
 
   struct {
-    std::array<int32_t, kMaxOutputChannels> values;
-    std::array<OutputMode, kMaxOutputChannels> modes;
+    std::array<int32_t, DAC_CHANNEL_LAST> values;
+    std::array<OutputMode, DAC_CHANNEL_LAST> modes;
 
     template <typename T>
     void set_pitch_values(const T& src)
     {
-      std::copy(src, src + kMaxOutputChannels, std::begin(values));
+      std::copy(src, src + DAC_CHANNEL_LAST, std::begin(values));
       std::fill(std::begin(modes), std::end(modes), OUTPUT_MODE_PITCH);  
     }
 
