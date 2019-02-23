@@ -113,8 +113,12 @@ void ADC::Init_DMA() {
 }
 
 /*static*/
-void ADC::Read(IOFrame *io_frame)
+void ADC::Read(IOFrame *ioframe)
 {
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
+  }
 }
 
 /*static*/ void ADC::CalibratePitch(int32_t c2, int32_t c4) {
