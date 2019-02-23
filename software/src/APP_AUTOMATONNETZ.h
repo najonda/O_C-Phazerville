@@ -324,7 +324,7 @@ private:
   int32_t output_values_[4];
 
   void update_trigger_out();
-  void update_outputs(bool chord_changed, int transpose, int inversion);
+  void update_outputs(bool chord_changed, int32_t pitch, int transpose, int inversion);
   void push_history(uint32_t pos) {
     history_ = (history_ << 8) | (pos & 0xff);
   }
@@ -449,10 +449,21 @@ void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
     }
   }
 
-  if ((triggers & TRIGGER_MASK_GRID) || (triggers & TRIGGER_MASK_ARP))
-    update_outputs(chord_changed, cell_transpose_, cell_inversion_);
+  if ((triggers & TRIGGER_MASK_GRID) || (triggers & TRIGGER_MASK_ARP)) {
+    update_outputs(
+        chord_changed,
+        ioframe->cv.pitch_values[ADC_CHANNEL_1],
+        cell_transpose_,
+        cell_inversion_ + ioframe->cv.Value<8>(ADC_CHANNEL_4));
+  }
 
-  ioframe->outputs.set_pitch_values(output_values_);
+  if (OUTPUTA_MODE_TRIG == output_mode())
+    ioframe->outputs.set_gate_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
+  else
+    ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
 }
 
 void AutomatonnetzState::Reset() {
@@ -464,15 +475,12 @@ void AutomatonnetzState::Reset() {
   const TransformCell &current_cell = grid.current_cell();
   cell_transpose_ = current_cell.transpose();
   cell_inversion_ = current_cell.inversion();
-  update_outputs(true, cell_transpose_, cell_inversion_);
+  update_outputs(true, 0, cell_transpose_, cell_inversion_);
 }
 
-void AutomatonnetzState::update_outputs(bool chord_changed, int transpose, int inversion) {
+void AutomatonnetzState::update_outputs(bool chord_changed, int32_t pitch, int transpose, int inversion) {
 
-  int32_t root =
-      quantizer.Process(OC::ADC::raw_pitch_value(ADC_CHANNEL_1)) + transpose;
-
-  inversion += ((OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9);
+  int32_t root = quantizer.Process(pitch) + transpose;
   CONSTRAIN(inversion, CELL_MIN_INVERSION * 2, CELL_MAX_INVERSION * 2);
 
   tonnetz_state.render(root, inversion);
