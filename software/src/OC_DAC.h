@@ -189,12 +189,16 @@ public:
       set_octave(DAC_CHANNEL(i), v);
   }
 
-  static uint32_t get_zero_offset(DAC_CHANNEL channel) {
+  [[deprecated]] static uint32_t get_zero_offset(DAC_CHANNEL channel) {
     return calibration_data_->calibrated_octaves[channel][kOctaveZero];
   }
 
   static uint32_t get_octave_offset(DAC_CHANNEL channel, int octave) {
     return calibration_data_->calibrated_octaves[channel][kOctaveZero + octave];
+  }
+
+  static uint16_t get_unipolar_max(DAC_CHANNEL channel) {
+    return MAX_VALUE - calibration_data_->calibrated_octaves[channel][kOctaveZero];
   }
 
   static void Update() {

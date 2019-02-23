@@ -177,15 +177,15 @@ struct {
 
 void FASTRUN LORENZ_process(OC::IOFrame *ioframe) {
 
-  bool reset1_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
-  bool reset2_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_2>();
-  bool reset_both_phase = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_3>();
-  bool freeze = OC::DigitalInputs::read_immediate<OC::DIGITAL_INPUT_4>();
+  bool reset1_phase = ioframe->digital_inputs.triggered(OC::DIGITAL_INPUT_1);
+  bool reset2_phase = ioframe->digital_inputs.triggered(OC::DIGITAL_INPUT_2);
+  bool reset_both_phase = ioframe->digital_inputs.triggered(OC::DIGITAL_INPUT_3);
+  bool freeze = ioframe->digital_inputs.raised(OC::DIGITAL_INPUT_4);
 
-  lorenz_generator.cv_freq1.push(OC::ADC::value<ADC_CHANNEL_1>());
-  lorenz_generator.cv_rho1.push(OC::ADC::value<ADC_CHANNEL_2>());
-  lorenz_generator.cv_freq2.push(OC::ADC::value<ADC_CHANNEL_3>());
-  lorenz_generator.cv_rho2.push(OC::ADC::value<ADC_CHANNEL_4>());
+  lorenz_generator.cv_freq1.push(ioframe->cv.values[ADC_CHANNEL_1]);
+  lorenz_generator.cv_rho1.push(ioframe->cv.values[ADC_CHANNEL_2]);
+  lorenz_generator.cv_freq2.push(ioframe->cv.values[ADC_CHANNEL_3]);
+  lorenz_generator.cv_rho2.push(ioframe->cv.values[ADC_CHANNEL_4]);
 
   // Range in settings is (0-256] so this gets scaled to (0,65535]
   // CV value is 12 bit so also needs scaling

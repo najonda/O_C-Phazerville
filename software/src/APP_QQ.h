@@ -844,7 +844,7 @@ public:
               // offset when TR source = continuous ?
               int8_t _trigger_offset = 0;
               bool _trigger_update = false;
-              if (OC::DigitalInputs::read_immediate(static_cast<OC::DigitalInput>(index))) {
+              if (ioframe->digital_inputs.raised(static_cast<OC::DigitalInput>(index))) {
                  _trigger_offset = (trigger_source == CHANNEL_TRIGGER_CONTINUOUS_UP) ? 1 : -1;
               }
               if (_trigger_offset != continuous_offset_)
