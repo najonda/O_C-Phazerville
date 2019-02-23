@@ -40,10 +40,10 @@ enum OutputVoltageScaling {
   VOLTAGE_SCALING_CARLOS_GAMMA,  // 3
   VOLTAGE_SCALING_BOHLEN_PIERCE, // 4
   VOLTAGE_SCALING_QUARTERTONE,   // 5
-  #ifdef BUCHLA_SUPPORT
-    VOLTAGE_SCALING_1_2V_PER_OCT,  // 6
-    VOLTAGE_SCALING_2V_PER_OCT,    // 7
-  #endif
+#ifdef BUCHLA_SUPPORT
+  VOLTAGE_SCALING_1_2V_PER_OCT,  // 6
+  VOLTAGE_SCALING_2V_PER_OCT,    // 7
+#endif
   VOLTAGE_SCALING_LAST  
 } ;
 
@@ -58,6 +58,7 @@ public:
 
   #ifdef BUCHLA_4U
     static constexpr int kOctaveZero = 0;
+    static constexpr int32_t kOctaveGateHigh = kOctaveZero + 8;
   #elif defined(VOR) 
     static int kOctaveZero;
     static constexpr int VBiasUnipolar = 3900;   // onboard DAC @ Vref 1.2V (internal), 1.75x gain
@@ -65,6 +66,7 @@ public:
     static constexpr int VBiasAsymmetric = 2760; // onboard DAC @ Vref 1.2V (internal), 1.75x gain
   #else
     static constexpr int kOctaveZero = 3;
+    static constexpr int32_t kOctaveGateHigh = kOctaveZero + 5;
   #endif
 
   struct CalibrationData {
@@ -170,6 +172,12 @@ public:
     return pitch;
   }
 
+  template <DAC_CHANNEL channel>
+  static int32_t GateToDAC(int32_t value)
+  {
+    return calibration_data_->calibrated_octaves[channel][value ? kOctaveGateHigh : kOctaveZero];
+  }
+
   // Set integer voltage value, where 0 = 0V, 1 = 1V
   static void set_octave(DAC_CHANNEL channel, int v) {
     set(channel, calibration_data_->calibrated_octaves[channel][kOctaveZero + v]);
@@ -241,13 +249,15 @@ private:
   template <DAC_CHANNEL channel>
   static void IOFrameToChannel(const IOFrame *ioframe)
   {
-    if (OUTPUT_MODE_PITCH == ioframe->outputs.modes[channel]) {
-      set<channel>(PitchToScaledDAC<channel>(ioframe->outputs.values[channel]));
-    } else {
-      // TODO[PLD]
+    auto value = ioframe->outputs.values[channel];
+    switch(ioframe->outputs.modes[channel]) {
+      case OUTPUT_MODE_PITCH: value = PitchToScaledDAC<channel>(value); break;
+      case OUTPUT_MODE_GATE:  value = GateToDAC<channel>(value); break;
+      case OUTPUT_MODE_UNI:   value += calibration_data_->calibrated_octaves[channel][kOctaveZero]; break;
+      case OUTPUT_MODE_RAW:   value = USAT16(value); break;
     }
+    set<channel>(value);
   }
-
 };
 
 }; // namespace OC

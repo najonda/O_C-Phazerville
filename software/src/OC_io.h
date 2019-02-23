@@ -47,7 +47,8 @@ enum DigitalInput {
 enum OutputMode {
   OUTPUT_MODE_PITCH,
   OUTPUT_MODE_GATE,
-  OUTPUT_MODE_RAW
+  OUTPUT_MODE_UNI,
+  OUTPUT_MODE_RAW,
 };
 
 static constexpr size_t kMaxOutputChannels = 4;
@@ -125,11 +126,13 @@ struct IOFrame {
     void set_unipolar_value(size_t channel, int32_t value)
     {
       values[channel] = value;
+      modes[channel] = OUTPUT_MODE_UNI;
     }
 
     void set_raw_value(size_t channel, uint32_t value)
     {
       values[channel] = value;
+      modes[channel] = OUTPUT_MODE_RAW;
     }
 
   } outputs;
