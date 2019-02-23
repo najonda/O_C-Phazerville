@@ -173,7 +173,7 @@ public:
     if (triggers & DIGITAL_INPUT_MASK(trigger_input))
       gate_state |= peaks::CONTROL_GATE_RISING;
 
-    bool gate_raised = OC::DigitalInputs::read_immediate(trigger_input);
+    bool gate_raised = ioframe->digital_inputs.raised(trigger_input);
     if (gate_raised)
       gate_state |= peaks::CONTROL_GATE;
     else if (gate_raised_)
@@ -181,8 +181,11 @@ public:
     gate_raised_ = gate_raised;
 
     // TODO[PLD] Scale range or offset?
-    ioframe->outputs.set_unipolar_value(dac_channel, bb_.ProcessSingleSample(gate_state, 32767));
-    //uint32_t value = OC::DAC::get_zero_offset(dac_channel) + bb_.ProcessSingleSample(gate_state, OC::DAC::MAX_VALUE - OC::DAC::get_zero_offset(dac_channel));
+    ioframe->outputs.set_unipolar_value(
+        dac_channel,
+        bb_.ProcessSingleSample(
+            gate_state,
+            OC::DAC::get_unipolar_max(dac_channel)));
   }
 
 
@@ -240,10 +243,11 @@ public:
   }
 
   void Process(OC::IOFrame *ioframe) {
-    cv1.push(OC::ADC::value<ADC_CHANNEL_1>());
-    cv2.push(OC::ADC::value<ADC_CHANNEL_2>());
-    cv3.push(OC::ADC::value<ADC_CHANNEL_3>());
-    cv4.push(OC::ADC::value<ADC_CHANNEL_4>());
+    // TODO[PLD] Do we need this excessive smoothing?
+    cv1.push(ioframe->cv.values[ADC_CHANNEL_1]);
+    cv2.push(ioframe->cv.values[ADC_CHANNEL_2]);
+    cv3.push(ioframe->cv.values[ADC_CHANNEL_3]);
+    cv4.push(ioframe->cv.values[ADC_CHANNEL_4]);
 
     const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
     uint32_t triggers = ioframe->digital_inputs.triggered();

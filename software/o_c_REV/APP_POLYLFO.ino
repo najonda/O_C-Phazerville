@@ -247,10 +247,10 @@ void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
   bool freeze = ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_2>();
   bool tempo_sync = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_3>();
  
-  poly_lfo.cv_freq.push(OC::ADC::value<ADC_CHANNEL_1>());
-  poly_lfo.cv_shape.push(OC::ADC::value<ADC_CHANNEL_2>());
-  poly_lfo.cv_spread.push(OC::ADC::value<ADC_CHANNEL_3>());
-  poly_lfo.cv_mappable.push(OC::ADC::value<ADC_CHANNEL_4>());
+  poly_lfo.cv_freq.push(ioframe->cv.values[ADC_CHANNEL_1]);
+  poly_lfo.cv_shape.push(ioframe->cv.values[ADC_CHANNEL_2]);
+  poly_lfo.cv_spread.push(ioframe->cv.values[ADC_CHANNEL_3]);
+  poly_lfo.cv_mappable.push(ioframe->cv.values[ADC_CHANNEL_4]);
 
   // Range in settings is (0-256] so this gets scaled to (0,65535]
   // CV value is 12 bit so also needs scaling
