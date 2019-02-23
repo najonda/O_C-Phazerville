@@ -686,8 +686,21 @@ public:
 
 H1200State h1200_state;
 
-void FASTRUN H1200_clock(uint32_t triggers) {
+void FASTRUN H1200_process(OC::IOFrame *ioframe) {
+  uint32_t triggers = ioframe->digital_inputs.triggered();
 
+  while (h1200_state.ui_actions.readable()) {
+    switch (h1200_state.ui_actions.Read()) {
+      case H1200::ACTION_FORCE_UPDATE:
+        triggers |= TRIGGER_MASK_DIRTY;
+        break;
+      case H1200::ACTION_MANUAL_RESET:
+        triggers |= TRIGGER_MASK_RESET;
+        break;
+      default:
+        break;
+    }
+  }
   triggers = h1200_state.trigger_delays_.Process(triggers, OC::trigger_delay_ticks[h1200_settings.get_trigger_delay()]);
   
   // Reset has priority
@@ -712,100 +725,34 @@ void FASTRUN H1200_clock(uint32_t triggers) {
   uint8_t nsh_transform_priority_ = h1200_settings.get_nsh_transform_priority();
 
   if (triggers || (h1200_settings.get_cv_sampling() == H1200_CV_SAMPLING_CONT)) {
-        switch (h1200_settings.get_root_offset_cv_src()) {
-          case H1200_CV_SOURCE_CV1:
-            root_ += h1200_state.quantizer.Process(OC::ADC::raw_pitch_value(ADC_CHANNEL_1));
-            break ;
-          case H1200_CV_SOURCE_CV2:
-            root_ += h1200_state.quantizer.Process(OC::ADC::raw_pitch_value(ADC_CHANNEL_2));
-            break ;
-          case H1200_CV_SOURCE_CV3:
-            root_ += h1200_state.quantizer.Process(OC::ADC::raw_pitch_value(ADC_CHANNEL_3));
-            break ;
-          case H1200_CV_SOURCE_CV4:
-            root_ += h1200_state.quantizer.Process(OC::ADC::raw_pitch_value(ADC_CHANNEL_4));
-            break ;
-          default:
-            break; 
-        } 
-      
-        switch (h1200_settings.get_octave_cv_src()) {
-          case H1200_CV_SOURCE_CV1:
-            octave_ += ((OC::ADC::value<ADC_CHANNEL_1>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV2:
-            octave_ += ((OC::ADC::value<ADC_CHANNEL_2>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV3:
-            octave_ += ((OC::ADC::value<ADC_CHANNEL_3>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV4:
-            octave_ += ((OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9);
-            break ;
-          default:
-            break; 
-        }
-        #ifdef BUCHLA_4U
-          CONSTRAIN(octave_, 0, 7);
-        #else
-          CONSTRAIN(octave_, -3, 3);
-        #endif
-      
-        switch (h1200_settings.get_inversion_cv_src()) {
-          case H1200_CV_SOURCE_CV1:
-            inversion_ += ((OC::ADC::value<ADC_CHANNEL_1>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV2:
-            inversion_ += ((OC::ADC::value<ADC_CHANNEL_2>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV3:
-            inversion_ += ((OC::ADC::value<ADC_CHANNEL_3>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV4:
-            inversion_ += ((OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9);
-            break ;
-          default:
-            break; 
-        } 
-        CONSTRAIN(inversion_,-H1200State::kMaxInversion, H1200State::kMaxInversion);
-      
-        switch (h1200_settings.get_transform_priority_cv_src()) {
-          case H1200_CV_SOURCE_CV1:
-            plr_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_1>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV2:
-            plr_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_2>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV3:
-            plr_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_3>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV4:
-            plr_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9);
-            break ;
-          default:
-            break; 
-        } 
-      
-        CONSTRAIN(plr_transform_priority_, TRANSFORM_PRIO_XPLR, TRANSFORM_PRIO_PLR_LAST-1);
-        
-        switch (h1200_settings.get_nsh_transform_priority_cv_src()) {
-          case H1200_CV_SOURCE_CV1:
-            nsh_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_1>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV2:
-            nsh_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_2>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV3:
-            nsh_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_3>() + 255) >> 9);
-            break ;
-          case H1200_CV_SOURCE_CV4:
-            nsh_transform_priority_ += ((OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9);
-            break ;
-          default:
-            break; 
-        } 
-      
-        CONSTRAIN(nsh_transform_priority_, TRANSFORM_PRIO_XNSH, TRANSFORM_PRIO_NSH_LAST-1);
+
+    auto cv_src = h1200_settings.get_root_offset_cv_src();
+    if (cv_src)
+      root_ += h1200_state.quantizer.Process(ioframe->cv.pitch_values[cv_src - H1200_CV_SOURCE_CV1]);
+
+    cv_src = h1200_settings.get_octave_cv_src();
+    if (cv_src)
+      octave_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+#ifdef BUCHLA_4U
+      CONSTRAIN(octave_, 0, 7);
+#else
+      CONSTRAIN(octave_, -3, 3);
+#endif
+
+    cv_src = h1200_settings.get_inversion_cv_src();
+    if (cv_src)
+      inversion_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+    CONSTRAIN(inversion_,-H1200State::kMaxInversion, H1200State::kMaxInversion);
+
+    cv_src = h1200_settings.get_transform_priority_cv_src();
+    if (cv_src)
+      plr_transform_priority_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+    CONSTRAIN(plr_transform_priority_, TRANSFORM_PRIO_XPLR, TRANSFORM_PRIO_PLR_LAST-1);
+
+    cv_src = h1200_settings.get_nsh_transform_priority_cv_src();
+    if (cv_src)
+      nsh_transform_priority_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+    CONSTRAIN(nsh_transform_priority_, TRANSFORM_PRIO_XNSH, TRANSFORM_PRIO_NSH_LAST-1);
   }
 
   if (h1200_settings.get_trigger_type() == H1200_TRIGGER_TYPE_PLR) {
@@ -919,12 +866,11 @@ void FASTRUN H1200_clock(uint32_t triggers) {
       h1200_state.h_euclidean_fill_ = h1200_settings.get_h_euclidean_fill() ;
       h1200_state.h_euclidean_offset_ = h1200_settings.get_h_euclidean_offset() ;
 
-      int channel_1_cv_ = ((OC::ADC::value<ADC_CHANNEL_1>() + 127) >> 8);
-      int channel_2_cv_ = ((OC::ADC::value<ADC_CHANNEL_2>() + 127) >> 8);
-      int channel_3_cv_ = ((OC::ADC::value<ADC_CHANNEL_3>() + 127) >> 8);
-      int channel_4_cv_ = ((OC::ADC::value<ADC_CHANNEL_4>() + 127) >> 8);
+      int channel_1_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_1);
+      int channel_2_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_2);
+      int channel_3_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_3);
+      int channel_4_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_4);
 
- 
       h1200_state.map_euclidean_cv(h1200_settings.get_euclidean_cv1_mapping(), channel_1_cv_) ;
       h1200_state.map_euclidean_cv(h1200_settings.get_euclidean_cv2_mapping(), channel_2_cv_) ;
       h1200_state.map_euclidean_cv(h1200_settings.get_euclidean_cv3_mapping(), channel_3_cv_) ;
@@ -1011,6 +957,8 @@ void FASTRUN H1200_clock(uint32_t triggers) {
 
   if (triggers)
     MENU_REDRAW = 1;
+
+  ioframe->outputs.set_pitch_values(h1200_state.output_values_);
 }
 
 void H1200_init() {
@@ -1047,26 +995,6 @@ void H1200_handleAppEvent(OC::AppEvent event) {
       h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
       break;
   }
-}
-
-void H1200_process(OC::IOFrame *ioframe) {
-  uint32_t triggers = ioframe->digital_inputs.triggered();
-
-  while (h1200_state.ui_actions.readable()) {
-    switch (h1200_state.ui_actions.Read()) {
-      case H1200::ACTION_FORCE_UPDATE:
-        triggers |= TRIGGER_MASK_DIRTY;
-        break;
-      case H1200::ACTION_MANUAL_RESET:
-        triggers |= TRIGGER_MASK_RESET;
-        break;
-      default:
-        break;
-    }
-  }
-
-  H1200_clock(triggers);
-  ioframe->outputs.set_pitch_values(h1200_state.output_values_);
 }
 
 void H1200_loop() {

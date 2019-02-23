@@ -11,9 +11,6 @@ namespace OC {
 /*static*/ ADC::CalibrationData *ADC::calibration_data_;
 /*static*/ uint32_t ADC::raw_[ADC_CHANNEL_LAST];
 /*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_LAST];
-#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
-/*static*/ volatile bool ADC::ready_;
-#endif
 
 #if defined(__MK20DX256__)
 constexpr uint16_t ADC::SCA_CHANNEL_ID[DMA_NUM_CH]; // ADCx_SCA register channel numbers
@@ -113,16 +110,6 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
 
 #endif // __IMXRT1062__
 
-#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
-/*static*/ void ADC::DMA_ISR() {
-
-  ADC::ready_ = true;
-  dma0->TCD->DADDR = &adcbuffer_0[0];
-  dma0->clearInterrupt();
-  /* restart DMA in ADC::Read() */
-}
-#endif
-
 /*
  * 
  * DMA/ADC à la https://forum.pjrc.com/threads/30171-Reconfigure-ADC-via-a-DMA-transfer-to-allow-multiple-Channel-Acquisition
@@ -147,11 +134,6 @@ void ADC::Init_DMA() {
   dma0->TCD->CITER = DMA_BUF_SIZE; 
   dma0->triggerAtHardwareEvent(DMAMUX_SOURCE_ADC0);
   dma0->disableOnCompletion();
-#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
-  dma0->interruptAtCompletion();
-  dma0->attachInterrupt(DMA_ISR);
-  ready_ = false;
-#endif
 
   dma1->begin(true); // allocate the DMA channel 
   dma1->TCD->SADDR = &ADC::SCA_CHANNEL_ID[0];
@@ -169,7 +151,7 @@ void ADC::Init_DMA() {
 
   dma0->enable();
   dma1->enable();
-} 
+}
 
 #elif defined(__IMXRT1062__)
 
@@ -448,16 +430,12 @@ static void Init_Teensy41_ADC33131D_chip() {
 
 
 #if defined(__MK20DX256__)
-/*static*/void FASTRUN ADC::Read(OC::IOFrame *) {
-
-#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
-  if (ADC::ready_)  {
-    ADC::ready_ = false;
-#else
+/*static*/
+void ADC::Read(IOFrame *ioframe)
+{
   if (dma0->complete()) {
     // On Teensy 3.2, this runs every 180us (every 3rd call from 60us timer)
     dma0->clearComplete();
-#endif
     dma0->TCD->DADDR = &adcbuffer_0[0];
 
     /* 
@@ -480,10 +458,17 @@ static void Init_Teensy41_ADC33131D_chip() {
     /* restart */
     dma0->enable();
   }
+
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
+  }
 }
 
 #elif defined(__IMXRT1062__)
-/*static*/void FASTRUN ADC::Read(OC::IOFrame *) {
+/*static*/
+void ADC::Read(IOFrame *ioframe)
+{
   static int ratelimit = 0;
   if (++ratelimit < 3) return; // emulate update 180us update rate of Teensy 3.2
   ratelimit = 0;
@@ -560,6 +545,11 @@ static void Init_Teensy41_ADC33131D_chip() {
     update<ADC_CHANNEL_3>(sum[2] * mult / count);
     update<ADC_CHANNEL_4>(sum[3] * mult / count);
     old_idx = idx;
+  }
+
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
   }
 }
 

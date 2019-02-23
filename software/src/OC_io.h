@@ -89,6 +89,7 @@ struct IOFrame {
 
     // Get CV value mapped for a given number of steps across the range
     // Round up/offset to move window and avoid "busy" toggling around 0
+    // Works best of powers-of-two
     template <int32_t steps>
     constexpr int32_t Value(size_t channel) const {
       // TODO[PLD] Ensure positive range allows for all values?
