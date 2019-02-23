@@ -778,80 +778,53 @@ public:
 
     // aux outputs:
     int32_t aux_sample = aux_sample_;
-
-    switch (aux_mode) {
-
-      case DQ_COPY:
-      case DQ_ASR:
-      break;
-      case DQ_GATE:
-      {
+    if (DQ_GATE != aux_mode) {
+      ioframe->outputs.set_pitch_value(aux_channel, aux_sample);
+    } else {
       if (aux_sample) {
+        // pulsewidth setting --
+        int16_t _pulsewidth = get_pulsewidth();
+        if (_pulsewidth || continuous) { // don't echo
+          bool _gates = false;
+          if (_pulsewidth == PULSEW_MAX)
+            _gates = true;
+          // we-can't-echo-hack
+          if (continuous && !_pulsewidth)
+            _pulsewidth = 0x1;
 
-            // pulsewidth setting --
-            int16_t _pulsewidth = get_pulsewidth();
+          // recalculate (in ticks), if new pulsewidth setting:
+          if (prev_pulsewidth_ != _pulsewidth || ! ticks_) {
+            if (!_gates) {
+              int32_t _fraction = signed_multiply_32x16b(TICKS_TO_MS, static_cast<int32_t>(_pulsewidth)); // = * 0.6667f
+              _fraction = signed_saturate_rshift(_fraction, 16, 0);
+              pulse_width_in_ticks_  = (_pulsewidth << 4) + _fraction;
+            } else {
+              // put out gates/half duty cycle:
+              pulse_width_in_ticks_ = channel_frequency_in_ticks_ >> 1;
+              if (_pulsewidth != PULSEW_MAX) { // CV?
+                pulse_width_in_ticks_ = signed_multiply_32x16b(static_cast<int32_t>(_pulsewidth) << 8, pulse_width_in_ticks_); //
+                pulse_width_in_ticks_ = signed_saturate_rshift(pulse_width_in_ticks_, 16, 0);
+              }
+            }
+          }
+          prev_pulsewidth_ = _pulsewidth;
+          // limit pulsewidth, if approaching half duty cycle:
+          if (!_gates && pulse_width_in_ticks_ >= channel_frequency_in_ticks_>>1)
+            pulse_width_in_ticks_ = (channel_frequency_in_ticks_ >> 1) | 1u;
 
-            if (_pulsewidth || continuous) { // don't echo
-
-                bool _gates = false;
-
-                if (_pulsewidth == 255)
-                  _gates = true;
-                // we-can't-echo-hack
-                if (continuous && !_pulsewidth)
-                  _pulsewidth = 0x1;
-
-                // recalculate (in ticks), if new pulsewidth setting:
-                if (prev_pulsewidth_ != _pulsewidth || ! ticks_) {
-
-                    if (!_gates) {
-                      int32_t _fraction = signed_multiply_32x16b(43691, static_cast<int32_t>(_pulsewidth)); // = * 0.6667f
-                      _fraction = signed_saturate_rshift(_fraction, 16, 0);
-                      pulse_width_in_ticks_  = (_pulsewidth << 4) + _fraction;
-                    }
-                    else { // put out gates/half duty cycle:
-
-                      pulse_width_in_ticks_ = channel_frequency_in_ticks_ >> 1;
-
-                      if (_pulsewidth != 255) { // CV?
-                        pulse_width_in_ticks_ = signed_multiply_32x16b(static_cast<int32_t>(_pulsewidth) << 8, pulse_width_in_ticks_); //
-                        pulse_width_in_ticks_ = signed_saturate_rshift(pulse_width_in_ticks_, 16, 0);
-                      }
-                    }
-                }
-                prev_pulsewidth_ = _pulsewidth;
-
-                // limit pulsewidth, if approaching half duty cycle:
-                if (!_gates && pulse_width_in_ticks_ >= channel_frequency_in_ticks_>>1)
-                  pulse_width_in_ticks_ = (channel_frequency_in_ticks_ >> 1) | 1u;
-
-                // turn off output?
-                if (ticks_ >= pulse_width_in_ticks_)
-                  aux_sample_ = OFF;
-                else // keep on
-                  aux_sample_ = ON;
-             }
-             else {
-                // we simply echo the pulsewidth:
-                 aux_sample_ = OC::DigitalInputs::read_immediate(get_digital_input()) ? ON : OFF;
-             }
-         }
+          // turn off output?
+          if (ticks_ >= pulse_width_in_ticks_)
+            aux_sample_ = OFF;
+          else // keep on
+            aux_sample_ = ON;
+        } else {
+          // we simply echo the pulsewidth:
+          aux_sample_ = ioframe->digital_inputs.raised(get_digital_input()) ? ON : OFF;
+        }
       }
-/*
-      // scale gate
-      #ifdef BUCHLA_4U
-        aux_sample = (aux_sample_ == ON) ? OC::DAC::get_octave_offset(aux_channel, OCTAVES - OC::DAC::kOctaveZero - 0x2) : OC::DAC::get_zero_offset(aux_channel);
-      #else
-        aux_sample = (aux_sample_ == ON) ? OC::DAC::get_octave_offset(aux_channel, OCTAVES - OC::DAC::kOctaveZero - 0x1) : OC::DAC::get_zero_offset(aux_channel);
-      #endif
-*/
-      break;
-      default:
-      break;
+      ioframe->outputs.set_gate_value(aux_channel, aux_sample_ == ON);
     }
-
     ioframe->outputs.set_pitch_value(dac_channel, sample);
-    ioframe->outputs.set_pitch_value(aux_channel, aux_sample); // TODO[PLD] Depends on aux_mode
 
     if (triggered || (continuous && changed)) {
       scrolling_history_.Push(history_sample);
