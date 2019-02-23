@@ -1,5 +1,6 @@
 #include "OC_ADC.h"
 #include "OC_gpio.h"
+#include "OC_io.h"
 #include "DMAChannel.h"
 #include <algorithm>
 
@@ -115,15 +116,6 @@ void ADC::Init_DMA() {
 
     /* restart */
     dma0->enable();
-  }
-}
-
-/*static*/
-void ADC::Read(IOFrame *ioframe)
-{
-  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
-    ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
-    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
   }
 }
 

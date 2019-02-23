@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 #include "OC_config.h"
-#include "OC_io.h"
 #include "OC_options.h"
 #include "util/util_math.h"
 #include "util/util_macros.h"
@@ -38,7 +37,7 @@ namespace OC {
 class DAC {
 public:
   static constexpr size_t kHistoryDepth = 8;
-  static constexpr uint16_t MAX_VALUE = 65535; // DAC fullscale 
+  static constexpr uint16_t MAX_VALUE = 65535U; // DAC fullscale 
 
 #ifdef BUCHLA_4U
   static constexpr int kOctaveZero = 0;
@@ -53,8 +52,6 @@ public:
   };
 
   static void Init(CalibrationData *calibration_data);
-
-  static void Write(const IOFrame *ioframe);
 
   static uint8_t calibration_data_used(uint8_t channel_id);
   static void set_auto_channel_calibration_data(uint8_t channel_id);
@@ -165,7 +162,7 @@ public:
     set_octave(DAC_CHANNEL_D, v);
   }
 
-  [[deprecated]] static uint32_t get_zero_offset(DAC_CHANNEL channel) {
+  static uint32_t get_zero_offset(DAC_CHANNEL channel) {
     return calibration_data_->calibrated_octaves[channel][kOctaveZero];
   }
 
@@ -212,19 +209,6 @@ private:
   static uint16_t history_[DAC_CHANNEL_LAST][kHistoryDepth];
   static volatile size_t history_tail_;
   static OutputVoltageScaling scaling_[DAC_CHANNEL_LAST];
-
-  template <DAC_CHANNEL channel>
-  static void IOFrameToChannel(const IOFrame *ioframe)
-  {
-    auto value = ioframe->outputs.values[channel];
-    switch(ioframe->outputs.modes[channel]) {
-      case OUTPUT_MODE_PITCH: value = PitchToScaledDAC<channel>(value); break;
-      case OUTPUT_MODE_GATE:  value = GateToDAC<channel>(value); break;
-      case OUTPUT_MODE_UNI:   value += calibration_data_->calibrated_octaves[channel][kOctaveZero]; break;
-      case OUTPUT_MODE_RAW:   value = USAT16(value); break;
-    }
-    set<channel>(value);
-  }
 };
 
 }; // namespace OC

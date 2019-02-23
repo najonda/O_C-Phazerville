@@ -26,23 +26,10 @@
 #define OC_IO_CONFIG_MENU_H_
 
 #include <array>
+#include "OC_io.h"
 #include "UI/ui_event_queue.h"
 
 namespace OC {
-
-enum INPUT_SETTINGS {
-  INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV2_GAIN, INPUT_SETTING_CV3_GAIN, INPUT_SETTING_CV4_GAIN,
-  INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV2_FILTER, INPUT_SETTING_CV3_FILTER, INPUT_SETTING_CV4_FILTER,
-  INPUT_SETTING_LAST
-};
-
-enum OUTPUT_SETTINGS {
-  OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_B_SCALING, OUTPUT_SETTING_C_SCALING, OUTPUT_SETTING_D_SCALING,
-  OUTPUT_SETTING_LAST
-};
-
-class InputSettings : public settings::SettingsBase<InputSettings, INPUT_SETTING_LAST> { };
-class OutputSettings: public settings::SettingsBase<OutputSettings, OUTPUT_SETTING_LAST> { };
 
 class IOConfigMenu {
 public:
@@ -55,6 +42,8 @@ public:
     OUTPUT_SCALING_PAGE,
     PAGE_LAST
   };
+
+  void Edit(InputSettings &input_settings, OutputSettings &output_settings);
 
   void enable(bool enabled) {
     enabled_ = true;
@@ -79,9 +68,8 @@ private:
   };
   std::array<Page, PAGE_LAST> pages_;
 
-
-  InputSettings input_settings_;
-  OutputSettings output_settings_;
+  InputSettings *input_settings_;
+  OutputSettings *output_settings_;
 
   void DrawInputSettingsPage() const;
   void DrawOutputScalingPage() const;

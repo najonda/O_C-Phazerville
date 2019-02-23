@@ -1,15 +1,17 @@
 #ifndef OC_ADC_H_
 #define OC_ADC_H_
 
-#include "src/drivers/ADC/OC_util_ADC.h"
-#include "OC_config.h"
-#include "OC_io.h"
-
+#include <algorithm>
+#include <limits>
 #include <stdint.h>
 #include <string.h>
-#include <limits>
 
-//#define ENABLE_ADC_DEBUG
+#include "src/drivers/ADC/OC_util_ADC.h"
+#include "OC_config.h"
+
+// Grmpfarglbarg
+#undef max
+#undef min
 
 enum ADC_CHANNEL {
   ADC_CHANNEL_1,
@@ -63,8 +65,6 @@ public:
   static void Init_DMA();
   static void DMA_ISR();
   static void Scan_DMA();
-
-  static void Read(IOFrame *io_frame);
 
   template <ADC_CHANNEL channel>
   static int32_t value() {

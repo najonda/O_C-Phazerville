@@ -73,15 +73,6 @@ void DAC::Init(CalibrationData *calibration_data) {
 }
 
 /*static*/
-void DAC::Write(const IOFrame *ioframe)
-{
-  IOFrameToChannel<DAC_CHANNEL_A>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_B>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_C>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_D>(ioframe);
-}
-
-/*static*/
 uint8_t DAC::calibration_data_used(uint8_t channel_id) {
   const OC::Autotune_data &autotune_data = OC::AUTOTUNE::GetAutotune_data(channel_id);
   return autotune_data.use_auto_calibration_;

@@ -24,8 +24,74 @@
 //
 #include <algorithm>
 #include "OC_io.h"
+#include "OC_strings.h"
+#include "OC_scales.h"
 
 namespace OC {
+
+SETTINGS_DECLARE(OC::InputSettings, OC::INPUT_SETTING_LAST) {
+  { 19, 0, 40 - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 19, 0, 40 - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 19, 0, 40 - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 19, 0, 40 - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 1, "CV1 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "CV2 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "CV3 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "CV4 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+};
+
+SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
+  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "A scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "B scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "C scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "D scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+};
+
+/*static*/ void IO::ReadDigitalInputs(IOFrame *ioframe)
+{
+  ioframe->digital_inputs.rising_edges = DigitalInputs::rising_edges();
+  ioframe->digital_inputs.raised_mask = DigitalInputs::raised_mask();
+}
+
+/*static*/ void IO::ReadADC(IOFrame *ioframe, const InputSettings &input_settings)
+{
+  for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
+    int32_t val, pitch;
+    if (input_settings.get_value(INPUT_SETTING_CV1_FILTER + channel)) {
+      val = ADC::value(static_cast<ADC_CHANNEL>(channel));
+      pitch = ADC::pitch_value(static_cast<ADC_CHANNEL>(channel));
+    } else {
+      val = ADC::raw_value(static_cast<ADC_CHANNEL>(channel));
+      pitch = ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(channel));
+    }
+
+    //auto mult = input_settings.get_value(INPUT_SETTING_CV1_GAIN + channel);
+
+    ioframe->cv.values[channel] = val;
+    ioframe->cv.pitch_values[channel] = pitch;
+  }
+}
+
+template <DAC_CHANNEL channel>
+static void IOFrameToChannel(const IOFrame *ioframe)
+{
+  auto value = ioframe->outputs.values[channel];
+  switch(ioframe->outputs.modes[channel]) {
+    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value); break;
+    case OUTPUT_MODE_GATE:  value = DAC::GateToDAC<channel>(value); break;
+    case OUTPUT_MODE_UNI:   value += DAC::get_zero_offset(channel); break;
+    case OUTPUT_MODE_RAW:   break;
+  }
+  DAC::set<channel>(value);
+}
+
+/*static*/ void IO::WriteDAC(IOFrame *ioframe, const OutputSettings &)
+{
+  IOFrameToChannel<DAC_CHANNEL_A>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_B>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_C>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_D>(ioframe);
+}
 
 void IOFrame::Reset()
 {

@@ -27,6 +27,7 @@
 #define DECLARE_APP(id, name, prefix) \
 { TWOCCS(id), \
   name, \
+  {}, {}, \
   prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
   prefix ## _handleAppEvent, \
   prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
@@ -241,8 +242,11 @@ void Init(bool reset_settings) {
 
   Scales::Init();
   AUTOTUNE::Init();
-  for (auto &app : available_apps)
+  for (auto &app : available_apps) {
+    app.input_settings.InitDefaults();
+    app.output_settings.InitDefaults();
     app.Init();
+  }
 
   global_settings.current_app_id = DEFAULT_APP_ID;
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;

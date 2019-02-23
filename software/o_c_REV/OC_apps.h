@@ -50,6 +50,9 @@ struct App {
   uint16_t id;
 	const char *name;
 
+  InputSettings input_settings;
+  OutputSettings output_settings;
+
   void (*Init)(); // one-time init
   size_t (*storageSize)(); // binary size of storage requirements
   size_t (*Save)(void *);
@@ -64,7 +67,7 @@ struct App {
   void (*HandleButtonEvent)(const UI::Event &);
   void (*HandleEncoderEvent)(const UI::Event &);
 
-  void (*Process)(IOFrame *io_frame);
+  void (*Process)(IOFrame *ioframe);
 };
 
 namespace apps {
@@ -73,10 +76,14 @@ namespace apps {
 
   void Init(bool reset_settings);
 
-  inline void Process(IOFrame *io_frame) __attribute__((always_inline));
-  inline void Process(IOFrame *io_frame) {
-    if (current_app && current_app->Process)
-      current_app->Process(io_frame);
+  inline void Process(IOFrame *ioframe) __attribute__((always_inline));
+  inline void Process(IOFrame *ioframe) {
+    if (current_app) {
+      IO::ReadDigitalInputs(ioframe);
+      IO::ReadADC(ioframe, current_app->input_settings);
+      current_app->Process(ioframe);
+      IO::WriteDAC(ioframe, current_app->output_settings);
+    }
   }
 
   App *find(uint16_t id);
