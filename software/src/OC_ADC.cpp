@@ -11,6 +11,10 @@ namespace OC {
 /*static*/ ADC::CalibrationData *ADC::calibration_data_;
 /*static*/ uint32_t ADC::raw_[ADC_CHANNEL_LAST];
 /*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_LAST];
+/*static*/ volatile bool ADC::ready_;
+/*static*/ ADC::ChannelStats ADC::channel_stats_[ADC_CHANNEL_LAST];
+/*static*/ uint32_t ADC::stats_ticks_ = 0;
+
 
 #if defined(__MK20DX256__)
 constexpr uint16_t ADC::SCA_CHANNEL_ID[DMA_NUM_CH]; // ADCx_SCA register channel numbers
@@ -94,6 +98,8 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, 0);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, 0);
   std::fill(adcbuffer_0, adcbuffer_0 + DMA_BUF_SIZE, 0);
+  for (auto &stats: channel_stats_)
+    stats.Reset();
   
   adc_.enableDMA();
 }
@@ -107,7 +113,13 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
 }
+/*static*/ void ADC::DMA_ISR() {
 
+  ADC::ready_ = true;
+  dma0->TCD->DADDR = &adcbuffer_0[0];
+  dma0->clearInterrupt();
+  /* restart DMA in ADC::Scan_DMA() */
+}
 #endif // __IMXRT1062__
 
 /*
@@ -134,6 +146,8 @@ void ADC::Init_DMA() {
   dma0->TCD->CITER = DMA_BUF_SIZE; 
   dma0->triggerAtHardwareEvent(DMAMUX_SOURCE_ADC0);
   dma0->disableOnCompletion();
+  dma0->interruptAtCompletion();
+  dma0->attachInterrupt(DMA_ISR);
 
   dma1->begin(true); // allocate the DMA channel 
   dma1->TCD->SADDR = &ADC::SCA_CHANNEL_ID[0];
@@ -438,6 +452,11 @@ void ADC::Read(IOFrame *ioframe)
     dma0->clearComplete();
     dma0->TCD->DADDR = &adcbuffer_0[0];
 
+  if (ADC::ready_) 
+  {  
+    ADC::ready_ = false;
+    ++stats_ticks_;
+    
     /* 
      *  collect  results from adcbuffer_0; as things are, there's DMA_BUF_SIZE = 16 samples in the buffer. 
     */

@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <limits>
 
 // If enabled, use an interrupt to track DMA completion; otherwise use polling
 //#define OC_ADC_ENABLE_DMA_INTERRUPT
@@ -56,6 +57,18 @@ public:
     int16_t pitch_cv_offset;
   };
 
+  struct ChannelStats {
+    int32_t min, max;
+    void Reset() {
+      min = std::numeric_limits<int32_t>::max();
+      max = std::numeric_limits<int32_t>::min();
+    }
+
+    void Push(int32_t value) {
+      min = std::min(value, min);
+      max = std::max(value, max);
+    }
+  };
   static void Init(CalibrationData *calibration_data);
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void ADC33131D_Vref_calibrate();
@@ -96,12 +109,21 @@ public:
 
   static float Read_ID_Voltage();
 
+  static const ChannelStats &get_channel_stats(ADC_CHANNEL channel) {
+    return channel_stats_[channel];
+  }
+
 private:
 
   template <ADC_CHANNEL channel>
   static void update(uint32_t value) {
     value = (value  >> (kAdcScanResolution - kAdcResolution)) << kAdcSmoothBits;
     raw_[channel] = value;
+    if (stats_ticks_ & 0x3fff)
+      channel_stats_[channel].Push(value >> kAdcValueShift);
+    else
+      channel_stats_[channel].Reset();
+
     // division should be shift if kAdcSmoothing is power-of-two
     value = (smoothed_[channel] * (kAdcSmoothing - 1) + value) / kAdcSmoothing;
     smoothed_[channel] = value;
@@ -116,6 +138,9 @@ private:
 
   static uint32_t raw_[ADC_CHANNEL_LAST];
   static uint32_t smoothed_[ADC_CHANNEL_LAST];
+
+  static ChannelStats channel_stats_[ADC_CHANNEL_LAST];
+  static uint32_t stats_ticks_;
 
   /*  
    *   below: channel ids for the ADCx_SCA register: we have 4 inputs
