@@ -25,6 +25,7 @@
 #ifndef OC_CV_UTILS_H_
 #define OC_CV_UTILS_H_
 
+#include <Arduino.h>
 #include <stdint.h>
 #include "extern/dspinst.h"
 #include "util/util_macros.h"

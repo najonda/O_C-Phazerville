@@ -531,6 +531,17 @@ void FASTRUN Automatonnetz_process(OC::IOFrame *ioframe) {
 
 void Automatonnetz_getIOConfig(OC::IOConfig &ioconfig)
 {
+  switch (automatonnetz_state.output_mode()) {
+  case OUTPUTA_MODE_ROOT:  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OC::OUTPUT_MODE_PITCH); break;
+  case OUTPUTA_MODE_TRIG:  ioconfig.outputs[DAC_CHANNEL_A].set("Trig", OC::OUTPUT_MODE_GATE); break;
+  case OUTPUTA_MODE_ARP:   ioconfig.outputs[DAC_CHANNEL_A].set("Arp", OC::OUTPUT_MODE_PITCH); break;
+  case OUTPUTA_MODE_STRUM: ioconfig.outputs[DAC_CHANNEL_A].set("Strum", OC::OUTPUT_MODE_PITCH); break;
+  default: break;
+  }
+
+  ioconfig.outputs[DAC_CHANNEL_B].set("1", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("2", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("3", OC::OUTPUT_MODE_PITCH);
 }
 
 static const weegfx::coord_t kGridXStart = 0;

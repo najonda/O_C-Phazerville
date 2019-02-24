@@ -1105,6 +1105,10 @@ void CHORDS_process(OC::IOFrame *ioframe) {
 
 void CHORDS_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("5", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("12", OC::OUTPUT_MODE_PITCH);
 }
 
 void CHORDS_loop() {
