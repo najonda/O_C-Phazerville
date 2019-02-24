@@ -1202,6 +1202,10 @@ void DQ_process(OC::IOFrame *ioframe) {
   dq_quantizer_channels[1].Update(ioframe, DAC_CHANNEL_B, DAC_CHANNEL_D);
 }
 
+void DQ_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void DQ_loop() {
 }
 

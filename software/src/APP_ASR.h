@@ -868,6 +868,10 @@ void ASR_downButtonLong() {
    asr.toggle_delay_mechanics();
 }
 
+void ASR_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void ASR_handleButtonEvent(const UI::Event &event) {
   if (asr_state.scale_editor.active()) {
     asr_state.scale_editor.HandleButtonEvent(event);

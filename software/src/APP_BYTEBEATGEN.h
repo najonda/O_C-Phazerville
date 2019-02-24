@@ -604,5 +604,12 @@ void BYTEBEATGEN_screensaver() {
 void FASTRUN BYTEBEATGEN_process(OC::IOFrame *ioframe) {
   bytebeatgen.Process(ioframe);
 }
+void BYTEBEATGEN_getIOConfig(OC::IOConfig &ioconfig)
+{
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_RAW);
+}
 
 #endif // ENABLE_APP_BYTEBEATGEN

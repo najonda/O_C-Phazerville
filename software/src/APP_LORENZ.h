@@ -234,6 +234,14 @@ void FASTRUN LORENZ_process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_raw_value(DAC_CHANNEL_D, lorenz_generator.lorenz.dac_code(3));
 }
 
+void LORENZ_getIOConfig(OC::IOConfig &ioconfig)
+{
+  ioconfig.outputs[DAC_CHANNEL_A].set(lorenz_output_names[lorenz_generator.get_out_a()], OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_B].set(lorenz_output_names[lorenz_generator.get_out_b()], OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_C].set(lorenz_output_names[lorenz_generator.get_out_c()], OC::OUTPUT_MODE_RAW);
+  ioconfig.outputs[DAC_CHANNEL_D].set(lorenz_output_names[lorenz_generator.get_out_d()], OC::OUTPUT_MODE_RAW);
+}
+
 void LORENZ_init() {
   lorenz_generator_state.selected_generator = 0;
   lorenz_generator_state.cursor.Init(LORENZ_SETTING_RHO1, LORENZ_SETTING_LAST - 1);

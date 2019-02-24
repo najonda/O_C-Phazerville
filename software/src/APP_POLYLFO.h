@@ -373,6 +373,10 @@ void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_raw_value(DAC_CHANNEL_D, poly_lfo.lfo.dac_code(3));
 }
 
+void POLYLFO_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void POLYLFO_init() {
 
   poly_lfo_state.left_edit_mode = POLYLFO_SETTING_COARSE;

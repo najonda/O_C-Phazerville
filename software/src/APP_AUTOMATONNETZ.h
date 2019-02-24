@@ -529,6 +529,10 @@ void FASTRUN Automatonnetz_process(OC::IOFrame *ioframe) {
   automatonnetz_state.Process(ioframe);
 }
 
+void Automatonnetz_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 static const weegfx::coord_t kGridXStart = 0;
 static const weegfx::coord_t kGridYStart = 2;
 static const weegfx::coord_t kGridH = 12;

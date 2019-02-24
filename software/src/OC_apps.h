@@ -69,6 +69,8 @@ struct App {
   void (*HandleEncoderEvent)(const UI::Event &);
 
   void (*Process)(IOFrame *ioframe);
+
+  void (*GetIOConfig)(IOConfig &config);
 };
 
 namespace apps {

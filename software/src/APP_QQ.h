@@ -1275,6 +1275,14 @@ void QQ_process(OC::IOFrame *ioframe) {
   quantizer_channels[3].Update(ioframe, DAC_CHANNEL_D);
 }
 
+void QQ_getIOConfig(OC::IOConfig &ioconfig)
+{
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_PITCH);
+}
+
 void QQ_loop() {
 }
 

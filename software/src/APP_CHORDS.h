@@ -1103,6 +1103,10 @@ void CHORDS_process(OC::IOFrame *ioframe) {
   chords.Update(ioframe);
 }
 
+void CHORDS_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void CHORDS_loop() {
 }
 
