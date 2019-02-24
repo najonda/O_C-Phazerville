@@ -84,6 +84,7 @@ public:
   static void reset_auto_channel_calibration_data(uint8_t channel_id);
   static void reset_all_auto_channel_calibration_data();
   static void choose_calibration_data();
+
   static void set_scaling(OutputVoltageScaling scaling, uint8_t channel_id);
   static void restore_scaling(uint32_t scaling);
   static OutputVoltageScaling get_voltage_scaling(uint8_t channel_id);
@@ -115,9 +116,9 @@ public:
   //
   // @return DAC output value
   template <DAC_CHANNEL channel>
-  static int32_t PitchToScaledDAC(int32_t pitch)
+  static int32_t PitchToScaledDAC(int32_t pitch, OutputVoltageScaling scaling)
   {
-    pitch = Scale<channel>(pitch);
+    pitch = Scale(pitch, scaling);
     pitch += kOctaveZero * 12 << 7;
     CONSTRAIN(pitch, 0, (120 << 7));
 
@@ -133,10 +134,9 @@ public:
   }
 
   // Scale output value given channel scaling
-  template <DAC_CHANNEL channel>
-  static int32_t Scale(int32_t pitch)
+  static int32_t Scale(int32_t pitch, OutputVoltageScaling scaling)
   {
-    switch (scaling_[channel]) {
+    switch (scaling) {
       case VOLTAGE_SCALING_1V_PER_OCT:    // 1V/oct
           break;
       case VOLTAGE_SCALING_CARLOS_ALPHA:  // Wendy Carlos alpha scale - scale by 0.77995
@@ -165,7 +165,6 @@ public:
       default: 
           break;
     }
-
     return pitch;
   }
 

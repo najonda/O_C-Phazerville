@@ -55,7 +55,12 @@ enum OUTPUT_SETTINGS {
 };
 
 class InputSettings : public settings::SettingsBase<InputSettings, INPUT_SETTING_LAST> { };
-class OutputSettings: public settings::SettingsBase<OutputSettings, OUTPUT_SETTING_LAST> { };
+class OutputSettings: public settings::SettingsBase<OutputSettings, OUTPUT_SETTING_LAST> {
+public:
+  OutputVoltageScaling get_output_scaling(int channel) const {
+    return static_cast<OutputVoltageScaling>(get_value(OUTPUT_SETTING_A_SCALING + channel));
+  }
+};
 
 struct IOFrame;
 
