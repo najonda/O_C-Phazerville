@@ -130,7 +130,7 @@ void save_global_settings() {
   memcpy(global_settings.user_chords, OC::user_chords, sizeof(OC::user_chords));
   memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
   // scaling settings:
-  global_settings.DAC_scaling = OC::DAC::store_scaling();
+// TODO[PLD]  global_settings.DAC_scaling = OC::DAC::store_scaling();
   
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -288,7 +288,7 @@ void Init(bool reset_settings) {
       memcpy(user_chords, global_settings.user_chords, sizeof(user_chords));
       memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
       DAC::choose_calibration_data(); // either use default data, or auto_calibration_data
-      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
+// TODO[PLD]      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
     }
 
     SERIAL_PRINTLN("Load app data: size is %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",

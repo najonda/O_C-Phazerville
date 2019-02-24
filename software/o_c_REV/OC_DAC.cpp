@@ -50,7 +50,7 @@ void DAC::Init(CalibrationData *calibration_data) {
 
   calibration_data_ = calibration_data;
   
-  restore_scaling(0x0);
+// TODO[PLD]  restore_scaling(0x0);
 
   // set up DAC pins 
   OC::pinMode(DAC_CS, OUTPUT);
@@ -173,6 +173,7 @@ void DAC::choose_calibration_data() {
   }
 }
 
+#if 0
 /*static*/
 OutputVoltageScaling DAC::get_voltage_scaling(uint8_t channel_id) {
   return scaling_[channel_id];
@@ -203,6 +204,7 @@ uint32_t DAC::store_scaling() {
     _scaling |= (scaling_[i] << (i * 8)); 
   return _scaling;
 }
+#endif
 
 /*static*/
 DAC::CalibrationData *DAC::calibration_data_ = nullptr;
@@ -216,8 +218,10 @@ uint16_t DAC::history_[DAC_CHANNEL_LAST][DAC::kHistoryDepth];
 /*static*/ 
 volatile size_t DAC::history_tail_;
 
+#if 0
 /*static*/ 
 OutputVoltageScaling DAC::scaling_[DAC_CHANNEL_LAST];
+#endif
 }; // namespace OC
 
 void set8565_CHA(uint32_t data) {

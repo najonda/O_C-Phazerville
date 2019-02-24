@@ -61,11 +61,13 @@ public:
   static void reset_all_auto_channel_calibration_data();
   static void choose_calibration_data();
 
+#if 0
   static void set_scaling(OutputVoltageScaling scaling, uint8_t channel_id);
-  static void restore_scaling(uint32_t scaling);
+  [[deprecated]] static void restore_scaling(uint32_t scaling);
   static OutputVoltageScaling get_voltage_scaling(uint8_t channel_id);
-  static uint32_t store_scaling();
-  
+  [[deprecated]] static uint32_t store_scaling();
+#endif
+
   static void set_all(uint32_t value) {
     for (int i = DAC_CHANNEL_A; i < DAC_CHANNEL_LAST; ++i)
       values_[i] = USAT16(value);

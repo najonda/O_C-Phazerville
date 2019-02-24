@@ -224,6 +224,8 @@ void ScaleEditor<Owner>::Draw() {
     }
   }
   else {
+#if 0
+// TODO[PLD]
     // scaling ... 
     weegfx::coord_t x = 0;
     weegfx::coord_t y = 0;
@@ -260,6 +262,7 @@ void ScaleEditor<Owner>::Draw() {
     graphics.print(OC::voltage_scalings[OC::DAC::get_voltage_scaling(DAC_CHANNEL_D)]);
     // draw cursor:
     graphics.invertRect(x - 2, (scaling_cursor_pos_ << 4) + 3, w - 6, 11);
+ #endif
   }
 }
 
@@ -440,9 +443,12 @@ void ScaleEditor<Owner>::move_cursor(int offset) {
     break;
     case _SCALING:
     {
+#if 0
+//TODO[PLD]
       auto scaling = OC::DAC::get_voltage_scaling(scaling_cursor_pos_) + offset;
       CONSTRAIN(scaling, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 0x1);
       OC::DAC::set_scaling(static_cast<OutputVoltageScaling>(scaling), scaling_cursor_pos_);
+#endif
     }
     break;
     default:
