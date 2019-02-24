@@ -820,6 +820,10 @@ void ASR_process(OC::IOFrame *ioframe) {
   asr.update(ioframe);
 }
 
+void ASR_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void ASR_handleButtonEvent(const UI::Event &event) {
   if (asr_state.scale_editor.active()) {
     asr_state.scale_editor.HandleButtonEvent(event);

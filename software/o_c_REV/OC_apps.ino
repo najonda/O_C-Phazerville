@@ -33,7 +33,8 @@
   prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
   prefix ## _handleButtonEvent, \
   prefix ## _handleEncoderEvent, \
-  prefix ## _process \
+  prefix ## _process, \
+  prefix ## _getIOConfig \
 }
 
 #ifdef BORING_APP_NAMES

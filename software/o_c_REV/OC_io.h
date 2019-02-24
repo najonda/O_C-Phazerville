@@ -62,6 +62,21 @@ public:
   }
 };
 
+struct OutputDesc {
+  const char *label = "";
+  OutputMode mode = OUTPUT_MODE_RAW;
+
+  void set(const char *l, OutputMode m) {
+    label = l;
+    mode = m;
+  }
+};
+
+struct IOConfig {
+
+  OutputDesc outputs[DAC_CHANNEL_LAST];
+};
+
 struct IOFrame;
 
 class IO {

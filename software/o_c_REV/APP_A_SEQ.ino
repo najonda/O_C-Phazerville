@@ -2133,6 +2133,10 @@ void SEQ_process(OC::IOFrame *ioframe) {
   seq_channel[1].update_aux_channel<DAC_CHANNEL_D>(ioframe);
 }
 
+void SEQ_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void SEQ_handleButtonEvent(const UI::Event &event) {
 
   if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {

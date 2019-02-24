@@ -407,3 +407,7 @@ void BBGEN_screensaver() {
 void FASTRUN BBGEN_process(OC::IOFrame *ioframe) {
   bbgen.Process(ioframe);
 }
+
+void BBGEN_getIOConfig(OC::IOConfig &ioconfig)
+{
+}

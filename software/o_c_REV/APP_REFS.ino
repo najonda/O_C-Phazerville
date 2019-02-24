@@ -768,6 +768,10 @@ void REFS_process(OC::IOFrame *ioframe) {
   return references_app.Process(ioframe);
 }
 
+void REFS_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void REFS_handleAppEvent(OC::AppEvent event) {
   switch (event) {
     case OC::APP_EVENT_RESUME:

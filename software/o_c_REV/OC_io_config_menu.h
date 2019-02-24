@@ -31,6 +31,8 @@
 
 namespace OC {
 
+struct App;
+
 class IOConfigMenu {
 public:
 
@@ -39,11 +41,11 @@ public:
   enum PAGE {
     INPUT_GAIN_PAGE,
     INPUT_FILTER_PAGE,
-    OUTPUT_SCALING_PAGE,
+    OUTPUT_PAGE,
     PAGE_LAST
   };
 
-  void Edit(InputSettings &input_settings, OutputSettings &output_settings);
+  void Edit(App *app);
 
   void enable(bool enabled) {
     enabled_ = true;
@@ -70,9 +72,18 @@ private:
 
   InputSettings *input_settings_;
   OutputSettings *output_settings_;
+  IOConfig io_config_;
 
   void DrawInputSettingsPage() const;
-  void DrawOutputScalingPage() const;
+  void DrawOutputPage() const;
+
+  Page &current_page() {
+    return pages_[current_page_];
+  }
+
+  const Page &current_page() const {
+    return pages_[current_page_];
+  }
 };
 
 } // namespace OC

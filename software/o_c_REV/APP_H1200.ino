@@ -955,6 +955,10 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_pitch_values(h1200_state.output_values_);
 }
 
+void H1200_getIOConfig(OC::IOConfig &ioconfig)
+{
+}
+
 void H1200_init() {
   h1200_settings.Init();
   h1200_state.Init();
