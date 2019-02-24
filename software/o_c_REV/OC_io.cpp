@@ -26,14 +26,15 @@
 #include "OC_io.h"
 #include "OC_strings.h"
 #include "OC_scales.h"
+#include "OC_cv_utils.h"
 
 namespace OC {
 
 SETTINGS_DECLARE(OC::InputSettings, OC::INPUT_SETTING_LAST) {
-  { 19, 0, 40 - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 19, 0, 40 - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
   { 0, 0, 1, "CV1 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { 0, 0, 1, "CV2 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { 0, 0, 1, "CV3 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
@@ -65,19 +66,19 @@ SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
       pitch = ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(channel));
     }
 
-    //auto mult = input_settings.get_value(INPUT_SETTING_CV1_GAIN + channel);
+    auto mult_factor = input_settings.get_value(INPUT_SETTING_CV1_GAIN + channel);
 
-    ioframe->cv.values[channel] = val;
-    ioframe->cv.pitch_values[channel] = pitch;
+    ioframe->cv.values[channel] = CVUtils::Attenuate(val, mult_factor);
+    ioframe->cv.pitch_values[channel] = CVUtils::Attenuate(pitch, mult_factor);
   }
 }
 
 template <DAC_CHANNEL channel>
-static void IOFrameToChannel(const IOFrame *ioframe)
+static void IOFrameToChannel(const IOFrame *ioframe, const OutputSettings &output_settings)
 {
   auto value = ioframe->outputs.values[channel];
   switch(ioframe->outputs.modes[channel]) {
-    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value); break;
+    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value, output_settings.get_output_scaling(channel)); break;
     case OUTPUT_MODE_GATE:  value = DAC::GateToDAC<channel>(value); break;
     case OUTPUT_MODE_UNI:   value += DAC::get_zero_offset(channel); break;
     case OUTPUT_MODE_RAW:   break;
@@ -85,12 +86,12 @@ static void IOFrameToChannel(const IOFrame *ioframe)
   DAC::set<channel>(value);
 }
 
-/*static*/ void IO::WriteDAC(IOFrame *ioframe, const OutputSettings &)
+/*static*/ void IO::WriteDAC(IOFrame *ioframe, const OutputSettings &output_settings)
 {
-  IOFrameToChannel<DAC_CHANNEL_A>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_B>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_C>(ioframe);
-  IOFrameToChannel<DAC_CHANNEL_D>(ioframe);
+  IOFrameToChannel<DAC_CHANNEL_A>(ioframe, output_settings);
+  IOFrameToChannel<DAC_CHANNEL_B>(ioframe, output_settings);
+  IOFrameToChannel<DAC_CHANNEL_C>(ioframe, output_settings);
+  IOFrameToChannel<DAC_CHANNEL_D>(ioframe, output_settings);
 }
 
 void IOFrame::Reset()

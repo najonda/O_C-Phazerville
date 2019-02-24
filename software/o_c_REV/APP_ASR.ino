@@ -26,30 +26,18 @@
 #include "OC_DAC.h"
 #include "OC_menus.h"
 #include "OC_pitch_utils.h"
+#include "OC_cv_utils.h"
 #include "OC_scales.h"
 #include "OC_scale_edit.h"
 #include "OC_strings.h"
 #include "OC_visualfx.h"
 #include "peaks_bytebeat.h"
-#include "extern/dspinst.h"
 
 namespace menu = OC::menu; // Ugh. This works for all .ino files
 
 #define NUM_ASR_CHANNELS 0x4
 #define ASR_MAX_ITEMS 256 // = ASR ring buffer size. 
 #define ASR_HOLD_BUF_SIZE ASR_MAX_ITEMS / NUM_ASR_CHANNELS // max. delay size 
-#define NUM_INPUT_SCALING 40 // # steps for input sample scaling (sb)
-
-// CV input gain multipliers 
-const int32_t multipliers[NUM_INPUT_SCALING] = {
-  // 0.0 / 2.0 in 0.05 steps
-  3277, 6554, 9830, 13107, 16384, 19661, 22938, 26214, 29491, 32768, 
-  36045, 39322, 42598, 45875, 49152, 52429, 55706, 58982, 62259, 65536, 
-  68813, 72090, 75366, 78643, 81920, 85197, 88474, 91750, 95027, 98304, 
-  101581, 104858, 108134, 111411, 114688, 117964, 121242, 124518, 127795, 131072
-};
-
-const uint8_t MULT_ONE = 19; // == 65536, see above
 
 enum ASRSettings {
   ASR_SETTING_SCALE,
@@ -448,44 +436,40 @@ public:
      clock_display_.Update(1, update);
 
      trigger_delay_.Update();
-    
      if (update)
-      trigger_delay_.Push(OC::trigger_delay_ticks[get_trigger_delay()]);
-      
+      trigger_delay_.Push(OC::trigger_delay_ticks[get_trigger_delay()]);     
      update = trigger_delay_.triggered();
 
-     if (update) {        
-
-         bool _freeze_switch, _freeze = digitalReadFast(TR2);
+     if (update) {
+         bool _freeze_switch, _freeze = ioframe->digital_inputs.raised(OC::DIGITAL_INPUT_2);
          int8_t _root  = get_root();
-         int8_t _index = get_index() + ((OC::ADC::value<ADC_CHANNEL_2>() + 31) >> 6);
+         int8_t _index = get_index() + ioframe->cv.Value<64>(ADC_CHANNEL_2);
          int8_t _octave = get_octave();
          int8_t _transpose = 0;
          int8_t _mult = get_mult();
-         int32_t _pitch = OC::ADC::raw_pitch_value(ADC_CHANNEL_1);
+         int32_t _pitch = ioframe->cv.pitch_values[ADC_CHANNEL_1];
          int32_t _asr_buffer[NUM_ASR_CHANNELS];  
 
          bool forced_update = force_update_;
          force_update_ = false;
-         update_scale(forced_update, (OC::ADC::value<ADC_CHANNEL_3>() + 127) >> 8);
+         update_scale(forced_update, ioframe->cv.Value<16>(ADC_CHANNEL_3));
          
          // cv4 destination, defaults to octave:
          switch(get_cv4_destination()) {
-
             case ASR_DEST_OCTAVE:
-              _octave += (OC::ADC::value<ADC_CHANNEL_4>() + 255) >> 9;
+              _octave += ioframe->cv.Value<8>(ADC_CHANNEL_4);
             break;
             case ASR_DEST_ROOT:
-              _root += (OC::ADC::value<ADC_CHANNEL_4>() + 127) >> 8;
+              _root += ioframe->cv.Value<16>(ADC_CHANNEL_4);
               CONSTRAIN(_root, 0, 11);
             break;
             case ASR_DEST_TRANSPOSE:
-              _transpose += (OC::ADC::value<ADC_CHANNEL_4>() + 63) >> 7;
+              _transpose += ioframe->cv.Value<32>(ADC_CHANNEL_4);
               CONSTRAIN(_transpose, -12, 12); 
             break;
             case ASR_DEST_INPUT_SCALING:
-              _mult += (OC::ADC::value<ADC_CHANNEL_4>() + 63) >> 7;
-              CONSTRAIN(_mult, 0, NUM_INPUT_SCALING - 1);
+              _mult += ioframe->cv.Value<64>(ADC_CHANNEL_4);
+              CONSTRAIN(_mult, 0, OC::CVUtils::kMultSteps - 1);
             break;
             // CV for buffer length happens in updateASR_indexed
             default:
@@ -657,7 +641,7 @@ public:
            }
          }
          // limit gain factor.
-         CONSTRAIN(_mult, 0, NUM_INPUT_SCALING - 0x1);
+         CONSTRAIN(_mult, 0, OC::CVUtils::kMultSteps - 1);
          // .. and index
          CONSTRAIN(_index, 0, ASR_HOLD_BUF_SIZE - 0x1);
          // push sample into ring-buffer and/or freeze buffer: 
@@ -671,15 +655,8 @@ public:
          
          // quantize buffer outputs:
          for (int i = 0; i < NUM_ASR_CHANNELS; ++i) {
-
              int32_t _sample = _asr_buffer[i];
-          
-            // scale sample
-             if (_mult != MULT_ONE) {  
-               _sample = signed_multiply_32x16b(multipliers[_mult], _sample);
-               _sample = signed_saturate_rshift(_sample, 16, 0);
-             }
-
+             _sample = OC::CVUtils::Attenuate(_sample, _mult);
              _sample = quantizer_.Process(_sample, _root << 7, _transpose);
              _sample = OC::PitchUtils::PitchAddOctaves(_sample, _octave);
              scrolling_history_[i].Push(_sample);
@@ -746,7 +723,7 @@ SETTINGS_DECLARE(ASR, ASR_SETTING_LAST) {
   { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
   { 65535, 1, 65535, "mask", NULL, settings::STORAGE_TYPE_U16 }, // mask
   { 0, 0, ASR_HOLD_BUF_SIZE - 1, "buf.index", NULL, settings::STORAGE_TYPE_U8 },
-  { MULT_ONE, 0, NUM_INPUT_SCALING - 1, "input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
   { 0, 0, OC::kNumDelayTimes - 1, "trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
   { 4, 4, ASR_HOLD_BUF_SIZE - 1, "hold (buflen)", NULL, settings::STORAGE_TYPE_U8 },
   { 0, 0, ASR_CHANNEL_SOURCE_LAST -1, "CV source", asr_input_sources, settings::STORAGE_TYPE_U4 },
