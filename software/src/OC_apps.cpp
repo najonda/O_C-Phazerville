@@ -269,8 +269,8 @@ void save_global_settings() {
   memcpy(global_settings.user_waveforms, HS::user_waveforms, sizeof(HS::user_waveforms));
   memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
   // scaling settings:
-  global_settings.DAC_scaling = OC::DAC::store_scaling();
-
+// TODO[PLD]  global_settings.DAC_scaling = OC::DAC::store_scaling();
+  
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
 }
@@ -447,7 +447,7 @@ void Init(bool reset_settings) {
       memcpy(HS::user_waveforms, global_settings.user_waveforms, sizeof(HS::user_waveforms));
       memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
       DAC::choose_calibration_data(); // either use default data, or auto_calibration_data
-      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
+// TODO[PLD]      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
       Scales::Validate();
     }
 
