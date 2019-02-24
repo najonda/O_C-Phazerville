@@ -957,6 +957,10 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
 
 void H1200_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("ROOT", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("+1", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("+2", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("+3", OC::OUTPUT_MODE_PITCH);
 }
 
 void H1200_init() {

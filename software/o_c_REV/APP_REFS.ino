@@ -770,6 +770,10 @@ void REFS_process(OC::IOFrame *ioframe) {
 
 void REFS_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_PITCH);
 }
 
 void REFS_handleAppEvent(OC::AppEvent event) {

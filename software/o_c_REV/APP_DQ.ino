@@ -1172,6 +1172,21 @@ void DQ_process(OC::IOFrame *ioframe) {
 
 void DQ_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
+  switch (dq_quantizer_channels[0].get_aux_mode()) {
+  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Gate", OC::OUTPUT_MODE_GATE); break;
+  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Copy", OC::OUTPUT_MODE_PITCH); break;
+  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ASR", OC::OUTPUT_MODE_PITCH); break;
+  default: break;
+  }
+  
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
+  switch (dq_quantizer_channels[1].get_aux_mode()) {
+  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Gate", OC::OUTPUT_MODE_GATE); break;
+  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Copy", OC::OUTPUT_MODE_PITCH); break;
+  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ASR", OC::OUTPUT_MODE_PITCH); break;
+  default: break;
+  }
 }
 
 void DQ_loop() {

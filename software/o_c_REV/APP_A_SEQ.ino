@@ -2135,6 +2135,25 @@ void SEQ_process(OC::IOFrame *ioframe) {
 
 void SEQ_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
+  switch(seq_channel[0].get_aux_mode()) {
+  case GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 gate", OC::OUTPUT_MODE_GATE); break;
+  case COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 copy", OC::OUTPUT_MODE_PITCH); break;
+  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 AD", OC::OUTPUT_MODE_UNI); break;
+  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADR", OC::OUTPUT_MODE_UNI); break;
+  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADSR", OC::OUTPUT_MODE_UNI); break;
+  default: break;
+  }
+
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
+  switch(seq_channel[1].get_aux_mode()) {
+  case GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 gate", OC::OUTPUT_MODE_GATE); break;
+  case COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 copy", OC::OUTPUT_MODE_PITCH); break;
+  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 AD", OC::OUTPUT_MODE_UNI); break;
+  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADR", OC::OUTPUT_MODE_UNI); break;
+  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADSR", OC::OUTPUT_MODE_UNI); break;
+  default: break;
+  }
 }
 
 void SEQ_handleButtonEvent(const UI::Event &event) {

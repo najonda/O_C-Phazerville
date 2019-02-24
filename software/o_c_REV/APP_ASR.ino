@@ -822,6 +822,10 @@ void ASR_process(OC::IOFrame *ioframe) {
 
 void ASR_getIOConfig(OC::IOConfig &ioconfig)
 {
+  ioconfig.outputs[DAC_CHANNEL_A].set("TAP1", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("TAP2", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("TAP3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("TAP4", OC::OUTPUT_MODE_PITCH);
 }
 
 void ASR_handleButtonEvent(const UI::Event &event) {
