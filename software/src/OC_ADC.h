@@ -68,6 +68,7 @@ public:
       max = std::max(value, max);
     }
   };
+  
   static void Init(CalibrationData *calibration_data);
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void ADC33131D_Vref_calibrate();

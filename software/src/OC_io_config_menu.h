@@ -42,6 +42,7 @@ public:
     INPUT_GAIN_PAGE,
     INPUT_FILTER_PAGE,
     OUTPUT_PAGE,
+    OUTPUT_CALIBRATION_PAGE,
     PAGE_LAST
   };
 
@@ -76,6 +77,7 @@ private:
 
   void DrawInputSettingsPage() const;
   void DrawOutputPage() const;
+  void DrawOutputCalibrationPage() const;
 
   Page &current_page() {
     return pages_[current_page_];

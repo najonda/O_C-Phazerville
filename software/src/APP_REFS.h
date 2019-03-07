@@ -477,6 +477,7 @@ void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) 
   pitch += (OC::DAC::kOctaveZero * 12) << 7;
   unscaled_pitch += (OC::DAC::kOctaveZero * 12) << 7;
 
+  // TODO[PLD] scaled vs. unscaled
   
   CONSTRAIN(pitch, 0, 120 << 7);
 
