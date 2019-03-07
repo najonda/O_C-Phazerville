@@ -61,6 +61,7 @@ public:
       max = std::max(value, max);
     }
   };
+  
   static void Init(CalibrationData *calibration_data);
   static void Init_DMA();
   static void DMA_ISR();

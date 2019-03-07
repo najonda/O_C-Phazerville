@@ -47,6 +47,7 @@ void IOConfigMenu::Init()
   pages_[INPUT_GAIN_PAGE].Init("CV", INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV4_GAIN);
   pages_[INPUT_FILTER_PAGE].Init("Filt", INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV4_FILTER);
   pages_[OUTPUT_PAGE].Init("Outs", OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_LAST - 1);
+  pages_[OUTPUT_CALIBRATION_PAGE].Init("Cal", 0, 3);
 
   input_settings_ = nullptr;
   output_settings_ = nullptr;
@@ -76,6 +77,7 @@ void IOConfigMenu::Draw() const
     case INPUT_GAIN_PAGE:
     case INPUT_FILTER_PAGE: DrawInputSettingsPage(); break;
     case OUTPUT_PAGE: DrawOutputPage(); break;
+    case OUTPUT_CALIBRATION_PAGE: DrawOutputCalibrationPage(); break;
     default: break;
   }
 }
@@ -93,10 +95,6 @@ void IOConfigMenu::DrawInputSettingsPage() const
   }
 }
 
-static const char * const output_mode_strings[] = {
-  "Pitch", "Gate", "Uni", "Raw"
-};
-
 void IOConfigMenu::DrawOutputPage() const
 {
   // NOTE Assuming there's only 4 lines here corresponding to the outputs
@@ -109,7 +107,9 @@ void IOConfigMenu::DrawOutputPage() const
     auto channel = setting - OUTPUT_SETTING_A_SCALING;
     auto &desc = io_config_.outputs[channel];
 
-    snprintf(label, sizeof(label), "#%c: %s %s", 'A' + channel, desc.label, output_mode_strings[desc.mode]);
+    // TODO[PLD] Display if autotune is active for this channel
+
+    snprintf(label, sizeof(label), "%s: %s %s", Strings::channel_id[channel], desc.label, Strings::output_mode_strings[desc.mode]);
 
     if (desc.mode == OUTPUT_MODE_PITCH) {
       const int value = output_settings_->get_value(setting);
@@ -120,6 +120,10 @@ void IOConfigMenu::DrawOutputPage() const
       list_item.DrawCustom();
     }
   }
+}
+
+void IOConfigMenu::DrawOutputCalibrationPage() const
+{
 }
 
 void IOConfigMenu::DispatchEvent(const UI::Event &event)
