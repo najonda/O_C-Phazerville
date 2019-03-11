@@ -273,6 +273,7 @@ void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
   bool freeze = ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_2>();
   bool tempo_sync = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_3>();
  
+  // TODO[PLD] Do we need the excessive smoothing?
   poly_lfo.cv_freq.push(ioframe->cv.values[ADC_CHANNEL_1]);
   poly_lfo.cv_shape.push(ioframe->cv.values[ADC_CHANNEL_2]);
   poly_lfo.cv_spread.push(ioframe->cv.values[ADC_CHANNEL_3]);

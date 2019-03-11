@@ -415,16 +415,16 @@ public:
     //force_update_ = true;
   }
 
-  int8_t _clock(uint8_t sequence_length, uint8_t sequence_count, uint8_t sequence_max, bool _reset) {
+  int8_t _clock(OC::IOFrame *ioframe, uint8_t sequence_length, uint8_t sequence_count, uint8_t sequence_max, bool _reset) {
 
         int8_t EoP = 0x0, _clk_cnt, _direction;
-        bool reset = !digitalReadFast(TR4) | _reset;
+        bool reset = ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_4>() | _reset;
 
         _clk_cnt = active_chord_;
         _direction = get_direction();
 
         if (get_direction_cv()) {
-           _direction += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_direction_cv() - 1)) + 255) >> 9;
+           _direction += ioframe->cv.Value<8>(static_cast<ADC_CHANNEL>(get_direction_cv() - 1));
            CONSTRAIN(_direction, 0, CHORDS_DIRECTIONS_LAST - 0x1);
         }
 
@@ -631,7 +631,7 @@ public:
                 if (active_progression_ >= OC::Chords::NUM_CHORD_PROGRESSIONS)
                     active_progression_ -= OC::Chords::NUM_CHORD_PROGRESSIONS;
                 // reset
-                _clock(get_num_chords(active_progression_), 0x0, progression_max, true);
+                _clock(ioframe, get_num_chords(active_progression_), 0x0, progression_max, true);
                 reset = true;
               }
               else if (num_progression_cv)  {
@@ -736,7 +736,7 @@ public:
         CONSTRAIN(active_chord_, 0x0, num_chords);
 
         if (num_chords && (_advance_trig < chord_advance_last_))
-          progression_EoP_ = _clock(num_chords, progression_cnt, progression_max, reset);
+          progression_EoP_ = _clock(ioframe, num_chords, progression_cnt, progression_max, reset);
         chord_advance_last_ = _advance_trig;
       }
 
@@ -763,9 +763,7 @@ public:
         transpose += (_base_note - 0x1);
       }
       else {
-        pitch = quantizer_.enabled()
-                  ? OC::ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(cv_source))
-                  : OC::ADC::pitch_value(static_cast<ADC_CHANNEL>(cv_source));
+        pitch = ioframe->cv.pitch_values[cv_source];
       }
 
       switch (cv_source) {
