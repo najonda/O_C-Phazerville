@@ -813,8 +813,6 @@ public:
     sequence_manual_ = display_num_sequence_;
     sequence_advance_state_ = false;
     pendulum_fwd_ = true;
-    uint32_t _seed = OC::ADC::value<ADC_CHANNEL_1>() + OC::ADC::value<ADC_CHANNEL_2>() + OC::ADC::value<ADC_CHANNEL_3>() + OC::ADC::value<ADC_CHANNEL_4>();
-    randomSeed(_seed);
     clock_display_.Init();
     arpeggiator_.Init();
     update_enabled_settings(0);

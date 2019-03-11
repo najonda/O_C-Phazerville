@@ -158,6 +158,13 @@ void setup() {
   CORE_timer.begin(CORE_timer_ISR, OC_CORE_TIMER_RATE);
   CORE_timer.priority(OC_CORE_TIMER_PRIO);
 
+  // Wait until there's at least some ADC values read
+  delay(4);
+  uint32_t random_seed =
+      OC::ADC::raw_value(ADC_CHANNEL_1) * OC::ADC::raw_value(ADC_CHANNEL_2) +
+      OC::ADC::raw_value(ADC_CHANNEL_3) + OC::ADC::raw_value(ADC_CHANNEL_4);
+  randomSeed(random_seed);
+
   SERIAL_PRINTLN("* UI ISR @%luus", OC_UI_TIMER_RATE);
   UI_timer.begin(UI_timer_ISR, OC_UI_TIMER_RATE);
   UI_timer.priority(OC_UI_TIMER_PRIO);
