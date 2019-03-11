@@ -73,6 +73,7 @@ public:
   void drawLine(coord_t x1, coord_t y1, coord_t x2, coord_t y2);
 
   void drawBitmap8(coord_t x, coord_t y, coord_t w, const uint8_t *data);
+  void printBitmap8(coord_t w, const uint8_t *data);
 
   // Beware: No clipping
   void drawCircle(coord_t center_x, coord_t center_y, coord_t r);

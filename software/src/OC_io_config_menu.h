@@ -42,7 +42,7 @@ public:
     INPUT_GAIN_PAGE,
     INPUT_FILTER_PAGE,
     OUTPUT_PAGE,
-    OUTPUT_CALIBRATION_PAGE,
+    OUTPUT_TODO_PAGE,
     PAGE_LAST
   };
 
@@ -65,9 +65,10 @@ private:
   PAGE current_page_;
   struct Page {
     const char *name;
+    const uint8_t *icon;
     menu::ScreenCursor<menu::kScreenLines> cursor;
 
-    void Init(const char *n, int start, int end);
+    void Init(const char *n, const uint8_t *i, int start, int end);
   };
   std::array<Page, PAGE_LAST> pages_;
 
@@ -77,7 +78,7 @@ private:
 
   void DrawInputSettingsPage() const;
   void DrawOutputPage() const;
-  void DrawOutputCalibrationPage() const;
+  void DrawTodoPage() const;
 
   Page &current_page() {
     return pages_[current_page_];

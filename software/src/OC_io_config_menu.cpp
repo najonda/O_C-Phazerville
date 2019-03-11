@@ -29,25 +29,27 @@
 #include "OC_apps.h"
 #include "OC_core.h"
 #include "OC_menus.h"
+#include "OC_bitmaps.h"
 #include "OC_strings.h"
 #include "OC_ui.h"
 #include "OC_io_config_menu.h"
 
 namespace OC {
 
-void IOConfigMenu::Page::Init(const char *n, int start, int end)
+void IOConfigMenu::Page::Init(const char *n, const uint8_t *i, int start, int end)
 {
   name = n;
+  icon = i;
   cursor.Init(start, end);
 }
 
 void IOConfigMenu::Init()
 {
   current_page_ = INPUT_GAIN_PAGE;
-  pages_[INPUT_GAIN_PAGE].Init("CV", INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV4_GAIN);
-  pages_[INPUT_FILTER_PAGE].Init("Filt", INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV4_FILTER);
-  pages_[OUTPUT_PAGE].Init("Outs", OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_LAST - 1);
-  pages_[OUTPUT_CALIBRATION_PAGE].Init("Cal", 0, 3);
+  pages_[INPUT_GAIN_PAGE].Init("CV ", bitmap_bipolar_8x8, INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV4_GAIN);
+  pages_[INPUT_FILTER_PAGE].Init("CV f", nullptr, INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV4_FILTER);
+  pages_[OUTPUT_PAGE].Init("OUTs", nullptr, OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_LAST - 1);
+  pages_[OUTPUT_TODO_PAGE].Init("????", nullptr, 0, 3);
 
   input_settings_ = nullptr;
   output_settings_ = nullptr;
@@ -70,6 +72,10 @@ void IOConfigMenu::Draw() const
   for (auto &page : pages_) {
     TitleBar::SetColumn(column++);
     graphics.print(page.name);
+    if (page.icon) {
+      graphics.movePrintPos(0, -1);
+      graphics.printBitmap8(8, page.icon);
+    }
   }
   TitleBar::Selected(current_page_);
 
@@ -77,7 +83,7 @@ void IOConfigMenu::Draw() const
     case INPUT_GAIN_PAGE:
     case INPUT_FILTER_PAGE: DrawInputSettingsPage(); break;
     case OUTPUT_PAGE: DrawOutputPage(); break;
-    case OUTPUT_CALIBRATION_PAGE: DrawOutputCalibrationPage(); break;
+    case OUTPUT_TODO_PAGE: DrawTodoPage(); break;
     default: break;
   }
 }
@@ -109,7 +115,7 @@ void IOConfigMenu::DrawOutputPage() const
 
     // TODO[PLD] Display if autotune is active for this channel
 
-    snprintf(label, sizeof(label), "%s: %s %s", Strings::channel_id[channel], desc.label, Strings::output_mode_strings[desc.mode]);
+    snprintf(label, sizeof(label), "%s: %4s %s", Strings::channel_id[channel], desc.label, Strings::output_mode_strings[desc.mode]);
 
     if (desc.mode == OUTPUT_MODE_PITCH) {
       const int value = output_settings_->get_value(setting);
@@ -122,7 +128,7 @@ void IOConfigMenu::DrawOutputPage() const
   }
 }
 
-void IOConfigMenu::DrawOutputCalibrationPage() const
+void IOConfigMenu::DrawTodoPage() const
 {
 }
 

@@ -276,7 +276,6 @@ void Graphics::drawVLinePattern(coord_t x, coord_t y, coord_t h, uint8_t pattern
   }
 }
 
-
 void Graphics::drawBitmap8(coord_t x, coord_t y, coord_t w, const uint8_t *data) {
 
   if (x + w > kWidth) w = kWidth - x;
@@ -304,6 +303,12 @@ void Graphics::drawBitmap8(coord_t x, coord_t y, coord_t w, const uint8_t *data)
       SETPIXELS_H(buf, w, (*src++) >> (8 - remainder));
     }
   }
+}
+
+void Graphics::printBitmap8(coord_t w, const uint8_t *data)
+{
+  drawBitmap8(text_x_, text_y_, w, data);
+  text_x_ += w;
 }
 
 void Graphics::drawLine(coord_t x0, coord_t y0, coord_t x1, coord_t y1) {
