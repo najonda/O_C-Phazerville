@@ -400,7 +400,7 @@ public:
     num_enabled_settings_ = settings - enabled_settings_;
   }
 
-  void updateASR_indexed(int32_t *_asr_buf, int32_t _sample, int16_t _index, bool _freeze) {
+  void updateASR_indexed(int32_t *_asr_buf, int32_t _sample, int16_t _index, bool _freeze, OC::IOFrame *ioframe) {
     
       int16_t _delay = _index, _offset;
 
@@ -408,7 +408,7 @@ public:
 
         int8_t _buflen = get_buffer_length();
         if (get_cv4_destination() == ASR_DEST_BUFLEN) {
-          _buflen += ((OC::ADC::value<ADC_CHANNEL_4>() + 31) >> 6);
+          _buflen += ioframe->cv.Value<64>(ADC_CHANNEL_4);
           CONSTRAIN(_buflen, NUM_ASR_CHANNELS, ASR_HOLD_BUF_SIZE - 0x1);
         }
         _ASR.Freeze(_buflen);
@@ -645,12 +645,12 @@ public:
          // .. and index
          CONSTRAIN(_index, 0, ASR_HOLD_BUF_SIZE - 0x1);
          // push sample into ring-buffer and/or freeze buffer: 
-         updateASR_indexed(_asr_buffer, _pitch, _index, _freeze_switch); 
+         updateASR_indexed(_asr_buffer, _pitch, _index, _freeze_switch, ioframe);
 
          // get octave offset :
-         if (!digitalReadFast(TR3)) 
+         if (ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_3>())
             _octave++;
-         else if (!digitalReadFast(TR4)) 
+         else if (ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_4>())
             _octave--;
          
          // quantize buffer outputs:
