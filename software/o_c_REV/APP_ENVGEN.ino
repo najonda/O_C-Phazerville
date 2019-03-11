@@ -1243,7 +1243,8 @@ void ENVGEN_debug() {
 }
 #endif // ENVGEN_DEBUG
 
-void FASTRUN ENVGEN_process(OC::IOFrame *ioframe) {
+// TODO[PLD] After conversion to ioframe, this function seemed to break RAM limits
+void /*FASTRUN*/ ENVGEN_process(OC::IOFrame *ioframe) {
   envgen.Process(ioframe);
 }
 
