@@ -451,7 +451,7 @@ public:
             int16_t brown_prb = get_brownian_probability();
 
             if (get_brownian_probability_cv()) {
-              brown_prb += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_brownian_probability_cv() - 1)) + 8) >> 3;
+              brown_prb += ioframe->cv.Value<512>(get_brownian_probability_cv() - 1);
               CONSTRAIN(brown_prb, 0, 256);
             }
             if (random(0,256) < brown_prb)
@@ -577,7 +577,7 @@ public:
 
       // update mask?
       if (get_mask_cv()) {
-        mask_rotate = (OC::ADC::value(static_cast<ADC_CHANNEL>(get_mask_cv() - 0x1)) + 127) >> 8;
+        mask_rotate = ioframe->cv.Value<16>(get_mask_cv() - 1);
       }
 
       update_scale(force_update_, mask_rotate);
@@ -591,12 +591,12 @@ public:
       progression_last_ = num_progression;
 
       if (get_progression_cv()) {
-        num_progression_cv = num_progression += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_progression_cv() - 1)) + 255) >> 9;
+        num_progression_cv = num_progression += ioframe->cv.Value<8>(get_progression_cv() - 1);
         CONSTRAIN(num_progression, 0, OC::Chords::NUM_CHORD_PROGRESSIONS - 0x1);
       }
 
       if (get_num_chords_cv())
-        num_chords_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(get_num_chords_cv() - 1)) + 255) >> 9;
+        num_chords_cv = ioframe->cv.Value<8>(get_num_chords_cv() - 1);
 
       switch (playmode) {
 
@@ -679,7 +679,7 @@ public:
                num_chords_last_ = num_chords;
                active_progression_ = num_progression;
                // process input:
-               active_chord_ = input_map_.Process(OC::ADC::value(static_cast<ADC_CHANNEL>(playmode - _SH1)));
+               active_chord_ = input_map_.Process(ioframe->cv.values[playmode - _SH1]);
              }
              progression_advance_last_ = _progression_advance_trig;
           }
@@ -699,7 +699,7 @@ public:
              num_chords_last_ = num_chords;
              active_progression_ = num_progression;
              // process input:
-             active_chord_ = input_map_.Process(OC::ADC::value(static_cast<ADC_CHANNEL>(playmode - _CV1)));
+             active_chord_ = input_map_.Process(ioframe->cv.values[playmode - _CV1]);
           }
           break;
           default:
@@ -767,32 +767,32 @@ public:
 
     // S/H mode
       if (get_root_cv()) {
-          root += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_root_cv() - 1)) + 127) >> 8;
+          root += ioframe->cv.Value<16>(get_root_cv() - 1);
           CONSTRAIN(root, 0, 15);
       }
 
       if (get_octave_cv()) {
-        octave += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_octave_cv() - 1)) + 255) >> 9;
+        octave += ioframe->cv.Value<8>(get_octave_cv() - 1);
         CONSTRAIN(octave, -4, 4);
       }
 
       if (get_transpose_cv()) {
-        transpose += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_transpose_cv() - 1)) + 63) >> 7;
+        transpose += ioframe->cv.Value<16>(get_transpose_cv() - 1);
         CONSTRAIN(transpose, -15, 15);
       }
 
       if (get_quality_cv()) {
-        _quality += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_quality_cv() - 1)) + 255) >> 9;
+        _quality += ioframe->cv.Value<8>(get_quality_cv() - 1);
         CONSTRAIN(_quality, 0,  OC::Chords::CHORDS_QUALITY_LAST - 1);
       }
 
       if (get_inversion_cv()) {
-        _inversion += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_inversion_cv() - 1)) + 511) >> 10;
+        _inversion += ioframe->cv.Value<4>(get_inversion_cv() - 1);
         CONSTRAIN(_inversion, 0,  OC::Chords::CHORDS_INVERSION_LAST - 1);
       }
 
       if (get_voicing_cv()) {
-        _voicing += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_voicing_cv() - 1)) + 255) >> 9;
+        _voicing += ioframe->cv.Value<8>(get_voicing_cv() - 1);
         CONSTRAIN(_voicing, 0,  OC::Chords::CHORDS_VOICING_LAST - 1);
       }
 

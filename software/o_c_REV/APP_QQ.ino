@@ -471,7 +471,7 @@ public:
           turing_machine_.set_length(get_turing_length());
           int32_t probability = get_turing_prob();
           if (get_turing_prob_cv_source()) {
-            probability += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_turing_prob_cv_source() - 1)) + 7) >> 4;
+            probability += ioframe->cv.Value<256>(get_turing_prob_cv_source() - 1);
             CONSTRAIN(probability, 0, 255);
           }
           turing_machine_.set_probability(probability);
@@ -479,15 +479,14 @@ public:
             uint32_t shift_register = turing_machine_.Clock();
             uint8_t range = get_turing_range();
             if (get_turing_range_cv_source()) {
-              range += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_turing_range_cv_source() - 1)) + 15) >> 5;
+              range += ioframe->cv.Value<128>(get_turing_range_cv_source() - 1);
               CONSTRAIN(range, 1, 120);
             }
 
             if (quantizer_.enabled()) {
-
               uint8_t modulus = get_turing_modulus();
               if (get_turing_modulus_cv_source()) {
-                 modulus += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_turing_modulus_cv_source() - 1)) + 15) >> 5;
+                 modulus += ioframe->cv.Value<128>(get_turing_modulus_cv_source() - 1);
                  CONSTRAIN(modulus, 2, 121);
               }
 
@@ -522,28 +521,28 @@ public:
 
             int32_t bytebeat_eqn = get_bytebeat_equation() << 12;
             if (get_bytebeat_equation_cv_source()) {
-              bytebeat_eqn += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_bytebeat_equation_cv_source() - 1)) << 4);
+              bytebeat_eqn += ioframe->cv.Value<4096>(get_bytebeat_equation_cv_source() - 1) << 4;
               bytebeat_eqn = USAT16(bytebeat_eqn);
             }
             bytebeat_.set_equation(bytebeat_eqn);
 
             int32_t bytebeat_p0 = get_bytebeat_p0() << 8;
             if (get_bytebeat_p0_cv_source()) {
-              bytebeat_p0 += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_bytebeat_p0_cv_source() - 1)) << 4);
+              bytebeat_p0 += ioframe->cv.Value<4096>(get_bytebeat_p0_cv_source() - 1) << 4;
               bytebeat_p0 = USAT16(bytebeat_p0);
             }
             bytebeat_.set_p0(bytebeat_p0);
 
             int32_t bytebeat_p1 = get_bytebeat_p1() << 8;
             if (get_bytebeat_p1_cv_source()) {
-              bytebeat_p1 += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_bytebeat_p1_cv_source() - 1)) << 4);
+              bytebeat_p1 += ioframe->cv.Value<4096>(get_bytebeat_p1_cv_source() - 1) << 4;
               bytebeat_p1 = USAT16(bytebeat_p1);
             }
             bytebeat_.set_p1(bytebeat_p1);
 
             int32_t bytebeat_p2 = get_bytebeat_p2() << 8;
             if (get_bytebeat_p2_cv_source()) {
-              bytebeat_p2 += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_bytebeat_p2_cv_source() - 1)) << 4);
+              bytebeat_p2 += ioframe->cv.Value<4096>(get_bytebeat_p2_cv_source() - 1) << 4;
               bytebeat_p2 = USAT16(bytebeat_p2);
             }
             bytebeat_.set_p2(bytebeat_p2);
@@ -552,12 +551,11 @@ public:
               uint32_t bb = bytebeat_.Clock();
               uint8_t range = get_bytebeat_range();
               if (get_bytebeat_range_cv_source()) {
-                range += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_bytebeat_range_cv_source() - 1)) + 15) >> 5;
+                range += ioframe->cv.Value<128>(get_bytebeat_range_cv_source() - 1);
                 CONSTRAIN(range, 1, 120);
               }
 
               if (quantizer_.enabled()) {
-
                 // Since our range is limited anyway, just grab the last byte
                 uint32_t scaled = ((bb >> 8) * range) >> 8;
 
@@ -589,7 +587,7 @@ public:
           logistic_map_.set_seed(123);
           int32_t logistic_map_r = get_logistic_map_r();
           if (get_logistic_map_r_cv_source()) {
-            logistic_map_r += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_logistic_map_r_cv_source() - 1)) + 7) >> 4;
+            logistic_map_r += ioframe->cv.Value<256>(get_logistic_map_r_cv_source() - 1);
             CONSTRAIN(logistic_map_r, 0, 255);
           }
           logistic_map_.set_r(logistic_map_r);
@@ -597,7 +595,7 @@ public:
             int64_t logistic_map_x = logistic_map_.Clock();
             uint8_t range = get_logistic_map_range();
             if (get_logistic_map_range_cv_source()) {
-              range += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_logistic_map_range_cv_source() - 1)) + 15) >> 5;
+              range += ioframe->cv.Value<128>(get_logistic_map_range_cv_source() - 1);
               CONSTRAIN(range, 1, 120);
             }
 
@@ -631,20 +629,20 @@ public:
             int16_t int_seq_stride = get_int_seq_stride();
 
             if (get_int_seq_index_cv_source()) {
-              int_seq_index += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_int_seq_index_cv_source() - 1)) + 127) >> 8;
+              int_seq_index += ioframe->cv.Value<16>(get_int_seq_index_cv_source() - 1);
             }
             if (int_seq_index < 0) int_seq_index = 0;
             if (int_seq_index > 8) int_seq_index = 8;
             int_seq_.set_int_seq(int_seq_index);
             int16_t int_seq_modulus_ = get_int_seq_modulus();
             if (get_int_seq_modulus_cv_source()) {
-                int_seq_modulus_ += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_int_seq_modulus_cv_source() - 1)) + 31) >> 6;
+                int_seq_modulus_ += ioframe->cv.Value<128>(get_int_seq_modulus_cv_source() - 1);
                 CONSTRAIN(int_seq_modulus_, 2, 121);
             }
             int_seq_.set_int_seq_modulus(int_seq_modulus_);
 
             if (get_int_seq_stride_cv_source()) {
-              int_seq_stride += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_int_seq_stride_cv_source() - 1)) + 31) >> 6;
+              int_seq_stride += ioframe->cv.Value<64>(get_int_seq_stride_cv_source() - 1);
             }
             if (int_seq_stride < 1) int_seq_stride = 1;
             if (int_seq_stride > kIntSeqLen - 1) int_seq_stride = kIntSeqLen - 1;
@@ -694,7 +692,7 @@ public:
               uint32_t is = int_seq_.Clock();
               int16_t range_ = get_int_seq_range();
               if (get_int_seq_range_cv_source()) {
-                range_ += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_int_seq_range_cv_source() - 1)) + 31) >> 6;
+                range_ += ioframe->cv.Value<128>(get_int_seq_range_cv_source() - 1);
                 CONSTRAIN(range_, 1, 120);
               }
               if (quantizer_.enabled()) {
@@ -748,23 +746,13 @@ public:
               // see below
 
               switch(_aux_cv_destination) {
-
                 case QQ_DEST_NONE:
                 break;
-                case QQ_DEST_TRANSPOSE:
-                  transpose += (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 63) >> 7;
-                break;
-                case QQ_DEST_ROOT:
-                  root += (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 127) >> 8;
-                break;
-                case QQ_DEST_OCTAVE:
-                  octave += (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 255) >> 9;
-                break;
-                case  QQ_DEST_MASK:
-                  update_scale(false, (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 127) >> 8);
-                break;
-                default:
-                break;
+                case QQ_DEST_TRANSPOSE: transpose += ioframe->cv.Value<32>(index); break;
+                case QQ_DEST_ROOT:      root += ioframe->cv.Value<16>(index); break;
+                case QQ_DEST_OCTAVE:    octave += ioframe->cv.Value<8>(index); break;
+                case  QQ_DEST_MASK:     update_scale(false, ioframe->cv.Value<16>(index)); break;
+                default: break;
               }
             }
 
@@ -780,18 +768,14 @@ public:
             // basically, update on note change only
 
             if (continuous && last_sample_ != sample) {
-
               bool _re_quantize = false;
               int _aux_cv = 0;
-
               if (index != source) {
-
                   switch(_aux_cv_destination) {
-
                     case QQ_DEST_NONE:
                     break;
                     case QQ_DEST_TRANSPOSE:
-                      _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 63) >> 7;
+                      _aux_cv = ioframe->cv.Value<32>(index);
                       if (_aux_cv != prev_transpose_cv_) {
                           transpose = get_transpose() + _aux_cv;
                           CONSTRAIN(transpose, -12, 12);
@@ -800,7 +784,7 @@ public:
                       }
                     break;
                     case QQ_DEST_ROOT:
-                      _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 127) >> 8;
+                      _aux_cv = ioframe->cv.Value<16>(index);
                       if (_aux_cv != prev_root_cv_) {
                           root = get_root() + _aux_cv;
                           CONSTRAIN(root, 0, 11);
@@ -809,7 +793,7 @@ public:
                       }
                     break;
                     case QQ_DEST_OCTAVE:
-                      _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 255) >> 9;
+                      _aux_cv = ioframe->cv.Value<8>(index);
                       if (_aux_cv != prev_octave_cv_) {
                           octave = get_octave() + _aux_cv;
                           CONSTRAIN(octave, -4, 4);
@@ -818,7 +802,7 @@ public:
                       }
                     break;
                     case QQ_DEST_MASK:
-                      schedule_mask_rotate_ = (OC::ADC::value(static_cast<ADC_CHANNEL>(index)) + 127) >> 8;
+                      schedule_mask_rotate_ = ioframe->cv.Value<16>(index);
                       update_scale(force_update_, schedule_mask_rotate_);
                     break;
                     default:
