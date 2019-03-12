@@ -84,6 +84,8 @@ public:
   static void ReadDigitalInputs(IOFrame *);
   static void ReadADC(IOFrame *, const InputSettings &);
   static void WriteDAC(IOFrame *, const OutputSettings &);
+
+  static int32_t pitch_rel_to_abs(int32_t pitch);
 };
 
 // Processing for apps works on a per-sample basis. An IOFrame encapuslates the
@@ -121,6 +123,7 @@ struct IOFrame {
     // Works best of powers-of-two
     template <int32_t steps>
     constexpr int32_t Value(size_t channel) const {
+      // TODO[PLD] size_t vs. ADC_CHANNEL
       // TODO[PLD] Ensure positive range allows for all values?
       // TODO[PLD] Rounding
       return (values[channel] * steps + (4096 / steps / 2 - 1)) >> 12;

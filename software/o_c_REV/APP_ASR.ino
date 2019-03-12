@@ -675,7 +675,7 @@ public:
     return clock_display_.getState();
   }
 
-  const OC::vfx::ScrollingHistory<uint16_t, kHistoryDepth> &history(int i) const {
+  const OC::vfx::ScrollingHistory<int32_t, kHistoryDepth> &history(int i) const {
     return scrolling_history_[i];
   }
 
@@ -695,7 +695,7 @@ private:
   int8_t turing_display_length_;
   peaks::ByteBeat bytebeat_ ;
   util::IntegerSequence int_seq_ ;
-  OC::vfx::ScrollingHistory<uint16_t, kHistoryDepth> scrolling_history_[NUM_ASR_CHANNELS];
+  OC::vfx::ScrollingHistory<int32_t, kHistoryDepth> scrolling_history_[NUM_ASR_CHANNELS];
   int num_enabled_settings_;
   ASRSettings enabled_settings_[ASR_SETTING_LAST];
 };
@@ -1013,7 +1013,7 @@ void ASR_menu() {
     asr_state.scale_editor.Draw(); 
 }
 
-uint16_t channel_history[ASR::kHistoryDepth];
+int32_t channel_history[ASR::kHistoryDepth];
 
 void ASR_screensaver() {
 
@@ -1026,19 +1026,28 @@ void ASR_screensaver() {
 
   for (int i = 0; i < NUM_ASR_CHANNELS; ++i) {
     asr.history(i).Read(channel_history);
+
+    std::transform(
+        std::begin(channel_history), std::end(channel_history),
+        std::begin(channel_history),
+        [](int32_t pitch) { return OC::IO::pitch_rel_to_abs(pitch); } );
+
     uint32_t scroll_pos = asr.history(i).get_scroll_pos() >> 5;
-    
+
     int pos = 0;
     weegfx::coord_t x = i * 32, y;
 
-    y = 63 - ((channel_history[pos++] >> 10) & 0x3f);
+    // Was: 10oct => 65536 / 1024 = 64px
+    // Now: 10oct => 1536 x 10 / 256 = 60px
+
+    y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
     graphics.drawHLine(x, y, scroll_pos);
     x += scroll_pos;
     graphics.drawVLine(x, y, 3);
 
     weegfx::coord_t last_y = y;
     for (int c = 0; c < 3; ++c) {
-      y = 63 - ((channel_history[pos++] >> 10) & 0x3f);
+      y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
       graphics.drawHLine(x, y, 8);
       if (y == last_y)
         graphics.drawVLine(x, y, 2);
@@ -1051,7 +1060,7 @@ void ASR_screensaver() {
 //      graphics.drawVLine(x, y, 3);
     }
 
-    y = 63 - ((channel_history[pos++] >> 10) & 0x3f);
+    y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
 //    graphics.drawHLine(x, y, 8 - scroll_pos);
     graphics.drawRect(x, y, 8 - scroll_pos, 2);
     if (y == last_y)

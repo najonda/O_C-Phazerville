@@ -403,7 +403,7 @@ public:
     trigger_display_.Init();
     update_enabled_settings();
 
-    scrolling_history_.Init(OC::DAC::kOctaveZero * 12 << 7);
+    scrolling_history_.Init(0);
   }
 
   void force_update() {
@@ -460,7 +460,6 @@ public:
 
     int32_t sample = last_sample_;
     int32_t temp_sample = 0;
-    int32_t history_sample = 0;
 
     switch (source) {
       case CHANNEL_SOURCE_TURING: {
@@ -502,14 +501,12 @@ public:
               int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - scaled + get_transpose()) + (get_root() << 7);
               sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
-              history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
             } else {
               // Scale range by 128, so 12 steps = 1V
               // We dont' need a calibrated value here, really.
               uint32_t scaled = multiply_u32xu32_rshift(range << 7, shift_register, get_turing_length());
               scaled += get_transpose() << 7;
               sample = OC::PitchUtils::PitchAddOctaves(scaled, get_octave());
-              history_sample = scaled + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
              }
           }
         }
@@ -565,7 +562,6 @@ public:
                 int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - scaled + get_transpose()) + (get_root() << 7);
                 sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
-                history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
               } else {
                 // We dont' need a calibrated value here, really
                 int octave = get_octave();
@@ -574,7 +570,6 @@ public:
                 // range is actually 120 (10 oct) but 65535 / 128 is close enough
                 sample += multiply_u32xu32_rshift32((static_cast<uint32_t>(range) * 65535U) >> 7, bb << 16);
                 sample = USAT16(sample);
-                history_sample = sample;
               }
             }
           }
@@ -606,14 +601,12 @@ public:
               int32_t pitch =
                   quantizer_.Lookup(64 + range / 2 - logistic_scaled + get_transpose()) + (get_root() << 7);
               sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
-              history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
             } else {
               int octave = get_octave();
               CONSTRAIN(octave, 0, 6);
               sample = OC::DAC::get_octave_offset(dac_channel, octave) + (get_transpose() << 7);
               sample += multiply_u32xu32_rshift24((static_cast<uint32_t>(range) * 65535U) >> 7, logistic_map_x);
               sample = USAT16(sample);
-              history_sample = sample;
             }
           }
         }
@@ -706,7 +699,6 @@ public:
                 int32_t pitch =
                   quantizer_.Lookup(64 + range_ / 2 - scaled + get_transpose()) + (get_root() << 7);
                 sample = OC::PitchUtils::PitchAddOctaves(pitch, get_octave());
-                history_sample = pitch + ((OC::DAC::kOctaveZero + get_octave()) * 12 << 7);
               } else {
                 // We dont' need a calibrated value here, really
                 int octave = get_octave();
@@ -715,7 +707,6 @@ public:
                 // range is actually 120 (10 oct) but 65535 / 128 is close enough
                 sample += multiply_u32xu32_rshift32((static_cast<uint32_t>(range_) * 65535U) >> 7, is << 20);
                 sample = USAT16(sample);
-                history_sample = sample;
               }
             }
           }
@@ -828,8 +819,6 @@ public:
                 sample = OC::PitchUtils::PitchAddOctaves(quantized, octave + continuous_offset_);
             }
             // end special treatment
-
-            history_sample = quantized + ((OC::DAC::kOctaveZero + octave + continuous_offset_) * 12 << 7);
           }
         }
     } // end switch
@@ -844,7 +833,7 @@ public:
     ioframe->outputs.set_pitch_value(dac_channel, sample + get_fine());
 
     if (triggered || (continuous && changed)) {
-      scrolling_history_.Push(history_sample);
+      scrolling_history_.Push(last_sample_);
       trigger_display_.Update(1, true);
     } else {
       trigger_display_.Update(1, false);
@@ -1543,12 +1532,12 @@ void QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
     graphics.setPixel(x, y);
 
   x = start_x + 1;
-  render_pitch(history[0], x, scroll_pos); x += scroll_pos;
-  render_pitch(history[1], x, 6); x += 6;
-  render_pitch(history[2], x, 6); x += 6;
-  render_pitch(history[3], x, 6); x += 6;
+  render_pitch(OC::IO::pitch_rel_to_abs(history[0]), x, scroll_pos); x += scroll_pos;
+  render_pitch(OC::IO::pitch_rel_to_abs(history[1]), x, 6); x += 6;
+  render_pitch(OC::IO::pitch_rel_to_abs(history[2]), x, 6); x += 6;
+  render_pitch(OC::IO::pitch_rel_to_abs(history[3]), x, 6); x += 6;
 
-  int32_t octave = render_pitch(history[4], x, 6 - scroll_pos);
+  int32_t octave = render_pitch(OC::IO::pitch_rel_to_abs(history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 28, kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
 }
 

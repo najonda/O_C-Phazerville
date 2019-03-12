@@ -27,6 +27,7 @@
 #include "OC_strings.h"
 #include "OC_scales.h"
 #include "OC_cv_utils.h"
+#include "OC_pitch_utils.h"
 
 namespace OC {
 
@@ -92,6 +93,10 @@ static void IOFrameToChannel(const IOFrame *ioframe, const OutputSettings &outpu
   IOFrameToChannel<DAC_CHANNEL_B>(ioframe, output_settings);
   IOFrameToChannel<DAC_CHANNEL_C>(ioframe, output_settings);
   IOFrameToChannel<DAC_CHANNEL_D>(ioframe, output_settings);
+}
+
+/*static*/ int32_t IO::pitch_rel_to_abs(int32_t pitch) {
+  return pitch + PitchUtils::PitchFromOctave(DAC::kOctaveZero);
 }
 
 void IOFrame::Reset()

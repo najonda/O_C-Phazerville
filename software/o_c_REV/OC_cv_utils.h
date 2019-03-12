@@ -41,9 +41,13 @@ public:
   static const int32_t kMultMultipliers[];
 
   static inline int32_t Attenuate(int32_t cv, int factor) {
-    CONSTRAIN(factor, 0, kMultSteps - 1); 
-    int32_t scaled = signed_multiply_32x16b(kMultMultipliers[factor], cv);
-    return signed_saturate_rshift(scaled, 16, 0);
+    if (kMultOne != factor) {
+      CONSTRAIN(factor, 0, kMultSteps - 1); 
+      int32_t scaled = signed_multiply_32x16b(kMultMultipliers[factor], cv);
+      return signed_saturate_rshift(scaled, 16, 0);
+    } else {
+      return cv;
+    }
   }
 };
 
