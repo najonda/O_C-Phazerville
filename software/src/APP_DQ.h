@@ -427,7 +427,7 @@ public:
     turing_machine_.Init();
     turing_display_length_ = get_turing_length();
 
-    scrolling_history_.Init(OC::DAC::kOctaveZero * 12 << 7);
+    scrolling_history_.Init(0);
   }
 
   void force_update() {
@@ -495,7 +495,6 @@ public:
 
     int32_t sample = last_sample_;
     int32_t temp_sample = 0;
-    int32_t history_sample = 0;
     uint8_t aux_mode = get_aux_mode();
 
     if (update) {
@@ -711,7 +710,6 @@ public:
       // end special treatment
 
       display_root_ = root;
-      history_sample = quantized + ((OC::DAC::kOctaveZero + octave) * 12 << 7);
 
       // deal with aux output:
       switch (aux_mode) {
@@ -822,7 +820,7 @@ public:
     ioframe->outputs.set_pitch_value(dac_channel, sample);
 
     if (triggered || (continuous && changed)) {
-      scrolling_history_.Push(history_sample);
+      scrolling_history_.Push(sample);
       trigger_display_.Update(1, true);
     } else {
       trigger_display_.Update(1, false);
@@ -1535,12 +1533,12 @@ void DQ_QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
     graphics.setPixel(x, y);
 
   x = start_x + 1;
-  dq_render_pitch(dq_history[0], x, scroll_pos); x += scroll_pos;
-  dq_render_pitch(dq_history[1], x, 6); x += 6;
-  dq_render_pitch(dq_history[2], x, 6); x += 6;
-  dq_render_pitch(dq_history[3], x, 6); x += 6;
+  dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[0]), x, scroll_pos); x += scroll_pos;
+  dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[1]), x, 6); x += 6;
+  dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[2]), x, 6); x += 6;
+  dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[3]), x, 6); x += 6;
 
-  int32_t octave = dq_render_pitch(dq_history[4], x, 6 - scroll_pos);
+  int32_t octave = dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 58, dq_kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
 }
 
