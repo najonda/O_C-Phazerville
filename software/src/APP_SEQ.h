@@ -866,14 +866,14 @@ public:
 
   /* main channel update below: */
 
-  inline void Update(uint32_t triggers, DAC_CHANNEL dac_channel) {
-
+  inline void Update(const OC::IOFrame *ioframe)
+  {
      // increment channel ticks ..
      subticks_++;
 
      int8_t _clock_source, _reset_source = 0x0, _aux_mode, _playmode;
      int8_t _multiplier = 0x0;
-     bool _none, _triggered, _tock, _sync, _continuous;
+     bool _triggered, _tock, _sync, _continuous;
      uint32_t _subticks = 0x0, prev_channel_frequency_in_ticks_ = 0x0;
 
      // core channel parameters --
@@ -889,9 +889,14 @@ public:
      update_scale(force_scale_update_);
 
      // clocked ?
-     _none = SEQ_CHANNEL_TRIGGER_NONE == _clock_source;
      // TR1 or TR3?
-     _triggered = _clock_source ? (!_none && (triggers & (1 << OC::DIGITAL_INPUT_3))) : (!_none && (triggers & (1 << OC::DIGITAL_INPUT_1)));
+     if (SEQ_CHANNEL_TRIGGER_NONE != _clock_source) {
+      _triggered = _clock_source
+          ? ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_3>()
+          : ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_1>();
+     } else {
+      _triggered = false;
+     }
      _tock = false;
      _sync = false;
 
@@ -921,7 +926,7 @@ public:
          _multiplier = get_multiplier();
 
          if (get_mult_cv_source()) {
-            _multiplier += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_mult_cv_source() - 1)) + 127) >> 8;
+            _multiplier += ioframe->cv.Value<16>(get_mult_cv_source() - 1);
             CONSTRAIN(_multiplier, 0, MULT_MAX);
          }
 
@@ -955,8 +960,10 @@ public:
          _reset_source = get_reset_source();
 
          if (_reset_source < SEQ_CHANNEL_TRIGGER_NONE && !reset_pending_) {
-
-            uint8_t reset_state_ = !_reset_source ? digitalReadFast(TR2) : digitalReadFast(TR4); // TR1, TR3 are main clock sources
+            // TR1, TR3 are main clock sources
+            uint8_t reset_state_ = !_reset_source
+              ? ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_2>()
+              : ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_4>();
 
             // ?
             if (reset_state_ < prev_reset_state_) {
@@ -1057,29 +1064,29 @@ public:
 
          // mask CV ?
          if (get_scale_mask_cv_source()) {
-            int16_t _rotate = (OC::ADC::value(static_cast<ADC_CHANNEL>(get_scale_mask_cv_source() - 1)) + 127) >> 8;
+            int16_t _rotate = ioframe->cv.Value<16>(get_scale_mask_cv_source() - 1);
             rotate_scale(_rotate);
          }
 
          // finally, process trigger + output:
-         if (process_num_seq_channel(_playmode, reset_pending_)) {
+         if (process_num_seq_channel(ioframe, _playmode, reset_pending_)) {
 
             // turn on gate
             gate_state_ = ON;
 
             int8_t _octave = get_octave();
             if (get_octave_cv_source())
-              _octave += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_octave_cv_source() - 1)) + 255) >> 9;
+              _octave += ioframe->cv.Value<8>(get_octave_cv_source() - 1);
 
             int8_t _transpose = 0x0;
             if (get_transpose_cv_source()) {
-              _transpose += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_transpose_cv_source() - 1)) + 64) >> 7;
+              _transpose += ioframe->cv.Value<32>(get_transpose_cv_source() - 1);
               CONSTRAIN(_transpose, -12, 12);
             }
 
             int8_t _root = get_root(0x0);
             if (get_root_cv_source()) {
-              _root += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_root_cv_source() - 1)) + 127) >> 8;
+              _root += ioframe->cv.Value<16>(get_root_cv_source() - 1);
               CONSTRAIN(_root, 0, 11);
             }
 
@@ -1091,14 +1098,14 @@ public:
 
               int8_t arp_range = get_arp_range();
               if (get_arp_range_cv_source()) {
-                arp_range += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_arp_range_cv_source() - 1)) + 255) >> 9;
+                arp_range += ioframe->cv.Value<8>(get_arp_range_cv_source() - 1);
                 CONSTRAIN(arp_range, 0, 4);
               }
               arpeggiator_.set_range(arp_range);
 
               int8_t arp_direction = get_arp_direction();
               if (get_arp_direction_cv_source()) {
-                arp_direction += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_arp_direction_cv_source() - 1)) + 255) >> 9;
+                arp_direction += ioframe->cv.Value<8>(get_arp_direction_cv_source() - 1);
                 CONSTRAIN(arp_direction, 0, 4);
               }
               arpeggiator_.set_direction(arp_direction);
@@ -1122,23 +1129,23 @@ public:
                 case ENV_ADR:
                 case ENV_ADSR:
                   if (get_attack_duration_cv()) {
-                    _attack += OC::ADC::value(static_cast<ADC_CHANNEL>(get_attack_duration_cv() - 1)) << 3;
+                    _attack += ioframe->cv.Value<4096>(get_attack_duration_cv() - 1) << 3;
                     USAT16(_attack) ;
                   }
                   if (get_decay_duration_cv()) {
-                    _decay += OC::ADC::value(static_cast<ADC_CHANNEL>(get_decay_duration_cv() - 1)) << 3;
+                    _decay += ioframe->cv.Value<4096>(get_decay_duration_cv() - 1) << 3;
                     USAT16(_decay);
                   }
                   if (get_sustain_level_cv()) {
-                    _sustain += OC::ADC::value(static_cast<ADC_CHANNEL>(get_sustain_level_cv() - 1)) << 4;
+                    _sustain += ioframe->cv.Value<4096>(get_sustain_level_cv() - 1) << 3;
                     CONSTRAIN(_sustain, 0, 65534);
                   }
                   if (get_release_duration_cv()) {
-                    _release += OC::ADC::value(static_cast<ADC_CHANNEL>(get_release_duration_cv() - 1)) << 3;
+                    _release += ioframe->cv.Value<4096>(get_release_duration_cv() - 1) << 3;
                     USAT16(_release) ;
                   }
                   if (get_env_loops_cv_source()) {
-                    _loops += OC::ADC::value(static_cast<ADC_CHANNEL>(get_env_loops_cv_source() - 1)) ;
+                    _loops += ioframe->cv.Value<4096>(get_env_loops_cv_source() - 1);
                     CONSTRAIN(_loops,1<<8, 65534) ;
                   }
                   // set the specified reset behaviours
@@ -1158,7 +1165,7 @@ public:
                 {
                   int8_t _octave_aux = _octave + get_octave_aux();
                   if (get_octave_aux_cv_source())
-                    _octave_aux += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_octave_aux_cv_source() - 1)) + 255) >> 9;
+                    _octave_aux += ioframe->cv.Value<8>(get_octave_aux_cv_source() - 1);
 
                   if (_playmode != PM_ARP)
                     step_pitch_aux_ = get_pitch_at_step(display_num_sequence_, clk_cnt_) + (_octave_aux * 12 << 7);
@@ -1222,7 +1229,7 @@ public:
             // CV?
             if (get_pulsewidth_cv_source()) {
 
-              _pulsewidth += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_pulsewidth_cv_source() - 1)) + 4) >> 3;
+              _pulsewidth += ioframe->cv.Value<512>(get_pulsewidth_cv_source() - 1);
               if (!_gates)
                 CONSTRAIN(_pulsewidth, 1, PULSEW_MAX);
               else // CV for 50% duty cycle:
@@ -1269,7 +1276,7 @@ public:
   } // end update
 
   /* details re: sequence processing happens (mostly) here: */
-  inline bool process_num_seq_channel(uint8_t playmode, uint8_t reset) {
+  inline bool process_num_seq_channel(const OC::IOFrame *ioframe, uint8_t playmode, uint8_t reset) {
 
       bool _out = true;
       bool _change = true;
@@ -1306,12 +1313,12 @@ public:
       }
 
       if (get_sequence_cv_source()) {
-        num_sequence_cv = _num_seq += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_sequence_cv_source() - 1)) + 255) >> 9;
+        num_sequence_cv = _num_seq += ioframe->cv.Value<8>(get_sequence_cv_source() - 1);
         CONSTRAIN(_num_seq, 0, OC::Patterns::PATTERN_USER_LAST - 0x1);
       }
 
       if (get_sequence_length_cv_source())
-        sequence_length_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(get_sequence_length_cv_source() - 1)) + 64) >> 7;
+        sequence_length_cv = ioframe->cv.Value<32>(get_sequence_length_cv_source() - 1);
 
       switch (_playmode) {
 
@@ -1352,7 +1359,7 @@ public:
                 if (active_sequence_ >= OC::Patterns::PATTERN_USER_LAST)
                     active_sequence_ -= OC::Patterns::PATTERN_USER_LAST;
                 // reset
-                _clock(get_sequence_length(active_sequence_), 0x0, sequence_max, true);
+                _clock(ioframe, get_sequence_length(active_sequence_), 0x0, sequence_max, true);
                 _reset = true;
               }
               else if (num_sequence_cv)  {
@@ -1414,8 +1421,9 @@ public:
 
            // process input:
            if (!input_range)
-              clk_cnt_ = input_map_.Process(OC::ADC::value(static_cast<ADC_CHANNEL>(_playmode - PM_SH1)));
+              clk_cnt_ = input_map_.Process(ioframe->cv.values[_playmode - PM_SH1]);
            else
+              // TODO[PLD] ???
               clk_cnt_ = input_map_.Process(0xFFF - OC::ADC::smoothed_raw_value(static_cast<ADC_CHANNEL>(_playmode - PM_SH1)));
         }
         break;
@@ -1439,8 +1447,9 @@ public:
 
            // process input:
            if (!input_range)
-              clk_cnt_ = input_map_.Process(OC::ADC::value(static_cast<ADC_CHANNEL>(_playmode - PM_CV1))); // = 5V
+              clk_cnt_ = input_map_.Process(ioframe->cv.values[_playmode - PM_CV1]); // = 5V
            else
+              // TODO[PLD] ???
               clk_cnt_ = input_map_.Process(0xFFF - OC::ADC::smoothed_raw_value(static_cast<ADC_CHANNEL>(_playmode - PM_CV1))); // = 10V
 
            // update output, if slot # changed:
@@ -1466,7 +1475,7 @@ public:
             CONSTRAIN(sequence_length, OC::Patterns::kMin, OC::Patterns::kMax);
 
         CONSTRAIN(clk_cnt_, 0x0, sequence_length);
-        sequence_EoS_ = _clock(sequence_length - 0x1, sequence_cnt, sequence_max, _reset);
+        sequence_EoS_ = _clock(ioframe, sequence_length - 0x1, sequence_cnt, sequence_max, _reset);
       }
 
       // this is the current sequence # (USER1-USER4):
@@ -1492,7 +1501,7 @@ public:
 
   // update sequencer clock, return -1, 0, 1 when EoS is reached:
 
-  int8_t _clock(uint8_t sequence_length, uint8_t sequence_count, uint8_t sequence_max, bool _reset) {
+  int8_t _clock(const OC::IOFrame *ioframe, uint8_t sequence_length, uint8_t sequence_count, uint8_t sequence_max, bool _reset) {
 
     int8_t EoS = 0x0, _clk_cnt, _direction;
     bool reset = _reset;
@@ -1501,7 +1510,7 @@ public:
     _direction = get_direction();
 
     if (get_direction_cv()) {
-       _direction += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_direction_cv() - 1)) + 255) >> 9;
+       _direction += ioframe->cv.Value<8>(get_direction_cv() - 1);
        CONSTRAIN(_direction, 0, SEQ_DIRECTIONS_LAST - 0x1);
     }
 
@@ -1539,7 +1548,7 @@ public:
         int16_t brown_prb = get_brownian_probability();
 
         if (get_brownian_probability_cv()) {
-          brown_prb += (OC::ADC::value(static_cast<ADC_CHANNEL>(get_brownian_probability_cv() - 1)) + 8) >> 3;
+          brown_prb += ioframe->cv.Value<256>(get_brownian_probability_cv() - 1);
           CONSTRAIN(brown_prb, 0, 256);
         }
         if (random(0,256) < brown_prb)
@@ -2132,8 +2141,8 @@ void SEQ_process(OC::IOFrame *ioframe) {
   }
 
   // update sequencer channels 1, 2:
-  seq_channel[0].Update(triggers, DAC_CHANNEL_A);
-  seq_channel[1].Update(triggers, DAC_CHANNEL_B);
+  seq_channel[0].Update(ioframe);
+  seq_channel[1].Update(ioframe);
   // update DAC channels A, B:
   seq_channel[0].update_main_channel<DAC_CHANNEL_A>(ioframe);
   seq_channel[1].update_main_channel<DAC_CHANNEL_B>(ioframe);
