@@ -527,22 +527,22 @@ public:
           case DQ_DEST_NONE:
           break;
           case DQ_DEST_SCALE_SLOT:
-            display_scale_slot_ += (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 255) >> 9;
+            display_scale_slot_ += ioframe->cv.Value<8>(channel_id);
             // if scale changes, we have to update the root and transpose values, too; mask gets updated in update_scale
             root = get_root(display_scale_slot_);
             transpose = get_transpose(display_scale_slot_);
           break;
           case DQ_DEST_ROOT:
-              root += (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 127) >> 8;
+              root += ioframe->cv.Value<16>(channel_id);
           break;
           case DQ_DEST_MASK:
-              schedule_mask_rotate_ = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 127) >> 8;
+              schedule_mask_rotate_ = ioframe->cv.Value<16>(channel_id);
           break;
           case DQ_DEST_OCTAVE:
-            octave += (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 255) >> 9;
+            octave += ioframe->cv.Value<8>(channel_id);
           break;
           case DQ_DEST_TRANSPOSE:
-            transpose += (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 64) >> 7;
+            transpose += ioframe->cv.Value<16>(channel_id);
           break;
           default:
           break;
@@ -568,12 +568,8 @@ public:
         cv_source = channel_id - 1;
 
       // now, acquire + process sample:
-      pitch = quantizer_.enabled()
-                ? OC::ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(cv_source))
-                : OC::ADC::pitch_value(static_cast<ADC_CHANNEL>(cv_source));
-
+      pitch = ioframe->cv.pitch_values[cv_source];
       switch (source) {
-
         case DQ_CHANNEL_SOURCE_CV1:
         case DQ_CHANNEL_SOURCE_CV2:
         case DQ_CHANNEL_SOURCE_CV3:
@@ -639,7 +635,7 @@ public:
             case DQ_DEST_NONE:
             break;
             case DQ_DEST_SCALE_SLOT:
-            _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 255) >> 9;
+            _aux_cv = ioframe->cv.Value<8>(channel_id);
             if (_aux_cv !=  prev_scale_cv_) {
                 display_scale_slot_ += _aux_cv;
                 CONSTRAIN(display_scale_slot_, 0, NUM_SCALE_SLOTS - 0x1);
@@ -653,7 +649,7 @@ public:
             }
             break;
             case DQ_DEST_TRANSPOSE:
-              _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 63) >> 7;
+              _aux_cv = ioframe->cv.Value<32>(channel_id);
               if (_aux_cv != prev_transpose_cv_) {
                   transpose = get_transpose(display_scale_slot_) + _aux_cv;
                   CONSTRAIN(transpose, -12, 12);
@@ -662,7 +658,7 @@ public:
               }
             break;
             case DQ_DEST_ROOT:
-              _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 127) >> 8;
+              _aux_cv = ioframe->cv.Value<16>(channel_id);
               if (_aux_cv != prev_root_cv_) {
                   display_root_ = root = get_root(display_scale_slot_) + _aux_cv;
                   CONSTRAIN(root, 0, 11);
@@ -671,7 +667,7 @@ public:
               }
             break;
             case DQ_DEST_OCTAVE:
-              _aux_cv = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 255) >> 9;
+              _aux_cv = ioframe->cv.Value<8>(channel_id);
               if (_aux_cv != prev_octave_cv_) {
                   octave = get_octave() + _aux_cv;
                   CONSTRAIN(octave, -4, 4);
@@ -680,7 +676,7 @@ public:
               }
             break;
             case DQ_DEST_MASK:
-              schedule_mask_rotate_ = (OC::ADC::value(static_cast<ADC_CHANNEL>(channel_id)) + 127) >> 8;
+              schedule_mask_rotate_ = ioframe->cv.Value<16>(channel_id);
               schedule_scale_update_ = true;
             break;
             default:
@@ -697,9 +693,8 @@ public:
           // offset when TR source = continuous ?
           int8_t _trigger_offset = 0;
           bool _trigger_update = false;
-          if (OC::DigitalInputs::read_immediate(static_cast<OC::DigitalInput>(channel_id - 1))) {
+          if (ioframe->digital_inputs.raised(static_cast<OC::DigitalInput>(channel_id - 1)))
              _trigger_offset = (trigger_source == DQ_CHANNEL_TRIGGER_CONTINUOUS_UP) ? 1 : -1;
-          }
           if (_trigger_offset != continuous_offset_)
             _trigger_update = true;
           continuous_offset_ = _trigger_offset;
