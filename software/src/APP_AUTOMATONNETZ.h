@@ -461,9 +461,9 @@ void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
     ioframe->outputs.set_gate_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
   else
     ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
-  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
-  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
-  ioframe->outputs.set_pitch_value(DAC_CHANNEL_A, output_values_[DAC_CHANNEL_A]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_B, output_values_[DAC_CHANNEL_B]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_C, output_values_[DAC_CHANNEL_C]);
+  ioframe->outputs.set_pitch_value(DAC_CHANNEL_D, output_values_[DAC_CHANNEL_D]);
 }
 
 void AutomatonnetzState::Reset() {

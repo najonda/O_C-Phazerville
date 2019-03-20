@@ -86,6 +86,10 @@ public:
     return calibration_data_->offset[channel] - (smoothed_[channel] >> kAdcValueShift);
   }
 
+  static int32_t unsmoothed_value(ADC_CHANNEL channel) {
+    return calibration_data_->offset[channel] - (raw_[channel] >> kAdcValueShift);
+  }
+
   static uint32_t raw_value(ADC_CHANNEL channel) {
     return raw_[channel] >> kAdcValueShift;
   }
@@ -98,7 +102,7 @@ public:
     return (value(channel) * calibration_data_->pitch_cv_scale) >> 12;
   }
 
-  static int32_t raw_pitch_value(ADC_CHANNEL channel) {
+  static int32_t unsmoothed_pitch_value(ADC_CHANNEL channel) {
     int32_t value = calibration_data_->offset[channel] - raw_value(channel);
     return (value * calibration_data_->pitch_cv_scale) >> 12;
   }
