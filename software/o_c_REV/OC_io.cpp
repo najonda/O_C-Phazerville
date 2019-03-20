@@ -63,8 +63,8 @@ SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
       val = ADC::value(static_cast<ADC_CHANNEL>(channel));
       pitch = ADC::pitch_value(static_cast<ADC_CHANNEL>(channel));
     } else {
-      val = ADC::raw_value(static_cast<ADC_CHANNEL>(channel));
-      pitch = ADC::raw_pitch_value(static_cast<ADC_CHANNEL>(channel));
+      val = ADC::unsmoothed_value(static_cast<ADC_CHANNEL>(channel));
+      pitch = ADC::unsmoothed_pitch_value(static_cast<ADC_CHANNEL>(channel));
     }
 
     auto mult_factor = input_settings.get_value(INPUT_SETTING_CV1_GAIN + channel);

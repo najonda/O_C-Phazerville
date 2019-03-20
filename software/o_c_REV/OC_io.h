@@ -126,7 +126,8 @@ struct IOFrame {
       // TODO[PLD] size_t vs. ADC_CHANNEL
       // TODO[PLD] Ensure positive range allows for all values?
       // TODO[PLD] Rounding
-      return (values[channel] * steps + (4096 / steps / 2 - 1)) >> 12;
+      return (values[channel] * steps + (1 << 11) - 1) >> 12;
+      //return (values[channel] * steps + (4096 / steps / 2 - 1)) >> 12;
     }
 
   } cv;

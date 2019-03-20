@@ -266,16 +266,16 @@ public:
     return delay_type_;
   }
   
-  void manual_freeze() {
-    freeze_switch_ = (~freeze_switch_) & 1u;
+  void toggle_manual_freeze() {
+    manual_freeze_ = !manual_freeze_;
   }
 
   void clear_freeze() {
-    freeze_switch_ = false;
+    manual_freeze_ = false;
   }
 
-  bool freeze_state() {
-    return freeze_switch_;
+  bool freeze_state() const {
+    return manual_freeze_ || freeze_;
   }
 
   ASRSettings enabled_setting_at(int index) const {
@@ -292,8 +292,8 @@ public:
     last_scale_ = -0x1;
     delay_type_ = false;
     octave_toggle_ = false;
-    freeze_switch_ = false;
-    TR2_state_ = 0x1;
+    manual_freeze_ = false;
+    freeze_ = false;
     set_scale(OC::Scales::SCALE_SEMI);
     last_mask_ = 0x0;
     quantizer_.Init();
@@ -401,12 +401,10 @@ public:
   }
 
   void updateASR_indexed(int32_t *_asr_buf, int32_t _sample, int16_t _index, bool _freeze, OC::IOFrame *ioframe) {
-    
       int16_t _delay = _index, _offset;
 
       if (_freeze) {
-
-        int8_t _buflen = get_buffer_length();
+        int32_t _buflen = get_buffer_length();
         if (get_cv4_destination() == ASR_DEST_BUFLEN) {
           _buflen += ioframe->cv.Value<64>(ADC_CHANNEL_4);
           CONSTRAIN(_buflen, NUM_ASR_CHANNELS, ASR_HOLD_BUF_SIZE - 0x1);
@@ -441,9 +439,9 @@ public:
      update = trigger_delay_.triggered();
 
      if (update) {
-         bool _freeze_switch, _freeze = ioframe->digital_inputs.raised(OC::DIGITAL_INPUT_2);
+         bool freeze = ioframe->digital_inputs.raised(OC::DIGITAL_INPUT_2);
          int8_t _root  = get_root();
-         int8_t _index = get_index() + ioframe->cv.Value<64>(ADC_CHANNEL_2);
+         int32_t _index = get_index() + ioframe->cv.Value<64>(ADC_CHANNEL_2);
          int8_t _octave = get_octave();
          int8_t _transpose = 0;
          int8_t _mult = get_mult();
@@ -476,19 +474,12 @@ public:
             break;
          }
          
-         // freeze ? 
-         if (_freeze < TR2_state_)
-            freeze_switch_ = true;
-         else if (_freeze > TR2_state_) {
-            freeze_switch_ = false;
-         }
-         TR2_state_ = _freeze;
-         // 
-         _freeze_switch = freeze_switch_;
+         // freeze?
+         freeze |= manual_freeze_;
+         freeze_ = freeze;
 
          // use built in CV sources? 
-         if (!_freeze_switch) {
-          
+         if (!freeze) {
            switch (get_cv_source()) {
   
             case ASR_CHANNEL_SOURCE_TURING:
@@ -645,7 +636,7 @@ public:
          // .. and index
          CONSTRAIN(_index, 0, ASR_HOLD_BUF_SIZE - 0x1);
          // push sample into ring-buffer and/or freeze buffer: 
-         updateASR_indexed(_asr_buffer, _pitch, _index, _freeze_switch, ioframe);
+         updateASR_indexed(_asr_buffer, _pitch, _index, freeze, ioframe);
 
          // get octave offset :
          if (ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_3>())
@@ -683,8 +674,8 @@ private:
   bool force_update_;
   bool delay_type_;
   bool octave_toggle_;
-  bool freeze_switch_;
-  int8_t TR2_state_;
+  bool manual_freeze_;
+  bool freeze_;
   int last_scale_;
   uint16_t last_mask_;
   braids::Quantizer quantizer_;
@@ -909,7 +900,7 @@ void ASR_topButton() {
 }
 
 void ASR_lowerButton() {
-   asr.manual_freeze();
+   asr.toggle_manual_freeze();
 }
 
 void ASR_rightButton() {
@@ -958,11 +949,12 @@ void ASR_menu() {
   graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);
   graphics.print(OC::scale_names[scale]);
 
-  if (asr.freeze_state())
-    graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, OC::bitmap_hold_indicator_4x8); 
-  else if (asr.get_scale(DUMMY) == scale)
+  if (asr.get_scale(DUMMY) == scale)
     graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, OC::bitmap_indicator_4x8);
-    
+
+  if (asr.freeze_state())
+    graphics.drawBitmap8(102, menu::QuadTitleBar::kTextY, 4, OC::bitmap_hold_indicator_4x8);  
+
   if (asr.poke_octave_toggle()) {
     graphics.setPrintPos(110, 2);
     graphics.print("+");
@@ -1013,8 +1005,6 @@ void ASR_menu() {
     asr_state.scale_editor.Draw(); 
 }
 
-int32_t channel_history[ASR::kHistoryDepth];
-
 void ASR_screensaver() {
 
 // Possible variants (w x h)
@@ -1024,6 +1014,7 @@ void ASR_screensaver() {
 // Normalize history to within one octave? That would make steps more visisble for small ranges
 // "Zoomed view" to fit range of history...
 
+  int32_t channel_history[ASR::kHistoryDepth];
   for (int i = 0; i < NUM_ASR_CHANNELS; ++i) {
     asr.history(i).Read(channel_history);
 
@@ -1040,14 +1031,14 @@ void ASR_screensaver() {
     // Was: 10oct => 65536 / 1024 = 64px
     // Now: 10oct => 1536 x 10 / 256 = 60px
 
-    y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
+    y = 64 - ((channel_history[pos++] >> 8) & 0x3f);
     graphics.drawHLine(x, y, scroll_pos);
     x += scroll_pos;
     graphics.drawVLine(x, y, 3);
 
     weegfx::coord_t last_y = y;
     for (int c = 0; c < 3; ++c) {
-      y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
+      y = 64 - ((channel_history[pos++] >> 8) & 0x3f);
       graphics.drawHLine(x, y, 8);
       if (y == last_y)
         graphics.drawVLine(x, y, 2);
@@ -1058,9 +1049,10 @@ void ASR_screensaver() {
       x += 8;
       last_y = y;
 //      graphics.drawVLine(x, y, 3);
+
     }
 
-    y = 2 + ((channel_history[pos++] >> 8) & 0x3f);
+    y = 64 - ((channel_history[pos++] >> 8) & 0x3f);
 //    graphics.drawHLine(x, y, 8 - scroll_pos);
     graphics.drawRect(x, y, 8 - scroll_pos, 2);
     if (y == last_y)
