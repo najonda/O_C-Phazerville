@@ -526,22 +526,22 @@ public:
           case DQ_DEST_NONE:
           break;
           case DQ_DEST_SCALE_SLOT:
-            display_scale_slot_ += ioframe->cv.Value<8>(channel_id);
+            display_scale_slot_ += ioframe->cv.ScaledValue<8>(channel_id);
             // if scale changes, we have to update the root and transpose values, too; mask gets updated in update_scale
             root = get_root(display_scale_slot_);
             transpose = get_transpose(display_scale_slot_);
           break;
           case DQ_DEST_ROOT:
-              root += ioframe->cv.Value<16>(channel_id);
+              root += ioframe->cv.ScaledValue<16>(channel_id);
           break;
           case DQ_DEST_MASK:
-              schedule_mask_rotate_ = ioframe->cv.Value<16>(channel_id);
+              schedule_mask_rotate_ = ioframe->cv.ScaledValue<16>(channel_id);
           break;
           case DQ_DEST_OCTAVE:
-            octave += ioframe->cv.Value<8>(channel_id);
+            octave += ioframe->cv.ScaledValue<8>(channel_id);
           break;
           case DQ_DEST_TRANSPOSE:
-            transpose += ioframe->cv.Value<16>(channel_id);
+            transpose += ioframe->cv.ScaledValue<16>(channel_id);
           break;
           default:
           break;
@@ -634,7 +634,7 @@ public:
             case DQ_DEST_NONE:
             break;
             case DQ_DEST_SCALE_SLOT:
-            _aux_cv = ioframe->cv.Value<8>(channel_id);
+            _aux_cv = ioframe->cv.ScaledValue<8>(channel_id);
             if (_aux_cv !=  prev_scale_cv_) {
                 display_scale_slot_ += _aux_cv;
                 CONSTRAIN(display_scale_slot_, 0, NUM_SCALE_SLOTS - 0x1);
@@ -648,7 +648,7 @@ public:
             }
             break;
             case DQ_DEST_TRANSPOSE:
-              _aux_cv = ioframe->cv.Value<32>(channel_id);
+              _aux_cv = ioframe->cv.ScaledValue<32>(channel_id);
               if (_aux_cv != prev_transpose_cv_) {
                   transpose = get_transpose(display_scale_slot_) + _aux_cv;
                   CONSTRAIN(transpose, -12, 12);
@@ -657,7 +657,7 @@ public:
               }
             break;
             case DQ_DEST_ROOT:
-              _aux_cv = ioframe->cv.Value<16>(channel_id);
+              _aux_cv = ioframe->cv.ScaledValue<16>(channel_id);
               if (_aux_cv != prev_root_cv_) {
                   display_root_ = root = get_root(display_scale_slot_) + _aux_cv;
                   CONSTRAIN(root, 0, 11);
@@ -666,7 +666,7 @@ public:
               }
             break;
             case DQ_DEST_OCTAVE:
-              _aux_cv = ioframe->cv.Value<8>(channel_id);
+              _aux_cv = ioframe->cv.ScaledValue<8>(channel_id);
               if (_aux_cv != prev_octave_cv_) {
                   octave = get_octave() + _aux_cv;
                   CONSTRAIN(octave, -4, 4);
@@ -675,7 +675,7 @@ public:
               }
             break;
             case DQ_DEST_MASK:
-              schedule_mask_rotate_ = ioframe->cv.Value<16>(channel_id);
+              schedule_mask_rotate_ = ioframe->cv.ScaledValue<16>(channel_id);
               schedule_scale_update_ = true;
             break;
             default:

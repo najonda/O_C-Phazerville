@@ -122,7 +122,7 @@ struct IOFrame {
     // Round up/offset to move window and avoid "busy" toggling around 0
     // Works best of powers-of-two
     template <int32_t steps>
-    constexpr int32_t Value(size_t channel) const {
+    constexpr int32_t ScaledValue(size_t channel) const {
       // TODO[PLD] size_t vs. ADC_CHANNEL
       // TODO[PLD] Ensure positive range allows for all values?
       // TODO[PLD] Rounding

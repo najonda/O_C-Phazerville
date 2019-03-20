@@ -424,7 +424,7 @@ public:
         _direction = get_direction();
 
         if (get_direction_cv()) {
-           _direction += ioframe->cv.Value<8>(static_cast<ADC_CHANNEL>(get_direction_cv() - 1));
+           _direction += ioframe->cv.ScaledValue<8>(static_cast<ADC_CHANNEL>(get_direction_cv() - 1));
            CONSTRAIN(_direction, 0, CHORDS_DIRECTIONS_LAST - 0x1);
         }
 
@@ -461,7 +461,7 @@ public:
             int16_t brown_prb = get_brownian_probability();
 
             if (get_brownian_probability_cv()) {
-              brown_prb += ioframe->cv.Value<512>(get_brownian_probability_cv() - 1);
+              brown_prb += ioframe->cv.ScaledValue<512>(get_brownian_probability_cv() - 1);
               CONSTRAIN(brown_prb, 0, 256);
             }
             if (random(0,256) < brown_prb)
@@ -587,7 +587,7 @@ public:
 
       // update mask?
       if (get_mask_cv()) {
-        mask_rotate = ioframe->cv.Value<16>(get_mask_cv() - 1);
+        mask_rotate = ioframe->cv.ScaledValue<16>(get_mask_cv() - 1);
       }
 
       update_scale(force_update_, mask_rotate);
@@ -601,12 +601,12 @@ public:
       progression_last_ = num_progression;
 
       if (get_progression_cv()) {
-        num_progression_cv = num_progression += ioframe->cv.Value<8>(get_progression_cv() - 1);
+        num_progression_cv = num_progression += ioframe->cv.ScaledValue<8>(get_progression_cv() - 1);
         CONSTRAIN(num_progression, 0, OC::Chords::NUM_CHORD_PROGRESSIONS - 0x1);
       }
 
       if (get_num_chords_cv())
-        num_chords_cv = ioframe->cv.Value<8>(get_num_chords_cv() - 1);
+        num_chords_cv = ioframe->cv.ScaledValue<8>(get_num_chords_cv() - 1);
 
       switch (playmode) {
 
@@ -777,32 +777,32 @@ public:
 
     // S/H mode
       if (get_root_cv()) {
-          root += ioframe->cv.Value<16>(get_root_cv() - 1);
+          root += ioframe->cv.ScaledValue<16>(get_root_cv() - 1);
           CONSTRAIN(root, 0, 15);
       }
 
       if (get_octave_cv()) {
-        octave += ioframe->cv.Value<8>(get_octave_cv() - 1);
+        octave += ioframe->cv.ScaledValue<8>(get_octave_cv() - 1);
         CONSTRAIN(octave, -4, 4);
       }
 
       if (get_transpose_cv()) {
-        transpose += ioframe->cv.Value<16>(get_transpose_cv() - 1);
+        transpose += ioframe->cv.ScaledValue<16>(get_transpose_cv() - 1);
         CONSTRAIN(transpose, -15, 15);
       }
 
       if (get_quality_cv()) {
-        _quality += ioframe->cv.Value<8>(get_quality_cv() - 1);
+        _quality += ioframe->cv.ScaledValue<8>(get_quality_cv() - 1);
         CONSTRAIN(_quality, 0,  OC::Chords::CHORDS_QUALITY_LAST - 1);
       }
 
       if (get_inversion_cv()) {
-        _inversion += ioframe->cv.Value<4>(get_inversion_cv() - 1);
+        _inversion += ioframe->cv.ScaledValue<4>(get_inversion_cv() - 1);
         CONSTRAIN(_inversion, 0,  OC::Chords::CHORDS_INVERSION_LAST - 1);
       }
 
       if (get_voicing_cv()) {
-        _voicing += ioframe->cv.Value<8>(get_voicing_cv() - 1);
+        _voicing += ioframe->cv.ScaledValue<8>(get_voicing_cv() - 1);
         CONSTRAIN(_voicing, 0,  OC::Chords::CHORDS_VOICING_LAST - 1);
       }
 

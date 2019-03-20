@@ -409,7 +409,7 @@ public:
       if (_freeze) {
         int32_t _buflen = get_buffer_length();
         if (get_cv4_destination() == ASR_DEST_BUFLEN) {
-          _buflen += ioframe->cv.Value<64>(ADC_CHANNEL_4);
+          _buflen += ioframe->cv.ScaledValue<64>(ADC_CHANNEL_4);
           CONSTRAIN(_buflen, NUM_ASR_CHANNELS, ASR_HOLD_BUF_SIZE - 0x1);
         }
         _ASR.Freeze(_buflen);
@@ -444,7 +444,7 @@ public:
      if (update) {
          bool freeze = ioframe->digital_inputs.raised(OC::DIGITAL_INPUT_2);
          int8_t _root  = get_root();
-         int32_t _index = get_index() + ioframe->cv.Value<64>(ADC_CHANNEL_2);
+         int32_t _index = get_index() + ioframe->cv.ScaledValue<64>(ADC_CHANNEL_2);
          int8_t _octave = get_octave();
          int8_t _transpose = 0;
          int8_t _mult = get_mult();
@@ -453,23 +453,23 @@ public:
 
          bool forced_update = force_update_;
          force_update_ = false;
-         update_scale(forced_update, ioframe->cv.Value<16>(ADC_CHANNEL_3));
+         update_scale(forced_update, ioframe->cv.ScaledValue<16>(ADC_CHANNEL_3));
          
          // cv4 destination, defaults to octave:
          switch(get_cv4_destination()) {
             case ASR_DEST_OCTAVE:
-              _octave += ioframe->cv.Value<8>(ADC_CHANNEL_4);
+              _octave += ioframe->cv.ScaledValue<8>(ADC_CHANNEL_4);
             break;
             case ASR_DEST_ROOT:
-              _root += ioframe->cv.Value<16>(ADC_CHANNEL_4);
+              _root += ioframe->cv.ScaledValue<16>(ADC_CHANNEL_4);
               CONSTRAIN(_root, 0, 11);
             break;
             case ASR_DEST_TRANSPOSE:
-              _transpose += ioframe->cv.Value<32>(ADC_CHANNEL_4);
+              _transpose += ioframe->cv.ScaledValue<32>(ADC_CHANNEL_4);
               CONSTRAIN(_transpose, -12, 12); 
             break;
             case ASR_DEST_INPUT_SCALING:
-              _mult += ioframe->cv.Value<64>(ADC_CHANNEL_4);
+              _mult += ioframe->cv.ScaledValue<64>(ADC_CHANNEL_4);
               CONSTRAIN(_mult, 0, OC::CVUtils::kMultSteps - 1);
             break;
             // CV for buffer length happens in updateASR_indexed
