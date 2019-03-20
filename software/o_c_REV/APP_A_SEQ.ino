@@ -916,7 +916,7 @@ public:
          _multiplier = get_multiplier();
 
          if (get_mult_cv_source()) {
-            _multiplier += ioframe->cv.Value<16>(get_mult_cv_source() - 1);
+            _multiplier += ioframe->cv.ScaledValue<16>(get_mult_cv_source() - 1);
             CONSTRAIN(_multiplier, 0, MULT_MAX);
          }
 
@@ -1054,7 +1054,7 @@ public:
 
          // mask CV ?
          if (get_scale_mask_cv_source()) {
-            int16_t _rotate = ioframe->cv.Value<16>(get_scale_mask_cv_source() - 1);
+            int16_t _rotate = ioframe->cv.ScaledValue<16>(get_scale_mask_cv_source() - 1);
             rotate_scale(_rotate);
          }
 
@@ -1066,17 +1066,17 @@ public:
 
             int8_t _octave = get_octave();
             if (get_octave_cv_source())
-              _octave += ioframe->cv.Value<8>(get_octave_cv_source() - 1);
+              _octave += ioframe->cv.ScaledValue<8>(get_octave_cv_source() - 1);
 
             int8_t _transpose = 0x0;
             if (get_transpose_cv_source()) {
-              _transpose += ioframe->cv.Value<32>(get_transpose_cv_source() - 1);
+              _transpose += ioframe->cv.ScaledValue<32>(get_transpose_cv_source() - 1);
               CONSTRAIN(_transpose, -12, 12);
             }
 
             int8_t _root = get_root(0x0);
             if (get_root_cv_source()) {
-              _root += ioframe->cv.Value<16>(get_root_cv_source() - 1);
+              _root += ioframe->cv.ScaledValue<16>(get_root_cv_source() - 1);
               CONSTRAIN(_root, 0, 11);
             }
 
@@ -1088,14 +1088,14 @@ public:
 
               int8_t arp_range = get_arp_range();
               if (get_arp_range_cv_source()) {
-                arp_range += ioframe->cv.Value<8>(get_arp_range_cv_source() - 1);
+                arp_range += ioframe->cv.ScaledValue<8>(get_arp_range_cv_source() - 1);
                 CONSTRAIN(arp_range, 0, 4);
               }
               arpeggiator_.set_range(arp_range);
 
               int8_t arp_direction = get_arp_direction();
               if (get_arp_direction_cv_source()) {
-                arp_direction += ioframe->cv.Value<8>(get_arp_direction_cv_source() - 1);
+                arp_direction += ioframe->cv.ScaledValue<8>(get_arp_direction_cv_source() - 1);
                 CONSTRAIN(arp_direction, 0, 4);
               }
               arpeggiator_.set_direction(arp_direction);
@@ -1119,23 +1119,23 @@ public:
                 case ENV_ADR:
                 case ENV_ADSR:
                   if (get_attack_duration_cv()) {
-                    _attack += ioframe->cv.Value<4096>(get_attack_duration_cv() - 1) << 3;
+                    _attack += ioframe->cv.ScaledValue<4096>(get_attack_duration_cv() - 1) << 3;
                     USAT16(_attack) ;
                   }
                   if (get_decay_duration_cv()) {
-                    _decay += ioframe->cv.Value<4096>(get_decay_duration_cv() - 1) << 3;
+                    _decay += ioframe->cv.ScaledValue<4096>(get_decay_duration_cv() - 1) << 3;
                     USAT16(_decay);
                   }
                   if (get_sustain_level_cv()) {
-                    _sustain += ioframe->cv.Value<4096>(get_sustain_level_cv() - 1) << 3;
+                    _sustain += ioframe->cv.ScaledValue<4096>(get_sustain_level_cv() - 1) << 3;
                     CONSTRAIN(_sustain, 0, 65534);
                   }
                   if (get_release_duration_cv()) {
-                    _release += ioframe->cv.Value<4096>(get_release_duration_cv() - 1) << 3;
+                    _release += ioframe->cv.ScaledValue<4096>(get_release_duration_cv() - 1) << 3;
                     USAT16(_release) ;
                   }
                   if (get_env_loops_cv_source()) {
-                    _loops += ioframe->cv.Value<4096>(get_env_loops_cv_source() - 1);
+                    _loops += ioframe->cv.ScaledValue<4096>(get_env_loops_cv_source() - 1);
                     CONSTRAIN(_loops,1<<8, 65534) ;
                   }
                   // set the specified reset behaviours
@@ -1155,7 +1155,7 @@ public:
                 {
                   int8_t _octave_aux = _octave + get_octave_aux();
                   if (get_octave_aux_cv_source())
-                    _octave_aux += ioframe->cv.Value<8>(get_octave_aux_cv_source() - 1);
+                    _octave_aux += ioframe->cv.ScaledValue<8>(get_octave_aux_cv_source() - 1);
 
                   if (_playmode != PM_ARP)
                     step_pitch_aux_ = get_pitch_at_step(display_num_sequence_, clk_cnt_) + (_octave_aux * 12 << 7);
@@ -1219,7 +1219,7 @@ public:
             // CV?
             if (get_pulsewidth_cv_source()) {
 
-              _pulsewidth += ioframe->cv.Value<512>(get_pulsewidth_cv_source() - 1);
+              _pulsewidth += ioframe->cv.ScaledValue<512>(get_pulsewidth_cv_source() - 1);
               if (!_gates)
                 CONSTRAIN(_pulsewidth, 1, PULSEW_MAX);
               else // CV for 50% duty cycle:
@@ -1303,12 +1303,12 @@ public:
       }
 
       if (get_sequence_cv_source()) {
-        num_sequence_cv = _num_seq += ioframe->cv.Value<8>(get_sequence_cv_source() - 1);
+        num_sequence_cv = _num_seq += ioframe->cv.ScaledValue<8>(get_sequence_cv_source() - 1);
         CONSTRAIN(_num_seq, 0, OC::Patterns::PATTERN_USER_LAST - 0x1);
       }
 
       if (get_sequence_length_cv_source())
-        sequence_length_cv = ioframe->cv.Value<32>(get_sequence_length_cv_source() - 1);
+        sequence_length_cv = ioframe->cv.ScaledValue<32>(get_sequence_length_cv_source() - 1);
 
       switch (_playmode) {
 
@@ -1500,7 +1500,7 @@ public:
     _direction = get_direction();
 
     if (get_direction_cv()) {
-       _direction += ioframe->cv.Value<8>(get_direction_cv() - 1);
+       _direction += ioframe->cv.ScaledValue<8>(get_direction_cv() - 1);
        CONSTRAIN(_direction, 0, SEQ_DIRECTIONS_LAST - 0x1);
     }
 
@@ -1538,7 +1538,7 @@ public:
         int16_t brown_prb = get_brownian_probability();
 
         if (get_brownian_probability_cv()) {
-          brown_prb += ioframe->cv.Value<256>(get_brownian_probability_cv() - 1);
+          brown_prb += ioframe->cv.ScaledValue<256>(get_brownian_probability_cv() - 1);
           CONSTRAIN(brown_prb, 0, 256);
         }
         if (random(0,256) < brown_prb)

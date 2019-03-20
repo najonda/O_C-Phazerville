@@ -726,7 +726,7 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
 
     cv_src = h1200_settings.get_octave_cv_src();
     if (cv_src)
-      octave_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+      octave_ += ioframe->cv.ScaledValue<8>(cv_src - H1200_CV_SOURCE_CV1);
 #ifdef BUCHLA_4U
       CONSTRAIN(octave_, 0, 7);
 #else
@@ -735,17 +735,17 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
 
     cv_src = h1200_settings.get_inversion_cv_src();
     if (cv_src)
-      inversion_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+      inversion_ += ioframe->cv.ScaledValue<8>(cv_src - H1200_CV_SOURCE_CV1);
     CONSTRAIN(inversion_,-H1200State::kMaxInversion, H1200State::kMaxInversion);
 
     cv_src = h1200_settings.get_transform_priority_cv_src();
     if (cv_src)
-      plr_transform_priority_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+      plr_transform_priority_ += ioframe->cv.ScaledValue<8>(cv_src - H1200_CV_SOURCE_CV1);
     CONSTRAIN(plr_transform_priority_, TRANSFORM_PRIO_XPLR, TRANSFORM_PRIO_PLR_LAST-1);
 
     cv_src = h1200_settings.get_nsh_transform_priority_cv_src();
     if (cv_src)
-      nsh_transform_priority_ += ioframe->cv.Value<8>(cv_src - H1200_CV_SOURCE_CV1);
+      nsh_transform_priority_ += ioframe->cv.ScaledValue<8>(cv_src - H1200_CV_SOURCE_CV1);
     CONSTRAIN(nsh_transform_priority_, TRANSFORM_PRIO_XNSH, TRANSFORM_PRIO_NSH_LAST-1);
   }
 
@@ -860,10 +860,10 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
       h1200_state.h_euclidean_fill_ = h1200_settings.get_h_euclidean_fill() ;
       h1200_state.h_euclidean_offset_ = h1200_settings.get_h_euclidean_offset() ;
 
-      int channel_1_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_1);
-      int channel_2_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_2);
-      int channel_3_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_3);
-      int channel_4_cv_ = ioframe->cv.Value<16>(ADC_CHANNEL_4);
+      int channel_1_cv_ = ioframe->cv.ScaledValue<16>(ADC_CHANNEL_1);
+      int channel_2_cv_ = ioframe->cv.ScaledValue<16>(ADC_CHANNEL_2);
+      int channel_3_cv_ = ioframe->cv.ScaledValue<16>(ADC_CHANNEL_3);
+      int channel_4_cv_ = ioframe->cv.ScaledValue<16>(ADC_CHANNEL_4);
 
       h1200_state.map_euclidean_cv(h1200_settings.get_euclidean_cv1_mapping(), channel_1_cv_) ;
       h1200_state.map_euclidean_cv(h1200_settings.get_euclidean_cv2_mapping(), channel_2_cv_) ;

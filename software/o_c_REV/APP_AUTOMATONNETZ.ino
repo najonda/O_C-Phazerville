@@ -438,7 +438,7 @@ void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
         chord_changed,
         ioframe->cv.pitch_values[ADC_CHANNEL_1],
         cell_transpose_,
-        cell_inversion_ + ioframe->cv.Value<8>(ADC_CHANNEL_4));
+        cell_inversion_ + ioframe->cv.ScaledValue<8>(ADC_CHANNEL_4));
   }
 
   if (OUTPUTA_MODE_TRIG == output_mode())
