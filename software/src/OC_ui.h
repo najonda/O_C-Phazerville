@@ -9,7 +9,7 @@
 #include "UI/ui_encoder.h"
 #include "UI/ui_event_queue.h"
 #include "UI/ui_events.h"
-#include "OC_io_config_menu.h"
+#include "OC_io_settings_menu.h"
 
 namespace OC {
 
@@ -76,7 +76,7 @@ public:
   void DebugStats();
   void Calibrate();
   void AppSettings();
-  UiMode AppIOConfig(const OC::App *app);
+  UiMode AppIOSettings(const OC::App *app);
   UiMode DispatchEvents(const OC::App *app);
 
   void Poll();
@@ -153,7 +153,7 @@ private:
 
   UI::EventQueue<kEventQueueDepth> event_queue_;
 
-  IOConfigMenu io_config_menu_;
+  IOSettingsMenu io_settings_menu_;
 
   inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
 #ifdef OC_UI_DEBUG

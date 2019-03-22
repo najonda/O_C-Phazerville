@@ -300,6 +300,11 @@ struct SettingsListItem {
     graphics.print(name_string);
   }
 
+  inline void DrawCharName(const char* name_string, weegfx::coord_t x_offset) const {
+    graphics.setPrintPos(x + kIndentDx + x_offset, y + kTextDy);
+    graphics.print(name_string);
+  }
+
   inline void DrawDefault(int value, const settings::value_attr &attr) const {
     DrawName(attr);
 
@@ -315,8 +320,8 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
-  inline void DrawCustomName(const char *name, int value, const settings::value_attr &attr) const {
-    DrawCharName(name);
+  inline void DrawCustomName(const char *name, int value, const settings::value_attr &attr, weegfx::coord_t x_offset = 0) const {
+    DrawCharName(name, x_offset);
 
     graphics.setPrintPos(endx, y + kTextDy);
     if(attr.value_names)

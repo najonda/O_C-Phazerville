@@ -51,8 +51,7 @@ struct App {
   uint16_t id;
 	const char *name;
 
-  InputSettings input_settings;
-  OutputSettings output_settings;
+  IOSettings io_settings;
 
   void (*Init)(); // one-time init
   size_t (*storageSize)(); // binary size of storage requirements
@@ -83,9 +82,9 @@ namespace apps {
   inline void Process(IOFrame *ioframe) {
     if (current_app) {
       IO::ReadDigitalInputs(ioframe);
-      IO::ReadADC(ioframe, current_app->input_settings);
+      IO::ReadADC(ioframe, current_app->io_settings);
       current_app->Process(ioframe);
-      IO::WriteDAC(ioframe, current_app->output_settings);
+      IO::WriteDAC(ioframe, current_app->io_settings);
     }
   }
 

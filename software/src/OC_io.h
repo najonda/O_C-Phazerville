@@ -43,37 +43,43 @@ enum OutputMode {
   OUTPUT_MODE_RAW,
 };
 
-enum INPUT_SETTINGS {
-  INPUT_SETTING_CV1_GAIN, INPUT_SETTING_CV2_GAIN, INPUT_SETTING_CV3_GAIN, INPUT_SETTING_CV4_GAIN,
-  INPUT_SETTING_CV1_FILTER, INPUT_SETTING_CV2_FILTER, INPUT_SETTING_CV3_FILTER, INPUT_SETTING_CV4_FILTER,
-  INPUT_SETTING_LAST
+enum IO_SETTING {
+  IO_SETTING_CV1_GAIN, IO_SETTING_CV1_FILTER, IO_SETTING_A_SCALING, IO_SETTING_A_TUNING,
+  IO_SETTING_CV2_GAIN, IO_SETTING_CV2_FILTER, IO_SETTING_B_SCALING, IO_SETTING_B_TUNING,
+  IO_SETTING_CV3_GAIN, IO_SETTING_CV3_FILTER, IO_SETTING_C_SCALING, IO_SETTING_C_TUNING,
+  IO_SETTING_CV4_GAIN, IO_SETTING_CV4_FILTER, IO_SETTING_D_SCALING, IO_SETTING_D_TUNING,
+  IO_SETTING_LAST
 };
 
-enum OUTPUT_SETTINGS {
-  OUTPUT_SETTING_A_SCALING, OUTPUT_SETTING_B_SCALING, OUTPUT_SETTING_C_SCALING, OUTPUT_SETTING_D_SCALING,
-  OUTPUT_SETTING_LAST
-};
-
-class InputSettings : public settings::SettingsBase<InputSettings, INPUT_SETTING_LAST> { };
-class OutputSettings: public settings::SettingsBase<OutputSettings, OUTPUT_SETTING_LAST> {
+class IOSettings: public settings::SettingsBase<IOSettings, IO_SETTING_LAST> {
 public:
   OutputVoltageScaling get_output_scaling(int channel) const {
-    return static_cast<OutputVoltageScaling>(get_value(OUTPUT_SETTING_A_SCALING + channel));
+    return static_cast<OutputVoltageScaling>(get_value(IO_SETTING_A_SCALING + channel * 4));
+  }
+
+  static inline IO_SETTING channel_setting(int setting, int channel) {
+    return static_cast<IO_SETTING>(setting + channel * 4);
   }
 };
 
+// Structs to hold information about IO ports;
+// Apps get queried and can fill this at runtime
 struct OutputDesc {
-  const char *label = "";
+  char label[9] = "";
   OutputMode mode = OUTPUT_MODE_RAW;
 
   void set(const char *l, OutputMode m) {
-    label = l;
+    strcpy(label, l);
     mode = m;
   }
 };
 
-struct IOConfig {
+struct InputDesc {
+  char label[9] = "";
+};
 
+struct IOConfig {
+  InputDesc inputs[DAC_CHANNEL_LAST];
   OutputDesc outputs[DAC_CHANNEL_LAST];
 };
 
@@ -82,8 +88,8 @@ struct IOFrame;
 class IO {
 public:
   static void ReadDigitalInputs(IOFrame *);
-  static void ReadADC(IOFrame *, const InputSettings &);
-  static void WriteDAC(IOFrame *, const OutputSettings &);
+  static void ReadADC(IOFrame *, const IOSettings &);
+  static void WriteDAC(IOFrame *, const IOSettings &);
 
   static int32_t pitch_rel_to_abs(int32_t pitch);
 };

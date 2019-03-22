@@ -31,22 +31,28 @@
 
 namespace OC {
 
-SETTINGS_DECLARE(OC::InputSettings, OC::INPUT_SETTING_LAST) {
-  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "CV1 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV2 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV3 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "CV4 smoothing", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-};
+static const char * const autotune_enable_strings[] = { "dftl", "auto" };
 
-SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
+SETTINGS_DECLARE(OC::IOSettings, OC::IO_SETTING_LAST) {
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 1, "CV1 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#A scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
+
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 1, "CV2 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#B scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
+
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 1, "CV3 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#C scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
+
+  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+  { 0, 0, 1, "CV4 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
   { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#D scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 };
 
 /*static*/ void IO::ReadDigitalInputs(IOFrame *ioframe)
@@ -55,11 +61,11 @@ SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
   ioframe->digital_inputs.raised_mask = DigitalInputs::raised_mask();
 }
 
-/*static*/ void IO::ReadADC(IOFrame *ioframe, const InputSettings &input_settings)
+/*static*/ void IO::ReadADC(IOFrame *ioframe, const IOSettings &io_settings)
 {
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
     int32_t val, pitch;
-    if (input_settings.get_value(INPUT_SETTING_CV1_FILTER + channel)) {
+    if (io_settings.get_value(IOSettings::channel_setting(IO_SETTING_CV1_FILTER, channel))) {
       val = ADC::value(static_cast<ADC_CHANNEL>(channel));
       pitch = ADC::pitch_value(static_cast<ADC_CHANNEL>(channel));
     } else {
@@ -67,7 +73,7 @@ SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
       pitch = ADC::unsmoothed_pitch_value(static_cast<ADC_CHANNEL>(channel));
     }
 
-    auto mult_factor = input_settings.get_value(INPUT_SETTING_CV1_GAIN + channel);
+    auto mult_factor = io_settings.get_value(IOSettings::channel_setting(IO_SETTING_CV1_GAIN, channel));
 
     ioframe->cv.values[channel] = CVUtils::Attenuate(val, mult_factor);
     ioframe->cv.pitch_values[channel] = CVUtils::Attenuate(pitch, mult_factor);
@@ -75,11 +81,11 @@ SETTINGS_DECLARE(OC::OutputSettings, OC::OUTPUT_SETTING_LAST) {
 }
 
 template <DAC_CHANNEL channel>
-static void IOFrameToChannel(const IOFrame *ioframe, const OutputSettings &output_settings)
+static void IOFrameToChannel(const IOFrame *ioframe, const IOSettings &io_settings)
 {
   auto value = ioframe->outputs.values[channel];
   switch(ioframe->outputs.modes[channel]) {
-    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value, output_settings.get_output_scaling(channel)); break;
+    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value, io_settings.get_output_scaling(channel)); break;
     case OUTPUT_MODE_GATE:  value = DAC::GateToDAC<channel>(value); break;
     case OUTPUT_MODE_UNI:   value += DAC::get_zero_offset(channel); break;
     case OUTPUT_MODE_RAW:   break;
@@ -87,12 +93,12 @@ static void IOFrameToChannel(const IOFrame *ioframe, const OutputSettings &outpu
   DAC::set<channel>(value);
 }
 
-/*static*/ void IO::WriteDAC(IOFrame *ioframe, const OutputSettings &output_settings)
+/*static*/ void IO::WriteDAC(IOFrame *ioframe, const IOSettings &io_settings)
 {
-  IOFrameToChannel<DAC_CHANNEL_A>(ioframe, output_settings);
-  IOFrameToChannel<DAC_CHANNEL_B>(ioframe, output_settings);
-  IOFrameToChannel<DAC_CHANNEL_C>(ioframe, output_settings);
-  IOFrameToChannel<DAC_CHANNEL_D>(ioframe, output_settings);
+  IOFrameToChannel<DAC_CHANNEL_A>(ioframe, io_settings);
+  IOFrameToChannel<DAC_CHANNEL_B>(ioframe, io_settings);
+  IOFrameToChannel<DAC_CHANNEL_C>(ioframe, io_settings);
+  IOFrameToChannel<DAC_CHANNEL_D>(ioframe, io_settings);
 }
 
 /*static*/ int32_t IO::pitch_rel_to_abs(int32_t pitch) {

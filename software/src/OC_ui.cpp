@@ -13,7 +13,6 @@
 #include "OC_ui.h"
 #include "OC_options.h"
 #include "src/drivers/display.h"
-#include "OC_io_config_menu.h"
 
 #ifdef VOR
 #include "VBiasManager.h"
@@ -57,7 +56,7 @@ void Ui::Init() {
 
   event_queue_.Init();
 
-  io_config_menu_.Init();
+  io_settings_menu_.Init();
 }
 
 void Ui::configure_encoders(EncoderConfig encoder_config) {
