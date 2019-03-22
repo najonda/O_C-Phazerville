@@ -124,11 +124,10 @@ public:
     return static_cast<ChannelPpqn>(values_[REF_SETTING_PPQN]);
   }
 
-
   void Update(OC::IOFrame *ioframe) {
 
     if (autotuner_) {
-      autotune_updateDAC();
+      autotune_updateDAC(ioframe);
       ticks_since_last_freq_++;
       return;
     }
