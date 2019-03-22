@@ -305,7 +305,7 @@ public:
     return _f_result;
   }
 
-  void measure_frequency_and_calc_error() {
+  void measure_frequency_and_calc_error(OC::IOFrame *ioframe) {
 
     switch(autotuner_step_) {
 
@@ -437,9 +437,9 @@ public:
         if (new_auto_calibration_point >= 65536 || new_auto_calibration_point < 0) {
           auto_error_ = true;
           autotuner_step_++;
-        }
-        else {
-          OC::DAC::set(dac_channel_, new_auto_calibration_point);
+        } else {
+          ioframe->outputs.set_raw_value(dac_channel_, new_auto_calibration_point);
+          //OC::DAC::set(dac_channel_, new_auto_calibration_point);
           OC::DAC::update_auto_channel_calibration_data(dac_channel_, octaves_cnt_, new_auto_calibration_point);
           ticks_since_last_freq_ = 0x0;
           octaves_cnt_++;
@@ -460,22 +460,21 @@ public:
     }
   }
   
-  void autotune_updateDAC() {
-
-    // TODO[PLD]
-
+  void autotune_updateDAC(OC::IOFrame *ioframe) {
     switch(autotuner_step_) {
 
       case OC::DAC_VOLT_0_ARM: 
       {
         F_correction_factor_ = 0x1; // don't go so fast
         auto_frequency();
-        OC::DAC::set(dac_channel_, OC::calibration_data.dac.calibrated_octaves[dac_channel_][OC::DAC::kOctaveZero]);
+        ioframe->outputs.set_pitch_value(dac_channel_, 0); // doesn't really matter by what means
+        //OC::DAC::set(dac_channel_, OC::calibration_data.dac.calibrated_octaves[dac_channel_][OC::DAC::kOctaveZero]);
       }
       break;
       case OC::DAC_VOLT_0_BASELINE:
       // set DAC to 0.000V, default calibration:
-      OC::DAC::set(dac_channel_, OC::calibration_data.dac.calibrated_octaves[dac_channel_][OC::DAC::kOctaveZero]);
+      ioframe->outputs.set_pitch_value(dac_channel_, 0); // doesn't really matter by what means
+      //OC::DAC::set(dac_channel_, OC::calibration_data.dac.calibrated_octaves[dac_channel_][OC::DAC::kOctaveZero]);
       break;
       case OC::DAC_VOLT_TARGET_FREQUENCIES:
       case OC::AUTO_CALIBRATION_STEP_LAST:
@@ -484,8 +483,9 @@ public:
       default: 
       // set DAC to calibration point + error
       {
-        int32_t _default_calibration_point = OC::calibration_data.dac.calibrated_octaves[dac_channel_][autotuner_step_ - OC::DAC_VOLT_3m];
-        OC::DAC::set(dac_channel_, _default_calibration_point + auto_DAC_offset_error_);
+        int32_t default_calibration_point = OC::calibration_data.dac.calibrated_octaves[dac_channel_][autotuner_step_ - OC::DAC_VOLT_3m];
+        ioframe->outputs.set_raw_value(dac_channel_, default_calibration_point + auto_DAC_offset_error_);
+        //OC::DAC::set(dac_channel_, default_calibration_point + auto_DAC_offset_error_);
       }
       break;
     }
@@ -494,7 +494,7 @@ public:
   void Update(OC::IOFrame *ioframe) {
 
     if (autotuner_) {
-      autotune_updateDAC();
+      autotune_updateDAC(ioframe);
       ticks_since_last_freq_++;
       return;
     }
@@ -642,7 +642,7 @@ public:
        _autotuner_active_channel += channel.autotuner_active();
 
     if (_autotuner_active_channel) {
-      channels_[_autotuner_active_channel - 0x1].measure_frequency_and_calc_error();
+      channels_[_autotuner_active_channel - 0x1].measure_frequency_and_calc_error(ioframe);
       return;
     }
     else if (FreqMeasure.available()) {
