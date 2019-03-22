@@ -6,16 +6,13 @@
 
 namespace OC {
 
-typedef OC::Autotune_data Autotune_data;
-
 class AUTOTUNE {
 public:
-  static const int NUM_DAC_CHANNELS;
   static void Init();
-  static const Autotune_data &GetAutotune_data(int channel);
+  static const AutotuneCalibrationData &GetAutotuneCalibrationData(int channel);
 };
 
-extern Autotune_data auto_calibration_data[DAC_CHANNEL_LAST];
+extern AutotuneCalibrationData auto_calibration_data[DAC_CHANNEL_LAST];
 };
 
 #endif // OC_AUTOTUNE_H_

@@ -227,7 +227,7 @@ struct GlobalSettings {
   OC::Pattern user_patterns[OC::Patterns::PATTERN_USER_ALL];
   HS::TuringMachine user_turing_machines[HS::TURING_MACHINE_COUNT];
   HS::VOSegment user_waveforms[HS::VO_SEGMENT_COUNT];
-  OC::Autotune_data auto_calibration_data[DAC_CHANNEL_LAST];
+  OC::AutotuneCalibrationData auto_calibration_data[DAC_CHANNEL_LAST];
 };
 
 // App settings are packed into a single blob of binary data; each app's chunk

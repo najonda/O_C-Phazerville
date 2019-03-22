@@ -156,7 +156,7 @@ public:
       reset_autotuner();
   }
 
-  void ISR();
+  void Process(OC::IOFrame *ioframe);
   void Close();
   void Draw();
   void HandleButtonEvent(const UI::Event &event);
@@ -510,10 +510,10 @@ private:
 };
 
   template <typename Owner>
-  void Autotuner<Owner>::ISR() {
+  void Autotuner<Owner>::Process(OC::IOFrame *ioframe) {
       if (armed_) {
-          updateDAC();
-          measure_frequency_and_calc_error();
+          updateDAC(ioframe);
+          measure_frequency_and_calc_error(ioframe);
           ticks_since_last_freq_++;
       }
 

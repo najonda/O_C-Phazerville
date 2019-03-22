@@ -249,7 +249,7 @@ public:
   void Process(OC::IOFrame *ioframe) {
       
     if (autotuner.active()) {
-      autotuner.ISR();
+      autotuner.Process(ioframe);
       return;
     }
 

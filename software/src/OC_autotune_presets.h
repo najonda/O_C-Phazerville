@@ -6,15 +6,15 @@
 
 namespace OC {
 
-  struct Autotune_data {
+  struct AutotuneCalibrationData {
  
     uint8_t use_auto_calibration_;
     uint16_t auto_calibrated_octaves[OCTAVES + 1];
-  };
 
-  const Autotune_data autotune_data_default[] = {
-    // default
-    { 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+    void Reset() {
+      memset(this, 0, sizeof(*this));
+    }
   };
 }
+
 #endif // OC_AUTOTUNE_PRESETS_H_
