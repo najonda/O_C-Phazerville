@@ -347,7 +347,7 @@ private:
   template <typename Owner>
   void Autotuner<Owner>::Begin() {
     
-    const OC::Autotune_data &autotune_data = OC::AUTOTUNE::GetAutotune_data(channel_);
+    const OC::AutotuneCalibrationData &autotune_data = OC::AUTOTUNE::GetAutotuneCalibrationData(channel_);
     calibration_data_ = autotune_data.use_auto_calibration_;
     
     if (calibration_data_ == 0x01) // auto cal. data is in use

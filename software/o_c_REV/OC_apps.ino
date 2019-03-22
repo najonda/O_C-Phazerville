@@ -89,7 +89,7 @@ struct GlobalSettings {
   OC::Scale user_scales[OC::Scales::SCALE_USER_LAST];
   OC::Pattern user_patterns[OC::Patterns::PATTERN_USER_ALL];
   OC::Chord user_chords[OC::Chords::CHORDS_USER_LAST];
-  OC::Autotune_data auto_calibration_data[DAC_CHANNEL_LAST];
+  OC::AutotuneCalibrationData auto_calibration_data[DAC_CHANNEL_LAST];
 };
 
 // App settings are packed into a single blob of binary data; each app's chunk

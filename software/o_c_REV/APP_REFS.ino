@@ -644,8 +644,7 @@ public:
     if (_autotuner_active_channel) {
       channels_[_autotuner_active_channel - 0x1].measure_frequency_and_calc_error(ioframe);
       return;
-    }
-    else if (FreqMeasure.available()) {
+    } else if (FreqMeasure.available()) {
       // average several readings together
       freq_sum_ = freq_sum_ + FreqMeasure.read();
       freq_count_ = freq_count_ + 1;
