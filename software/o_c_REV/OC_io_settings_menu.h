@@ -22,8 +22,8 @@
 // 
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
-#ifndef OC_IO_CONFIG_MENU_H_
-#define OC_IO_CONFIG_MENU_H_
+#ifndef OC_IO_SETTINGS_MENU_H_
+#define OC_IO_SETTINGS_MENU_H_
 
 #include <array>
 #include "OC_io.h"
@@ -33,18 +33,10 @@ namespace OC {
 
 struct App;
 
-class IOConfigMenu {
+class IOSettingsMenu {
 public:
 
   void Init();
-
-  enum PAGE {
-    INPUT_GAIN_PAGE,
-    INPUT_FILTER_PAGE,
-    OUTPUT_PAGE,
-    OUTPUT_TODO_PAGE,
-    PAGE_LAST
-  };
 
   void Edit(App *app);
 
@@ -62,33 +54,17 @@ public:
 private:
   bool enabled_ = false;
 
-  PAGE current_page_;
-  struct Page {
-    const char *name;
-    const uint8_t *icon;
-    menu::ScreenCursor<menu::kScreenLines> cursor;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  int selected_channel_;
 
-    void Init(const char *n, const uint8_t *i, int start, int end);
-  };
-  std::array<Page, PAGE_LAST> pages_;
-
-  InputSettings *input_settings_;
-  OutputSettings *output_settings_;
+  IOSettings *io_settings_;
   IOConfig io_config_;
 
   void DrawInputSettingsPage() const;
   void DrawOutputPage() const;
   void DrawTodoPage() const;
-
-  Page &current_page() {
-    return pages_[current_page_];
-  }
-
-  const Page &current_page() const {
-    return pages_[current_page_];
-  }
 };
 
 } // namespace OC
 
-#endif // OC_IO_CONFIG_MENU_H_
+#endif // OC_IO_SETTINGS_MENU_H_

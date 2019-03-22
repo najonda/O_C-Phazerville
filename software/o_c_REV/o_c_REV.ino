@@ -162,7 +162,7 @@ void FASTRUN loop() {
     }
 
     if (OC::UI_MODE_APP_IO_CONFIG == ui_mode) {
-      ui_mode = OC::ui.AppIOConfig(OC::apps::current_app);
+      ui_mode = OC::ui.AppIOSettings(OC::apps::current_app);
     }
 
     // Refresh display

@@ -27,7 +27,7 @@
 #define DECLARE_APP(id, name, prefix) \
 { TWOCCS(id), \
   name, \
-  {}, {}, \
+  {}, \
   prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
   prefix ## _handleAppEvent, \
   prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
@@ -244,8 +244,7 @@ void Init(bool reset_settings) {
   Scales::Init();
   AUTOTUNE::Init();
   for (auto &app : available_apps) {
-    app.input_settings.InitDefaults();
-    app.output_settings.InitDefaults();
+    app.io_settings.InitDefaults();
     app.Init();
   }
 
