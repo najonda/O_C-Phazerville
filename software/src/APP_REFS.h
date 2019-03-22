@@ -126,12 +126,6 @@ public:
 
   void Update(OC::IOFrame *ioframe) {
 
-    if (autotuner_) {
-      autotune_updateDAC(ioframe);
-      ticks_since_last_freq_++;
-      return;
-    }
-
     int octave = get_octave();
     int range = get_range();
     if (range) {
@@ -200,10 +194,6 @@ const char* const notes_or_bpm[2] = {
 
 const char* const ppqn_labels[10] = {
  " 1",  " 2", " 4", " 8", "16", "24", "32", "48", "64", "96",  
-};
-
-const char* const error[] = {
-  "0.050", "0.125", "0.250", "0.500", "1.000", "2.000", "4.000"
 };
 
 // EEPROM size: 11 bytes * 4 channels == 44 bytes

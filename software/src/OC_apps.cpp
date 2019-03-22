@@ -220,7 +220,7 @@ struct GlobalSettings {
   bool encoders_enable_acceleration;
   bool reserved0;
   bool reserved1;
-  uint32_t DAC_scaling;
+  uint32_t reserved2;
   uint16_t current_app_id;
 
   OC::Scale user_scales[OC::Scales::SCALE_USER_LAST];
@@ -268,8 +268,6 @@ void save_global_settings() {
   memcpy(global_settings.user_turing_machines, HS::user_turing_machines, sizeof(HS::user_turing_machines));
   memcpy(global_settings.user_waveforms, HS::user_waveforms, sizeof(HS::user_waveforms));
   memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
-  // scaling settings:
-// TODO[PLD]  global_settings.DAC_scaling = OC::DAC::store_scaling();
   
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -410,7 +408,7 @@ void Init(bool reset_settings) {
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
   global_settings.reserved0 = false;
   global_settings.reserved1 = false;
-  global_settings.DAC_scaling = VOLTAGE_SCALING_1V_PER_OCT;
+  global_settings.reserved2 = 0U;
 
   if (reset_settings) {
     if (ui.ConfirmReset()) {
@@ -445,8 +443,6 @@ void Init(bool reset_settings) {
       memcpy(HS::user_turing_machines, global_settings.user_turing_machines, sizeof(HS::user_turing_machines));
       memcpy(HS::user_waveforms, global_settings.user_waveforms, sizeof(HS::user_waveforms));
       memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
-      DAC::choose_calibration_data(); // either use default data, or auto_calibration_data
-// TODO[PLD]      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
       Scales::Validate();
     }
 

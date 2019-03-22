@@ -85,7 +85,11 @@ static void IOFrameToChannel(const IOFrame *ioframe, const IOSettings &io_settin
 {
   auto value = ioframe->outputs.values[channel];
   switch(ioframe->outputs.modes[channel]) {
-    case OUTPUT_MODE_PITCH: value = DAC::PitchToScaledDAC<channel>(value, io_settings.get_output_scaling(channel)); break;
+    case OUTPUT_MODE_PITCH:
+      value = DAC::PitchToScaledDAC<channel>(
+                  value, io_settings.get_output_scaling(channel),
+                  io_settings.autotune_data_enabled(channel));
+    break;
     case OUTPUT_MODE_GATE:  value = DAC::GateToDAC<channel>(value); break;
     case OUTPUT_MODE_UNI:   value += DAC::get_zero_offset(channel); break;
     case OUTPUT_MODE_RAW:   break;
