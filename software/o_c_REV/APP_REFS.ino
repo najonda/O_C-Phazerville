@@ -591,10 +591,6 @@ const char* const ppqn_labels[10] = {
  " 1",  " 2", " 4", " 8", "16", "24", "32", "48", "64", "96",  
 };
 
-const char* const error[] = {
-  "0.050", "0.125", "0.250", "0.500", "1.000", "2.000", "4.000"
-};
-
 SETTINGS_DECLARE(ReferenceChannel, REF_SETTING_LAST) {
   #ifdef BUCHLA_4U
   { 0, 0, 9, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
@@ -634,17 +630,16 @@ public:
 
   void Process(OC::IOFrame *ioframe) {
       
-    for (auto &channel : channels_)
+    bool autotuner_active = false;
+    for (auto &channel : channels_) {
       channel.Update(ioframe);
+      if (channel.autotuner_active()) {
+        channel.measure_frequency_and_calc_error(ioframe);
+        autotuner_active = true;
+      }
+    }
 
-    uint8_t _autotuner_active_channel = 0x0;
-    for (auto &channel : channels_)
-       _autotuner_active_channel += channel.autotuner_active();
-
-    if (_autotuner_active_channel) {
-      channels_[_autotuner_active_channel - 0x1].measure_frequency_and_calc_error(ioframe);
-      return;
-    } else if (FreqMeasure.available()) {
+    if (!autotuner_active && FreqMeasure.available()) {
       // average several readings together
       freq_sum_ = freq_sum_ + FreqMeasure.read();
       freq_count_ = freq_count_ + 1;
@@ -795,6 +790,12 @@ void REFS_loop() {
 }
 
 void REFS_menu() {
+  // autotuner ...
+  if (references_app.autotuner.active()) {
+    references_app.autotuner.Draw();
+    return;
+  }
+
   menu::QuadTitleBar::Draw();
   for (uint_fast8_t i = 0; i < NUM_REF_CHANNELS; ++i) {
     menu::QuadTitleBar::SetColumn(i);
@@ -822,9 +823,6 @@ void REFS_menu() {
       break;
     }
   }
-  // autotuner ...
-  if (references_app.autotuner.active())
-    references_app.autotuner.Draw();
 }
 
 void print_voltage(int octave, int fraction) {

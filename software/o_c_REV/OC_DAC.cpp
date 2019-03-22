@@ -152,26 +152,6 @@ void DAC::reset_all_auto_channel_calibration_data(){
 }
 
 /*static*/
-void DAC::choose_calibration_data() {
-  
-  // at this point, global settings are restored
-  for (int i = 0; i < DAC_CHANNEL_LAST; i++) {
-    
-    const OC::AutotuneCalibrationData &autotune_data = OC::AUTOTUNE::GetAutotuneCalibrationData(i);
-
-    if (autotune_data.use_auto_calibration_ == 0x0) { 
-    // no autotune_data yet, so we use defaults:
-      reset_auto_channel_calibration_data(i);
-    }
-    else if (autotune_data.use_auto_calibration_ == 0xFF) {
-    // use autotune_data
-      set_auto_channel_calibration_data(i);
-    }
-    // ... else use default calibration
-  }
-}
-
-/*static*/
 DAC::CalibrationData *DAC::calibration_data_ = nullptr;
 
 /*static*/

@@ -54,11 +54,15 @@ enum IO_SETTING {
 class IOSettings: public settings::SettingsBase<IOSettings, IO_SETTING_LAST> {
 public:
   OutputVoltageScaling get_output_scaling(int channel) const {
-    return static_cast<OutputVoltageScaling>(get_value(IO_SETTING_A_SCALING + channel * 4));
+    return static_cast<OutputVoltageScaling>(get_value(channel_setting(IO_SETTING_A_SCALING, channel)));
   }
 
   static inline IO_SETTING channel_setting(int setting, int channel) {
     return static_cast<IO_SETTING>(setting + channel * 4);
+  }
+
+  bool autotune_data_enabled(int channel) const {
+    return get_value(channel_setting(IO_SETTING_A_TUNING, channel));
   }
 };
 

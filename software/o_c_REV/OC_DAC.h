@@ -59,7 +59,6 @@ public:
   static void update_auto_channel_calibration_data(uint8_t channel_id, int8_t octave, uint32_t pitch_data);
   static void reset_auto_channel_calibration_data(uint8_t channel_id);
   static void reset_all_auto_channel_calibration_data();
-  static void choose_calibration_data();
 
   static void set_all(uint32_t value) {
     for (int i = DAC_CHANNEL_A; i < DAC_CHANNEL_LAST; ++i)
@@ -85,7 +84,7 @@ public:
   //
   // @return DAC output value
   template <DAC_CHANNEL channel>
-  static int32_t PitchToScaledDAC(int32_t pitch, OutputVoltageScaling scaling)
+  static int32_t PitchToScaledDAC(int32_t pitch, OutputVoltageScaling scaling, bool autotune_enabled)
   {
     pitch = Scale(pitch, scaling);
     pitch += kOctaveZero * 12 << 7;

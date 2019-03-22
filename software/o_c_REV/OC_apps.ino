@@ -83,7 +83,7 @@ struct GlobalSettings {
   bool encoders_enable_acceleration;
   bool reserved0;
   bool reserved1;
-  uint32_t DAC_scaling;
+  uint32_t reserved2;
   uint16_t current_app_id;
   
   OC::Scale user_scales[OC::Scales::SCALE_USER_LAST];
@@ -129,8 +129,6 @@ void save_global_settings() {
   memcpy(global_settings.user_patterns, OC::user_patterns, sizeof(OC::user_patterns));
   memcpy(global_settings.user_chords, OC::user_chords, sizeof(OC::user_chords));
   memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
-  // scaling settings:
-// TODO[PLD]  global_settings.DAC_scaling = OC::DAC::store_scaling();
   
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -252,7 +250,7 @@ void Init(bool reset_settings) {
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
   global_settings.reserved0 = false;
   global_settings.reserved1 = false;
-  global_settings.DAC_scaling = VOLTAGE_SCALING_1V_PER_OCT; 
+  global_settings.reserved2 = 0U;
 
   if (reset_settings) {
     if (ui.ConfirmReset()) {
@@ -286,8 +284,6 @@ void Init(bool reset_settings) {
       memcpy(user_patterns, global_settings.user_patterns, sizeof(user_patterns));
       memcpy(user_chords, global_settings.user_chords, sizeof(user_chords));
       memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
-      DAC::choose_calibration_data(); // either use default data, or auto_calibration_data
-// TODO[PLD]      DAC::restore_scaling(global_settings.DAC_scaling); // recover output scaling settings
     }
 
     SERIAL_PRINTLN("Load app data: size is %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
