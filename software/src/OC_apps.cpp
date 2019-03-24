@@ -26,6 +26,7 @@
 #include "OC_menus.h"
 #include "OC_config.h"
 #include "OC_digital_inputs.h"
+#include "OC_global_settings.h"
 #include "OC_autotune.h"
 #include "OC_calibration.h"
 #include "OC_patterns.h"
@@ -227,7 +228,6 @@ struct GlobalSettings {
   OC::Pattern user_patterns[OC::Patterns::PATTERN_USER_ALL];
   HS::TuringMachine user_turing_machines[HS::TURING_MACHINE_COUNT];
   HS::VOSegment user_waveforms[HS::VO_SEGMENT_COUNT];
-  OC::AutotuneCalibrationData auto_calibration_data[DAC_CHANNEL_LAST];
 };
 
 // App settings are packed into a single blob of binary data; each app's chunk
@@ -267,7 +267,6 @@ void save_global_settings() {
   memcpy(global_settings.user_patterns, OC::user_patterns, sizeof(OC::user_patterns));
   memcpy(global_settings.user_turing_machines, HS::user_turing_machines, sizeof(HS::user_turing_machines));
   memcpy(global_settings.user_waveforms, HS::user_waveforms, sizeof(HS::user_waveforms));
-  memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
   
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -397,18 +396,17 @@ int index_of(uint16_t id) {
 
 void Init(bool reset_settings) {
 
-  Scales::Init();
-  AUTOTUNE::Init();
   for (auto &app : available_apps) {
     app.io_settings.InitDefaults();
     app.Init();
   }
 
-  global_settings.current_app_id = DEFAULT_APP_ID;
+  global_settings.Init();
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
   global_settings.reserved0 = false;
   global_settings.reserved1 = false;
   global_settings.reserved2 = 0U;
+  global_settings.current_app_id = DEFAULT_APP_ID;
 
   if (reset_settings) {
     if (ui.ConfirmReset()) {
@@ -442,7 +440,6 @@ void Init(bool reset_settings) {
       memcpy(user_patterns, global_settings.user_patterns, sizeof(user_patterns));
       memcpy(HS::user_turing_machines, global_settings.user_turing_machines, sizeof(HS::user_turing_machines));
       memcpy(HS::user_waveforms, global_settings.user_waveforms, sizeof(HS::user_waveforms));
-      memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
       Scales::Validate();
     }
 

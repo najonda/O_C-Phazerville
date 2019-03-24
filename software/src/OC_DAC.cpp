@@ -53,9 +53,10 @@ int DAC::kOctaveZero = 0;
 #endif
 
 /*static*/
-void DAC::Init(CalibrationData *calibration_data) {
+void DAC::Init(CalibrationData *calibration_data, AutotuneCalibrationData *autotune_calibration_data) {
 
   calibration_data_ = calibration_data;
+  autotune_calibration_data_ = autotune_calibration_data;
 
   // set up DAC pins 
   OC::pinMode(DAC_CS, OUTPUT);
@@ -116,7 +117,7 @@ uint8_t DAC::calibration_data_used(uint8_t channel_id) {
 
 /*static*/
 void DAC::set_auto_channel_calibration_data(uint8_t channel_id) {
-  
+#if 0
   SERIAL_PRINTLN("use auto calibration data ... (channel: %d)", channel_id + 1);
   
   if (channel_id < DAC_CHANNEL_LAST) {
@@ -131,62 +132,7 @@ void DAC::set_auto_channel_calibration_data(uint8_t channel_id) {
           calibration_data_->calibrated_octaves[channel_id][i] = autotune_data.auto_calibrated_octaves[i];
     } 
   }
-}
-
-/*static*/
-void DAC::set_default_channel_calibration_data(uint8_t channel_id) {
-  
-  SERIAL_PRINTLN("reset to core/default calibration data ... (channel: %d)", channel_id + 1);
-  
-  if (channel_id < DAC_CHANNEL_LAST) {
-
-    // reset data
-    for (int i = 0; i < OCTAVES + 1; i++) 
-      calibration_data_->calibrated_octaves[channel_id][i] = OC::calibration_data.dac.calibrated_octaves[channel_id][i];
-    // + update info
-    OC::AutotuneCalibrationData *autotune_data = &OC::auto_calibration_data[channel_id];
-    if (autotune_data->use_auto_calibration_ == 0xFF || autotune_data->use_auto_calibration_ == 0x01)
-      autotune_data->use_auto_calibration_ = 0xFF; // = data available, but not used
-    else 
-      autotune_data->use_auto_calibration_ = 0x00;
-  }
-}
-
-/*static*/
-void DAC::update_auto_channel_calibration_data(uint8_t channel_id, int8_t octave, uint32_t pitch_data) {
-  
-  SERIAL_PRINTLN("update: ch.#%d -> %d (%d)", (int)(channel_id + 1), (int)pitch_data, (int)octave);
-  
-  if (channel_id < DAC_CHANNEL_LAST) {
-
-      // write data
-      OC::AutotuneCalibrationData *autotune_data = &OC::auto_calibration_data[channel_id];
-      autotune_data->auto_calibrated_octaves[octave] = pitch_data;
-      // + update info
-      if (octave == OCTAVES) {
-        autotune_data->use_auto_calibration_ = 0xFF; // = data available, but not used
-        SERIAL_PRINTLN("set auto-calibration data, %d", autotune_data->use_auto_calibration_);
-      }
-   }
-}
-
-/*static*/
-void DAC::reset_auto_channel_calibration_data(uint8_t channel_id) {
-  
-  // reset data
-  if (channel_id < DAC_CHANNEL_LAST) {
-    SERIAL_PRINTLN("reset channel# %d calibration data", (int)(channel_id + 1));
-    OC::AutotuneCalibrationData *autotune_data = &OC::auto_calibration_data[channel_id];
-    autotune_data->use_auto_calibration_ = 0x0;
-    for (int i = 0; i < OCTAVES + 1; i++)
-      autotune_data->auto_calibrated_octaves[i] = OC::calibration_data.dac.calibrated_octaves[channel_id][i];
-  }
-}
-
-/*static*/
-void DAC::reset_all_auto_channel_calibration_data(){
-   for (int i = 0; i < DAC_CHANNEL_LAST; i++)
-      reset_auto_channel_calibration_data(i);
+#endif
 }
 
 #if defined(__MK20DX256__)
@@ -213,7 +159,10 @@ void DAC::set_Vbias(uint32_t data) {
 #endif
 
 /*static*/
-DAC::CalibrationData *DAC::calibration_data_ = nullptr;
+const DAC::CalibrationData *DAC::calibration_data_ = nullptr;
+
+/*static*/
+const DAC::AutotuneCalibrationData *DAC::autotune_calibration_data_ = nullptr;
 
 /*static*/
 uint32_t DAC::values_[DAC_CHANNEL_LAST];

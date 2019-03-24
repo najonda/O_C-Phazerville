@@ -1,6 +1,8 @@
 #ifndef OC_DAC_H_
 #define OC_DAC_H_
 
+#include <algorithm>
+#include <iterator>
 #include <stdint.h>
 #include <string.h>
 #include "OC_config.h"
@@ -68,21 +70,51 @@ public:
     static constexpr int32_t kOctaveGateHigh = kOctaveZero + 5;
   #endif
 
-  struct CalibrationData {
-    uint16_t calibrated_octaves[DAC_CHANNEL_LAST][OCTAVES + 1];
-  };
-
-  static void Init(CalibrationData *calibration_data);
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void DAC8568_Vref_enable();
   #endif
 
+  // Base calibration data for each octave on each channel
+  struct CalibrationData {
+    uint16_t calibrated_octaves[DAC_CHANNEL_LAST][OCTAVES + 1];
+  };
+
+  // Making this into a distinct type might avoid some unintentional blunders.
+  struct AutotuneChannelCalibrationData {
+    bool valid;
+    uint16_t calibrated_octaves[OCTAVES + 1];
+
+    void set_calibration_point(int octave, uint16_t calibration_point) {
+      calibrated_octaves[octave] = calibration_point;
+    }
+
+    void CopyFrom(const uint16_t *src) {
+      std::copy(src, src + OCTAVES + 1, calibrated_octaves);
+      valid = true;
+    }
+
+    void Reset() {
+      valid = false;
+      std::fill(std::begin(calibrated_octaves), std::end(calibrated_octaves), 0);
+    }
+
+    bool is_valid() const {
+      return valid;
+    }
+  };
+
+  struct AutotuneCalibrationData {
+    AutotuneChannelCalibrationData channels[DAC_CHANNEL_LAST];
+
+    void Reset() {
+      for (auto &ch : channels) ch.Reset();
+    }
+  };
+
+  static void Init(CalibrationData *calibration_data, AutotuneCalibrationData *autotune_calibration_data);
+
   static uint8_t calibration_data_used(uint8_t channel_id);
   static void set_auto_channel_calibration_data(uint8_t channel_id);
-  static void set_default_channel_calibration_data(uint8_t channel_id);
-  static void update_auto_channel_calibration_data(uint8_t channel_id, int8_t octave, uint32_t pitch_data);
-  static void reset_auto_channel_calibration_data(uint8_t channel_id);
-  static void reset_all_auto_channel_calibration_data();
 
   static void set_Vbias(uint32_t data);
   static void init_Vbias();
@@ -105,9 +137,12 @@ public:
     return values_[index];
   }
 
-  // Calculate DAC value from pitch value with 12 * 128 bit per octave for a specific channel.
+  // Calculate DAC value from pitch value with 12 * 128 bit per octave for a
+  // specific channel.
   // 0 = C1 = 0V, C2 = 24 << 7 = 1V etc.
   // Respects channel's current scaling settings and calibration data.
+  // If autotune_enabled is true, use the autotune calibration if it's valid,
+  // otherwise use the default values (which are assumed to be sane).
   //
   // @return DAC output value
   template <DAC_CHANNEL channel>
@@ -120,9 +155,14 @@ public:
     const int32_t octave = pitch / (12 << 7);
     const int32_t fractional = pitch - octave * (12 << 7);
 
-    int32_t sample = calibration_data_->calibrated_octaves[channel][octave];
+    const uint16_t *calibrated_octaves =
+      (!autotune_enabled || autotune_calibration_data_->channels[channel].is_valid())
+      ? calibration_data_->calibrated_octaves[channel]
+      : autotune_calibration_data_->channels[channel].calibrated_octaves;
+
+    int32_t sample = calibrated_octaves[octave];
     if (fractional) {
-      int32_t span = calibration_data_->calibrated_octaves[channel][octave + 1] - sample;
+      int32_t span = calibrated_octaves[octave + 1] - sample;
       sample += (fractional * span) / (12 << 7);
     }
     return sample;
@@ -235,7 +275,9 @@ public:
   }
 
 private:
-  static CalibrationData *calibration_data_;
+  static const CalibrationData *calibration_data_;
+  static const AutotuneCalibrationData *autotune_calibration_data_;
+
   static uint32_t values_[DAC_CHANNEL_LAST];
   static uint16_t history_[DAC_CHANNEL_LAST][kHistoryDepth];
   static volatile size_t history_tail_;

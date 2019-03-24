@@ -25,6 +25,7 @@
 
 #ifdef ENABLE_APP_REFERENCES
 
+#include <numeric>
 #include "OC_apps.h"
 #include "OC_menus.h"
 #include "OC_strings.h"
@@ -78,10 +79,11 @@ public:
   void Init(DAC_CHANNEL dac_channel) {
     InitDefaults();
 
+    dac_channel_ = dac_channel;
     rate_phase_ = 0;
     mod_offset_ = 0;
     last_pitch_ = 0;
-    dac_channel_ = dac_channel;
+
     update_enabled_settings();
   }
 
@@ -179,11 +181,11 @@ public:
   void RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) const;
 
 private:
+  DAC_CHANNEL dac_channel_;
+
   uint32_t rate_phase_;
   int mod_offset_;
   int32_t last_pitch_;
-  DAC_CHANNEL dac_channel_;
-
   int num_enabled_settings_;
   ReferenceSetting enabled_settings_[REF_SETTING_LAST];
 };
@@ -448,6 +450,8 @@ void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) 
 
   int32_t pitch = last_pitch_ ;
   int32_t unscaled_pitch = last_pitch_ ;
+
+  // TODO[PLD] Adapt to new DAC/scaling
 
   #ifdef BUCHLA_SUPPORT
     switch (OC::DAC::get_voltage_scaling(chan)) {
