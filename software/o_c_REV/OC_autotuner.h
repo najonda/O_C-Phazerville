@@ -1,8 +1,8 @@
 #ifndef OC_AUTOTUNER_H
 #define OC_AUTOTUNER_H
 
-#include "OC_autotune.h"
 #include "OC_options.h"
+#include "OC_DAC.h"
 
 #if defined(BUCHLA_4U) && !defined(IO_10V)
 const char* const AT_steps[] = {
@@ -347,8 +347,7 @@ private:
   template <typename Owner>
   void Autotuner<Owner>::Begin() {
     
-    const AutotuneCalibrationData &autotune_data = AUTOTUNE::GetAutotuneCalibrationData(channel_);
-    calibration_data_ = autotune_data.use_auto_calibration_;
+    calibration_data_ = global_settings.autotune_calibration_data.channels[channel_].is_valid();
     
     if (calibration_data_ == 0x01) // auto cal. data is in use
       data_select_ = 0x1;

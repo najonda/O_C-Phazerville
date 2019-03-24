@@ -23,7 +23,6 @@
 #include "OC_apps.h"
 #include "OC_digital_inputs.h"
 #include "OC_global_settings.h"
-#include "OC_autotune.h"
 
 #define DECLARE_APP(id, name, prefix) \
 { TWOCCS(id), \

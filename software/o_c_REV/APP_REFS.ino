@@ -246,7 +246,9 @@ public:
   }
 
   uint8_t data_available() const {
-    return OC::DAC::calibration_data_used(dac_channel_);
+    // TODO[PLD] Return if autocalibration for channel is active (usage TBD)
+    return 0;
+    //return OC::DAC::calibration_data_used(dac_channel_);
   }
 
   void use_default() {
@@ -257,7 +259,8 @@ public:
   }
 
   void use_auto_calibration() {
-    OC::DAC::set_auto_channel_calibration_data(dac_channel_);
+    // TODO[PLD] Enable autocalibration for channel here
+    //OC::DAC::set_auto_channel_calibration_data(dac_channel_);
   }
   
   bool auto_frequency() {
@@ -443,7 +446,7 @@ public:
       if (octaves_cnt_ > OCTAVES) { 
         autotune_completed_ = true;
         // and point to auto data ...
-        OC::DAC::set_auto_channel_calibration_data(dac_channel_);
+        use_auto_calibration();
         autotuner_step_++;
       }
       break;

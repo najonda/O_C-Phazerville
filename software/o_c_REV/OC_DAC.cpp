@@ -38,15 +38,13 @@
 #include "OC_gpio.h"
 #include "OC_options.h"
 #include "OC_calibration.h"
-#include "OC_autotune_presets.h"
-#include "OC_autotune.h"
 
 #define SPICLOCK_30MHz   (SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_DBR) //(60 / 2) * ((1+1)/2) = 30 MHz (= 24MHz, when F_BUS == 48000000)
 
 namespace OC {
 
 /*static*/
-void DAC::Init(CalibrationData *calibration_data, AutotuneCalibrationData *autotune_calibration_data) {
+void DAC::Init(const CalibrationData *calibration_data, const AutotuneCalibrationData *autotune_calibration_data) {
 
   calibration_data_ = calibration_data;
   autotune_calibration_data_ = autotune_calibration_data;
@@ -69,32 +67,6 @@ void DAC::Init(CalibrationData *calibration_data, AutotuneCalibrationData *autot
 
   set_all(0xffff);
   Update();
-}
-
-/*static*/
-uint8_t DAC::calibration_data_used(uint8_t channel_id) {
-  const OC::AutotuneCalibrationData &autotune_data = OC::AUTOTUNE::GetAutotuneCalibrationData(channel_id);
-  return autotune_data.use_auto_calibration_;
-}
-
-/*static*/
-void DAC::set_auto_channel_calibration_data(uint8_t channel_id) {
-#if 0
-  SERIAL_PRINTLN("use auto calibration data ... (channel: %d)", channel_id + 1);
-  
-  if (channel_id < DAC_CHANNEL_LAST) {
-  
-    OC::AutotuneCalibrationData *_autotune_data = &OC::auto_calibration_data[channel_id];
-    if (_autotune_data->use_auto_calibration_ == 0xFF)  { // = data available ?
-      
-        _autotune_data->use_auto_calibration_ = 0x01; // = use auto data 
-        // update data:
-        const OC::AutotuneCalibrationData &autotune_data = OC::AUTOTUNE::GetAutotuneCalibrationData(channel_id);
-        for (int i = 0; i < OCTAVES + 1; i++)
-          calibration_data_->calibrated_octaves[channel_id][i] = autotune_data.auto_calibrated_octaves[i];
-    } 
-  }
-#endif
 }
 
 /*static*/
