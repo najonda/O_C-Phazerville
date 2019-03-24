@@ -27,7 +27,7 @@
 #include "OC_config.h"
 #include "OC_digital_inputs.h"
 #include "OC_global_settings.h"
-#include "OC_autotune.h"
+
 #include "OC_calibration.h"
 #include "OC_patterns.h"
 #include "enigma/TuringMachine.h"

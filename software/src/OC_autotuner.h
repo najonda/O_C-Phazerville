@@ -1,10 +1,9 @@
 #ifndef OC_AUTOTUNER_H
 #define OC_AUTOTUNER_H
 
-#include "OC_calibration.h"
-#include "OC_autotune.h"
 #include "OC_options.h"
 #include "OC_visualfx.h"
+#include "OC_DAC.h"
 
 // autotune constants:
 #ifdef VOR
@@ -787,8 +786,7 @@ private:
   template <typename Owner>
   void Autotuner<Owner>::Begin() {
     
-    const OC::Autotune_data &autotune_data = OC::AUTOTUNE::GetAutotune_data(channel_);
-    calibration_data_ = autotune_data.use_auto_calibration_;
+    calibration_data_ = global_settings.autotune_calibration_data.channels[channel_].is_valid();
     
     if (calibration_data_ == 0x01) // auto cal. data is in use
       data_select_ = 0x1;

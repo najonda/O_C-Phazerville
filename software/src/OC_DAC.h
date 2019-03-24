@@ -111,10 +111,11 @@ public:
     }
   };
 
-  static void Init(CalibrationData *calibration_data, AutotuneCalibrationData *autotune_calibration_data);
-
-  static uint8_t calibration_data_used(uint8_t channel_id);
-  static void set_auto_channel_calibration_data(uint8_t channel_id);
+  // Init internals and SPI interface
+  //
+  // Any changes to calibration_data and autotune_calibration_data are managed
+  // externally.
+  static void Init(const CalibrationData *calibration_data, const AutotuneCalibrationData *autotune_calibration_data);
 
   static void set_Vbias(uint32_t data);
   static void init_Vbias();
