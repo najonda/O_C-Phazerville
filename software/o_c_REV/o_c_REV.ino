@@ -30,6 +30,7 @@
 #include "OC_DAC.h"
 #include "OC_debug.h"
 #include "OC_gpio.h"
+#include "OC_global_settings.h"
 #include "OC_ADC.h"
 #include "OC_calibration.h"
 #include "OC_digital_inputs.h"
@@ -103,7 +104,7 @@ void setup() {
   delay(400);
   OC::ADC::Init(&OC::calibration_data.adc); // Yes, it's using the calibration_data before it's loaded...
   OC::ADC::Init_DMA();
-  OC::DAC::Init(&OC::calibration_data.dac);
+  OC::DAC::Init(&OC::calibration_data.dac, &OC::global_settings.autotune_calibration_data);
 
   display::Init();
 

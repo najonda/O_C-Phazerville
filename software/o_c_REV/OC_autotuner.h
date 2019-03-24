@@ -110,7 +110,7 @@ private:
     graphics.clearRect(x, y, w, h);
     graphics.drawFrame(x, y, w, h);
     graphics.setPrintPos(x + 2, y + 3);
-    graphics.print(OC::Strings::channel_id[channel_]);
+    graphics.print(Strings::channel_id[channel_]);
 
     x = 16; y = 15;
 
@@ -164,13 +164,13 @@ private:
           int _octave = owner_->get_octave_cnt();
           if (_octave > 1 && _octave < OCTAVES) {
             for (int i = 0; i <= _octave; i++, x += 6)
-              graphics.drawBitmap8(x + 18, y + 4, 4, OC::bitmap_indicator_4x8);
+              graphics.drawBitmap8(x + 18, y + 4, 4, bitmap_indicator_4x8);
           }
           else if (owner_->auto_tune_step() == DAC_VOLT_0_BASELINE || owner_->auto_tune_step() == DAC_VOLT_TARGET_FREQUENCIES) // this goes too quick, so ... 
             graphics.print(" 0.0V baseline");
           else {
             graphics.print(AT_steps[owner_->auto_tune_step() - DAC_VOLT_3m]);
-            if (!owner_->_ready())
+            if (!owner_->autotuner_ready())
               graphics.print(" ");
             else 
               graphics.printf(" > %7.3f", owner_->get_auto_frequency());
@@ -182,7 +182,7 @@ private:
         graphics.print("error!");
         break;
         case AT_DONE: 
-        graphics.print(OC::Strings::channel_id[channel_]);
+        graphics.print(Strings::channel_id[channel_]);
         graphics.print("  --> a-ok!");
         calibration_data_ = owner_->data_available();
         break;
@@ -207,16 +207,16 @@ private:
     
      if (UI::EVENT_BUTTON_PRESS == event.type) {
       switch (event.control) {
-        case OC::CONTROL_BUTTON_UP:
+        case CONTROL_BUTTON_UP:
           handleButtonUp(event);
           break;
-        case OC::CONTROL_BUTTON_DOWN:
+        case CONTROL_BUTTON_DOWN:
           handleButtonDown(event);
           break;
-        case OC::CONTROL_BUTTON_L:
+        case CONTROL_BUTTON_L:
           handleButtonLeft(event);
           break;    
-        case OC::CONTROL_BUTTON_R:
+        case CONTROL_BUTTON_R:
           owner_->reset_autotuner();
           Close();
           break;
@@ -226,16 +226,16 @@ private:
     }
     else if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
        switch (event.control) {
-        case OC::CONTROL_BUTTON_UP:
+        case CONTROL_BUTTON_UP:
           // screensaver 
         break;
-        case OC::CONTROL_BUTTON_DOWN:
-          OC::DAC::reset_all_auto_channel_calibration_data();
+        case CONTROL_BUTTON_DOWN:
+          global_settings.autotune_calibration_data.Reset();
           calibration_data_ = 0x0;
         break;
-        case OC::CONTROL_BUTTON_L: 
+        case CONTROL_BUTTON_L: 
         break;
-        case OC::CONTROL_BUTTON_R:
+        case CONTROL_BUTTON_R:
          // app menu
         break;  
         default:
@@ -247,10 +247,10 @@ private:
   template <typename Owner>
   void Autotuner<Owner>::HandleEncoderEvent(const UI::Event &event) {
    
-    if (OC::CONTROL_ENCODER_R == event.control) {
+    if (CONTROL_ENCODER_R == event.control) {
       move_cursor(event.value);
     }
-    else if (OC::CONTROL_ENCODER_L == event.control) {
+    else if (CONTROL_ENCODER_L == event.control) {
       change_value(event.value); 
     }
   }
@@ -347,7 +347,7 @@ private:
   template <typename Owner>
   void Autotuner<Owner>::Begin() {
     
-    const OC::AutotuneCalibrationData &autotune_data = OC::AUTOTUNE::GetAutotuneCalibrationData(channel_);
+    const AutotuneCalibrationData &autotune_data = AUTOTUNE::GetAutotuneCalibrationData(channel_);
     calibration_data_ = autotune_data.use_auto_calibration_;
     
     if (calibration_data_ == 0x01) // auto cal. data is in use

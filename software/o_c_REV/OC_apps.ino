@@ -22,6 +22,7 @@
 
 #include "OC_apps.h"
 #include "OC_digital_inputs.h"
+#include "OC_global_settings.h"
 #include "OC_autotune.h"
 
 #define DECLARE_APP(id, name, prefix) \
@@ -75,23 +76,6 @@ static constexpr int NUM_AVAILABLE_APPS = ARRAY_SIZE(available_apps);
 
 namespace OC {
 
-// Global settings are stored separately to actual app setings.
-// The theory is that they might not change as often.
-struct GlobalSettings {
-  static constexpr uint32_t FOURCC = FOURCC<'O','C','S',2>::value;
-
-  bool encoders_enable_acceleration;
-  bool reserved0;
-  bool reserved1;
-  uint32_t reserved2;
-  uint16_t current_app_id;
-  
-  OC::Scale user_scales[OC::Scales::SCALE_USER_LAST];
-  OC::Pattern user_patterns[OC::Patterns::PATTERN_USER_ALL];
-  OC::Chord user_chords[OC::Chords::CHORDS_USER_LAST];
-  OC::AutotuneCalibrationData auto_calibration_data[DAC_CHANNEL_LAST];
-};
-
 // App settings are packed into a single blob of binary data; each app's chunk
 // gets its own header with id and the length of the entire chunk. This makes
 // this a bit more flexible during development.
@@ -128,7 +112,6 @@ void save_global_settings() {
   memcpy(global_settings.user_scales, OC::user_scales, sizeof(OC::user_scales));
   memcpy(global_settings.user_patterns, OC::user_patterns, sizeof(OC::user_patterns));
   memcpy(global_settings.user_chords, OC::user_chords, sizeof(OC::user_chords));
-  memcpy(global_settings.auto_calibration_data, OC::auto_calibration_data, sizeof(OC::auto_calibration_data));
   
   global_settings_storage.Save(global_settings);
   SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
@@ -239,18 +222,17 @@ int index_of(uint16_t id) {
 
 void Init(bool reset_settings) {
 
-  Scales::Init();
-  AUTOTUNE::Init();
   for (auto &app : available_apps) {
     app.io_settings.InitDefaults();
     app.Init();
   }
 
-  global_settings.current_app_id = DEFAULT_APP_ID;
+  global_settings.Init();
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
   global_settings.reserved0 = false;
   global_settings.reserved1 = false;
   global_settings.reserved2 = 0U;
+  global_settings.current_app_id = DEFAULT_APP_ID;
 
   if (reset_settings) {
     if (ui.ConfirmReset()) {
@@ -283,7 +265,6 @@ void Init(bool reset_settings) {
       memcpy(user_scales, global_settings.user_scales, sizeof(user_scales));
       memcpy(user_patterns, global_settings.user_patterns, sizeof(user_patterns));
       memcpy(user_chords, global_settings.user_chords, sizeof(user_chords));
-      memcpy(auto_calibration_data, global_settings.auto_calibration_data, sizeof(auto_calibration_data));
     }
 
     SERIAL_PRINTLN("Load app data: size is %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
