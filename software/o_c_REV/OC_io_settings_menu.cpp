@@ -29,6 +29,7 @@
 #include "OC_apps.h"
 #include "OC_core.h"
 #include "OC_cv_utils.h"
+#include "OC_global_settings.h"
 #include "OC_menus.h"
 #include "OC_bitmaps.h"
 #include "OC_strings.h"
@@ -84,9 +85,10 @@ void IOSettingsMenu::Draw() const
     const int value = io_settings_->get_value(IOSettings::channel_setting(setting, selected_channel_));
     const auto &attr = IOSettings::value_attr(IOSettings::channel_setting(setting, selected_channel_));
 
+    const auto &output_desc = io_config_.outputs[selected_channel_];
+
     switch (setting) {
     case IO_SETTING_A_SCALING: {
-      const auto &output_desc = io_config_.outputs[selected_channel_];
       graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
       if (output_desc.mode == OUTPUT_MODE_PITCH) {
         list_item.DrawCustomName(output_desc.label, value, attr, 10);
@@ -96,6 +98,7 @@ void IOSettingsMenu::Draw() const
       }
     }
     break;
+
     case IO_SETTING_CV1_GAIN: {
       const auto &input_desc = io_config_.inputs[selected_channel_];
       snprintf(label, sizeof(label),
@@ -105,13 +108,27 @@ void IOSettingsMenu::Draw() const
       list_item.DrawCustomName(label, value, attr);
     }
     break;
-    case IO_SETTING_CV1_FILTER:
+
     case IO_SETTING_A_TUNING:
+      if (OUTPUT_MODE_PITCH == output_desc.mode) {
+        list_item.DrawDefault(value, attr);
+      } else {
+        list_item.DrawCharName("DAC calibr.       N/A");
+        list_item.DrawCustom();
+      }
+    break;
+
+    case IO_SETTING_CV1_FILTER:
     default:
       list_item.DrawDefault(value, attr);
-      break;
+    break;
     }
   }
+}
+
+bool IOSettingsMenu::autotune_available() const
+{
+  return global_settings.autotune_calibration_data.channels[selected_channel_].is_valid();
 }
 
 void IOSettingsMenu::DispatchEvent(const UI::Event &event)
@@ -119,9 +136,20 @@ void IOSettingsMenu::DispatchEvent(const UI::Event &event)
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case CONTROL_BUTTON_R:
-        if (IO_SETTING_A_SCALING != cursor_.cursor_pos() ||
-            OUTPUT_MODE_PITCH == io_config_.outputs[selected_channel_].mode)
+        switch(cursor_.cursor_pos()) {
+        case IO_SETTING_A_SCALING:
+          if (OUTPUT_MODE_PITCH == io_config_.outputs[selected_channel_].mode)
+            cursor_.toggle_editing();
+        break;
+        case IO_SETTING_A_TUNING:
+          if (OUTPUT_MODE_PITCH == io_config_.outputs[selected_channel_].mode &&
+              autotune_available())
+            cursor_.toggle_editing();
+        break;
+        default:
           cursor_.toggle_editing();
+        break;
+        }
       break;
     }
   } else if (UI::EVENT_ENCODER == event.type) {

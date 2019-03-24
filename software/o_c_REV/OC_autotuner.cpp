@@ -1,6 +1,7 @@
 // Copyright 2019 Patrick Dowling
 //
 // Author: Patrick Dowling (pld@gurkenkiste.com)
+// Adapted from code by Max Stadler
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,47 +23,40 @@
 // 
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
-#ifndef OC_IO_SETTINGS_MENU_H_
-#define OC_IO_SETTINGS_MENU_H_
 
-#include <array>
-#include "OC_io.h"
-#include "UI/ui_event_queue.h"
+#include "OC_autotuner.h"
 
 namespace OC {
 
-struct App;
+#if defined(BUCHLA_4U) && !defined(IO_10V)
+const char* const AT_steps[] = {
+  "0.0V", "1.2V", "2.4V", "3.6V", "4.8V", "6.0V", "7.2V", "8.4V", "9.6V", "10.8V", " " 
+};
 
-class IOSettingsMenu {
-public:
+#elif defined(IO_10V)
+const char* const AT_steps[] = {
+  "0.0V", "1.0V", "2.0V", "3.0V", "4.0V", "5.0V", "6.0V", "7.0V", "8.0V", "9.0V", " " 
+};
 
-  void Init();
+#else
+const char* const AT_steps[] = {
+  "-3V", "-2V", "-1V", " 0V", "+1V", "+2V", "+3V", "+4V", "+5V", "+6V", " " 
+};
+#endif
 
-  void Edit(App *app);
+const char *const reset_action_strings[] = {
+  ">RESET", ">  USE"
+};
 
-  void enable(bool enabled) {
-    enabled_ = true;
-  }
+const char *const status_action_strings[] = {
+  ">  ARM", ">  RUN", "> STOP", ">   OK"
+};
 
-  inline bool enabled() const {
-    return enabled_;
-  }
-
-  void Draw() const;
-  void DispatchEvent(const UI::Event &event);
-
-private:
-  bool enabled_ = false;
-
-  menu::ScreenCursor<menu::kScreenLines> cursor_;
-  int selected_channel_;
-
-  IOSettings *io_settings_;
-  IOConfig io_config_;
-
-  bool autotune_available() const;
+SETTINGS_DECLARE(OC::AutotunerSettings, OC::AUTOTUNER_SETTINGS_LAST) {
+  { OC::AUTOTUNER_RESET, OC::AUTOTUNER_RESET, OC::AUTOTUNER_RESET_ACTION_LAST - 1, "Autotune", OC::reset_action_strings, settings::STORAGE_TYPE_U4 },
+  { 0, 0, 3, "Start voltage", OC::AT_steps, settings::STORAGE_TYPE_U4 },
+  { 0, -3, 0, "End voltage", /*trust me, I know what I'm doing*/OC::AT_steps + OCTAVES - 1, settings::STORAGE_TYPE_U4 },
+  { OC::AUTOTUNER_ARM, OC::AUTOTUNER_ARM, OC::AUTOTUNER_STATUS_ACTION_LAST - 1, "", OC::status_action_strings, settings::STORAGE_TYPE_U4 }
 };
 
 } // namespace OC
-
-#endif // OC_IO_SETTINGS_MENU_H_

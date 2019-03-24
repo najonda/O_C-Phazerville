@@ -24,6 +24,7 @@
 // Very simple "reference" voltage app (not so simple any more...)
 
 #include <numeric>
+#include "OC_options.h"
 #include "OC_apps.h"
 #include "OC_menus.h"
 #include "OC_strings.h"
@@ -32,18 +33,28 @@
 #include "src/drivers/FreqMeasure/OC_FreqMeasure.h"
 
 // autotune constants:
-#define FREQ_MEASURE_TIMEOUT 512
-#define ERROR_TIMEOUT (FREQ_MEASURE_TIMEOUT << 0x4)
+static constexpr uint32_t FREQ_MEASURE_TIMEOUT = 512;
+static constexpr uint32_t ERROR_TIMEOUT = (FREQ_MEASURE_TIMEOUT << 0x4);
 #define MAX_NUM_PASSES 1500
 #define CONVERGE_PASSES 5
+
+static constexpr int32_t kMaxOffsetError = (65536 / 5);
+
 // 
 static constexpr double kAaboveMidCtoC0 = 0.03716272234383494188492;
 
+#ifdef AUTOTUNE_DEBUG
+# define AUTOTUNE_PRINTLN(msg, ...) \
+  serial_printf(msg "\n", ##__VA_ARGS__)
+#else
+# define AUTOTUNE_PRINTLN(msg, ...)
+#endif
+
 //
 #ifdef FLIP_180
-const uint8_t DAC_CHANNEL_FTM = DAC_CHANNEL_A;
+static constexpr DAC_CHANNEL DAC_CHANNEL_FTM = DAC_CHANNEL_A;
 #else
-const uint8_t DAC_CHANNEL_FTM = DAC_CHANNEL_D;
+static constexpr DAC_CHANNEL DAC_CHANNEL_FTM = DAC_CHANNEL_D;
 #endif
 
 // 
@@ -80,8 +91,6 @@ const uint8_t DAC_CHANNEL_FTM = DAC_CHANNEL_D;
     8.0f
   };
 #endif
-
-const uint8_t NUM_REF_CHANNELS = DAC_CHANNEL_LAST;
 
 enum ReferenceSetting {
   REF_SETTING_OCTAVE,
@@ -120,11 +129,14 @@ public:
     InitDefaults();
 
     dac_channel_ = dac_channel;
+    calibration_data_ = OC::calibration_data.dac.calibrated_octaves[dac_channel_];
+    autotune_calibration_data_ = &OC::global_settings.autotune_calibration_data.channels[dac_channel_];
+
     rate_phase_ = 0;
     mod_offset_ = 0;
     last_pitch_ = 0;
 
-    reset_autotuner();
+    autotuner_reset();
 
     update_enabled_settings();
     history_.Init(0.f);
@@ -134,7 +146,7 @@ public:
     return values_[REF_SETTING_OCTAVE];
   }
 
-  int get_channel() const {
+  DAC_CHANNEL get_channel() const {
     return dac_channel_;
   }
 
@@ -167,8 +179,10 @@ public:
     return static_cast<ChannelPpqn>(values_[REF_SETTING_PPQN]);
   }
 
+// BEGIN AUTOTUNER
+
   bool autotuner_active() const {
-    return autotuner_ && autotuner_step_;
+    return autotuner_;
   }
 
   bool autotuner_completed() const {
@@ -179,7 +193,7 @@ public:
     autotune_completed_ = false;
   }
 
-  bool autotuner_error() const {
+  const char *autotuner_error() const {
     return auto_error_;
   }
 
@@ -187,38 +201,44 @@ public:
     return octaves_cnt_ + 0x1;
   }
 
-  uint8_t auto_tune_step() const {
-    return autotuner_step_;
+  OC::AUTO_CALIBRATION_STEP autotuner_step() const {
+    return static_cast<OC::AUTO_CALIBRATION_STEP>(autotuner_step_);
   }
 
-  void autotuner_arm(uint8_t _status) {
-    reset_autotuner();
-    autotuner_ = _status ? true : false;
+  void autotuner_arm() {
+    autotuner_reset();
+    autotuner_ = true;
   }
   
   void autotuner_run() {     
-    autotuner_step_ = autotuner_ ? OC::DAC_VOLT_0_BASELINE : OC::DAC_VOLT_0_ARM;
+    if (OC::DAC_VOLT_0_ARM == autotuner_step_) {
+      autotuner_step_ = OC::DAC_VOLT_0_BASELINE;
     // we start, so reset data to defaults:
-    if (autotuner_step_ == OC::DAC_VOLT_0_BASELINE)
-      use_default();
+      autotuner_copy_defaults();
+    }
   }
 
-  void auto_reset_step() {
+  void autotuner_next_step() {
     auto_num_passes_ = 0x0;
     auto_DAC_offset_error_ = 0x0;
     correction_direction_ = false;
     correction_cnt_positive_ = correction_cnt_negative_ = 0x0;
     F_correction_factor_ = 0xFF;
     auto_ready_ = false;
+
+    ++autotuner_step_;
+    AUTOTUNE_PRINTLN("channel %d : autotune step %d (error=%s)",
+                     (int)dac_channel_, (int)autotuner_step_, auto_error_);
   }
 
-  void reset_autotuner() {
+  void autotuner_reset() {
+    AUTOTUNE_PRINTLN("channel %d : autotuner_reset", (int)dac_channel_);
     autotuner_ = false;
     autotuner_step_ = OC::DAC_VOLT_0_ARM;
     auto_DAC_offset_error_ = 0;
     auto_frequency_ = 0.f;
     auto_last_frequency_ = 0.f;
-    auto_error_ = false;
+    auto_error_ = nullptr;
     auto_ready_ = false;
     autotune_completed_ = false;
     auto_freq_sum_ = 0;
@@ -245,17 +265,9 @@ public:
      return auto_ready_;
   }
 
-  uint8_t data_available() const {
-    // TODO[PLD] Return if autocalibration for channel is active (usage TBD)
-    return 0;
-    //return OC::DAC::calibration_data_used(dac_channel_);
-  }
-
-  void use_default() {
-    SERIAL_PRINTLN("channel %d : reset to core/default calibration data ...", (int)dac_channel_);
-
-    auto &calibration_data = OC::global_settings.autotune_calibration_data.channels[dac_channel_];
-    calibration_data.CopyFrom(OC::calibration_data.dac.calibrated_octaves[dac_channel_]);
+  void autotuner_copy_defaults() {
+    AUTOTUNE_PRINTLN("channel %d : reset to core/default calibration data ...", (int)dac_channel_);
+    autotune_calibration_data_->CopyFrom(calibration_data_);
   }
 
   void use_auto_calibration() {
@@ -264,15 +276,15 @@ public:
   }
   
   bool auto_frequency() {
-
     bool _f_result = false;
 
     if (ticks_since_last_freq_ > ERROR_TIMEOUT) {
-      auto_error_ = true;
+      AUTOTUNE_PRINTLN("channel %d : octave %d %lu > %lu",
+                       (int)dac_channel_, octaves_cnt_, ticks_since_last_freq_, ERROR_TIMEOUT);
+      auto_error_ = "ETIM";
     }
-    
+
     if (FreqMeasure.available()) {
-      
       auto_freq_sum_ = auto_freq_sum_ + FreqMeasure.read();
       auto_freq_count_ = auto_freq_count_ + 1;
 
@@ -290,6 +302,7 @@ public:
         _f_result = true;
         ticks_since_last_freq_ = 0x0;
         OC::ui.Poke();
+        //AUTOTUNE_PRINTLN("%.3f", auto_frequency_);
       }
     }
     return _f_result;
@@ -297,8 +310,12 @@ public:
 
   void measure_frequency_and_calc_error(OC::IOFrame *ioframe) {
 
-    switch(autotuner_step_) {
+    if (auto_error_ || autotune_completed_) {
+      //AUTOTUNE_PRINTLN("auto_error_=%s autotune_completed_=%d", auto_error_, autotune_completed_);
+      return;
+    }
 
+    switch(autotuner_step_) {
       case OC::DAC_VOLT_0_ARM:
       // do nothing
       break;
@@ -316,14 +333,14 @@ public:
           // ... and derive target frequency at 0V
           auto_frequency_ = (uint32_t) (0.5f + ((auto_frequency_ + average) / (float)(kHistoryDepth + 1))); // 0V 
           // reset step, and proceed:
-          auto_reset_step();
-          autotuner_step_++;
+          autotuner_next_step();
         }
         else if (_update) 
           auto_num_passes_++;
       }
       break;
       case OC::DAC_VOLT_TARGET_FREQUENCIES: 
+      // NOTE This step is "sticky" and repeats for all required octaves
       {
         #ifdef BUCHLA_SUPPORT
         
@@ -342,6 +359,7 @@ public:
         #else
           auto_target_frequencies_[octaves_cnt_]  =  auto_frequency_ * target_multipliers[octaves_cnt_]; 
         #endif
+        AUTOTUNE_PRINTLN("channel %d : auto_target_frequencies[%d] = %.3f", (int)dac_channel_, octaves_cnt_, auto_target_frequencies_[octaves_cnt_]);
         octaves_cnt_++;
         // go to next step, if done:
         if (octaves_cnt_ >= OCTAVES) {
@@ -366,21 +384,30 @@ public:
         if (_update && (auto_num_passes_ > MAX_NUM_PASSES)) {  
           /* target frequency reached */
           
-          if ((autotuner_step_ > OC::DAC_VOLT_2m) && (auto_last_frequency_ * 1.25f > auto_frequency_))
-              auto_error_ = true; // throw error, if things don't seem to double ...
+          if ((autotuner_step_ > OC::DAC_VOLT_2m) && (auto_last_frequency_ * 1.25f > auto_frequency_)) {
+            AUTOTUNE_PRINTLN("channel %d : step %d %.3f * 1.25f > %.3f",
+                             (int)dac_channel_, (int)autotuner_step_, auto_last_frequency_, auto_frequency_);
+            auto_error_ = "EFREQ"; // throw error, if things don't seem to double ...
+          }
+          if (auto_DAC_offset_error_ > kMaxOffsetError || auto_DAC_offset_error_ < -kMaxOffsetError) {
+            AUTOTUNE_PRINTLN("channel %d : step %d offset error %ld > %ld",
+                             (int)dac_channel_, (int)autotuner_step_, auto_DAC_offset_error_, kMaxOffsetError);
+            auto_error_ = "EOFFS";
+          }
+
           // average:
           float history[kHistoryDepth]; 
-          float average = 0.0f;
           history_.Read(history);
-          for (uint8_t i = 0; i < kHistoryDepth; i++)
-            average += history[i];
+          float average = std::accumulate(std::begin(history), std::end(history), 0.f);
           // store last frequency:
-           auto_last_frequency_  = ((auto_frequency_ + average) / (float)(kHistoryDepth + 1));
+          auto_last_frequency_  = ((auto_frequency_ + average) / (float)(kHistoryDepth + 1));
           // and DAC correction value:
+          AUTOTUNE_PRINTLN("channel %d : step %d offset=%d",
+                           (int)dac_channel_, (int)autotuner_step_, (int)auto_DAC_offset_error_);
           auto_calibration_data_[autotuner_step_ - OC::DAC_VOLT_3m] = auto_DAC_offset_error_;
           // and reset step:
-          auto_reset_step();
-          autotuner_step_++; 
+          if (!auto_error_)
+            autotuner_next_step();
         }
         // 
         else if (_update) {
@@ -418,24 +445,25 @@ public:
       }
       break;
       case OC::AUTO_CALIBRATION_STEP_LAST:
+      // NOTE This step is "sticky" and repeats for all required octaves
       // step through the octaves:
       if (ticks_since_last_freq_ > 2000) {
-        int32_t new_auto_calibration_point = OC::calibration_data.dac.calibrated_octaves[dac_channel_][octaves_cnt_] + auto_calibration_data_[octaves_cnt_];
+        int32_t new_auto_calibration_point = calibration_data_[octaves_cnt_] + auto_calibration_data_[octaves_cnt_];
         // write to DAC and update data
         if (new_auto_calibration_point >= 65536 || new_auto_calibration_point < 0) {
-          auto_error_ = true;
+          AUTOTUNE_PRINTLN("channel %d : octave %d data out of range: %d", (int)dac_channel_, octaves_cnt_, (int)new_auto_calibration_point);
+          auto_error_ = "ERNG";
           autotuner_step_++;
         } else {
           ioframe->outputs.set_raw_value(dac_channel_, new_auto_calibration_point);
           //OC::DAC::set(dac_channel_, new_auto_calibration_point);
           //OC::DAC::update_auto_channel_calibration_data(dac_channel_, octaves_cnt_, new_auto_calibration_point);
 
-          auto &autotune_data = OC::global_settings.autotune_calibration_data.channels[dac_channel_];
-          SERIAL_PRINTLN("channel %d : set_calibration_point(%d, %d)", (int)dac_channel_, octave, (int)calibration_point);
-          autotune_data.set_calibration_point(octaves_cnt_, new_auto_calibration_point);
+          AUTOTUNE_PRINTLN("channel %d : set_calibration_point(%d, %d)", (int)dac_channel_, octaves_cnt_, (int)new_auto_calibration_point);
+          autotune_calibration_data_->set_calibration_point(octaves_cnt_, new_auto_calibration_point);
           if (octaves_cnt_ == OCTAVES) {
-            SERIAL_PRINTLN("channel %d : autotune calibration data valid=true", (int)dac_channel_);
-            autotune_data.valid = true;
+            AUTOTUNE_PRINTLN("channel %d : autotune calibration data valid=true", (int)dac_channel_);
+            autotune_calibration_data_->valid = true;
           }
 
           ticks_since_last_freq_ = 0x0;
@@ -451,8 +479,8 @@ public:
       }
       break;
       default:
-      autotuner_step_ = OC::DAC_VOLT_0_ARM;
-      autotuner_ = 0x0;
+      //autotuner_step_ = OC::DAC_VOLT_0_ARM;
+      //autotuner_ = 0x0;
       break;
     }
   }
@@ -480,7 +508,7 @@ public:
       default: 
       // set DAC to calibration point + error
       {
-        int32_t default_calibration_point = OC::calibration_data.dac.calibrated_octaves[dac_channel_][autotuner_step_ - OC::DAC_VOLT_3m];
+        int32_t default_calibration_point = calibration_data_[autotuner_step_ - OC::DAC_VOLT_3m];
         ioframe->outputs.set_raw_value(dac_channel_, default_calibration_point + auto_DAC_offset_error_);
         //OC::DAC::set(dac_channel_, default_calibration_point + auto_DAC_offset_error_);
       }
@@ -488,6 +516,8 @@ public:
     }
   }
  
+ // END AUTOTUNER
+
   void Update(OC::IOFrame *ioframe) {
 
     if (autotuner_) {
@@ -550,6 +580,8 @@ public:
 
 private:
   DAC_CHANNEL dac_channel_;
+  const uint16_t *calibration_data_;
+  OC::DAC::AutotuneChannelCalibrationData *autotune_calibration_data_;
 
   uint32_t rate_phase_;
   int mod_offset_;
@@ -561,7 +593,7 @@ private:
   int32_t auto_DAC_offset_error_;
   float auto_frequency_;
   float auto_last_frequency_;
-  bool auto_error_;
+  const char *auto_error_;
   bool auto_ready_;
   bool autotune_completed_;
 
@@ -636,6 +668,7 @@ public:
       channel.Update(ioframe);
       if (channel.autotuner_active()) {
         channel.measure_frequency_and_calc_error(ioframe);
+        autotuner.Tick();
         autotuner_active = true;
       }
     }
@@ -667,59 +700,59 @@ public:
 
   ReferenceChannel channels_[DAC_CHANNEL_LAST];
 
-  float get_frequency( ) {
+  float get_frequency() const {
     return(frequency_) ;
   }
 
-  float get_ppqn() {
-    float ppqn_ = 4.0 ;
+  float get_ppqn() const {
+    float ppqn_ = 4.0f;
     switch(channels_[DAC_CHANNEL_FTM].get_channel_ppqn()){
       case CHANNEL_PPQN_1:
-        ppqn_ = 1.0;
+        ppqn_ = 1.0f;
         break;
       case CHANNEL_PPQN_2:
-        ppqn_ = 2.0;
+        ppqn_ = 2.0f;
         break;
       case CHANNEL_PPQN_4:
-        ppqn_ = 4.0;
+        ppqn_ = 4.0f;
         break;
       case CHANNEL_PPQN_8:
-        ppqn_ = 8.0;
+        ppqn_ = 8.0f;
         break;
       case CHANNEL_PPQN_16:
-        ppqn_ = 16.0;
+        ppqn_ = 16.0f;
         break;
       case CHANNEL_PPQN_24:
-        ppqn_ = 24.0;
+        ppqn_ = 24.0f;
         break;
       case CHANNEL_PPQN_32:
-        ppqn_ = 32.0;
+        ppqn_ = 32.0f;
         break;
       case CHANNEL_PPQN_48:
-        ppqn_ = 48.0;
+        ppqn_ = 48.0f;
         break;
       case CHANNEL_PPQN_64:
-        ppqn_ = 64.0;
+        ppqn_ = 64.0f;
         break;
       case CHANNEL_PPQN_96:
-        ppqn_ = 96.0;
+        ppqn_ = 96.0f;
         break;
       default:
-        ppqn_ = 8.0 ;
+        ppqn_ = 8.0f;
         break;
     }
     return(ppqn_);
   }
 
-  float get_bpm( ) {
-    return((60.0 * frequency_)/get_ppqn()) ;
+  float get_bpm() const {
+    return((60.f * frequency_)/get_ppqn()) ;
   }
 
-  bool get_notes_or_bpm( ) {
+  bool get_notes_or_bpm() const {
     return(static_cast<bool>(channels_[DAC_CHANNEL_FTM].get_notes_or_bpm())) ;
   }
 
-  float get_C0_freq() {
+  float get_C0_freq() const {
     return(static_cast<float>(channels_[DAC_CHANNEL_FTM].get_a_above_mid_c() * kAaboveMidCtoC0));
   }
 
@@ -738,12 +771,12 @@ void REFS_init() {
 }
 
 size_t REFS_storageSize() {
-  return NUM_REF_CHANNELS * ReferenceChannel::storageSize();
+  return DAC_CHANNEL_LAST * ReferenceChannel::storageSize();
 }
 
 size_t REFS_save(void *storage) {
   size_t used = 0;
-  for (size_t i = 0; i < NUM_REF_CHANNELS; ++i) {
+  for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
     used += references_app.channels_[i].Save(static_cast<char*>(storage) + used);
   }
   return used;
@@ -751,7 +784,7 @@ size_t REFS_save(void *storage) {
 
 size_t REFS_restore(const void *storage) {
   size_t used = 0;
-  for (size_t i = 0; i < NUM_REF_CHANNELS; ++i) {
+  for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
     used += references_app.channels_[i].Restore(static_cast<const char*>(storage) + used);
     references_app.channels_[i].update_enabled_settings();
   }
@@ -760,7 +793,7 @@ size_t REFS_restore(const void *storage) {
 }
 
 void REFS_process(OC::IOFrame *ioframe) {
-  return references_app.Process(ioframe);
+  references_app.Process(ioframe);
 }
 
 void REFS_getIOConfig(OC::IOConfig &ioconfig)
@@ -781,13 +814,14 @@ void REFS_handleAppEvent(OC::AppEvent event) {
     case OC::APP_EVENT_SUSPEND:
     case OC::APP_EVENT_SCREENSAVER_ON:
     case OC::APP_EVENT_SCREENSAVER_OFF:
-      for (size_t i = 0; i < NUM_REF_CHANNELS; ++i)
-        references_app.channels_[i].reset_autotuner();
+      for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i)
+        references_app.channels_[i].autotuner_reset();
       break;
   }
 }
 
 void REFS_loop() {
+  references_app.autotuner.Update();
 }
 
 void REFS_menu() {
@@ -798,7 +832,7 @@ void REFS_menu() {
   }
 
   menu::QuadTitleBar::Draw();
-  for (uint_fast8_t i = 0; i < NUM_REF_CHANNELS; ++i) {
+  for (uint_fast8_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
     menu::QuadTitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
   }
@@ -986,7 +1020,7 @@ void REFS_handleEncoderEvent(const UI::Event &event) {
     
     int previous = references_app.selected_channel().num_enabled_settings();
     int selected = references_app.ui.selected_channel + event.value;
-    CONSTRAIN(selected, 0, NUM_REF_CHANNELS - 0x1);
+    CONSTRAIN(selected, 0, DAC_CHANNEL_LAST - 0x1);
     references_app.ui.selected_channel = selected;
 
     // hack -- deal w/ menu items / channels
