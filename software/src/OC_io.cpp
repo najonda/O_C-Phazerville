@@ -31,7 +31,7 @@
 
 namespace OC {
 
-static const char * const autotune_enable_strings[] = { "dftl", "auto" };
+static const char * const autotune_enable_strings[] = { "dflt", "auto" };
 
 SETTINGS_DECLARE(OC::IOSettings, OC::IO_SETTING_LAST) {
   { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
@@ -65,7 +65,7 @@ SETTINGS_DECLARE(OC::IOSettings, OC::IO_SETTING_LAST) {
 {
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
     int32_t val, pitch;
-    if (io_settings.get_value(IOSettings::channel_setting(IO_SETTING_CV1_FILTER, channel))) {
+    if (io_settings.adc_filter_enabled(channel)) {
       val = ADC::value(static_cast<ADC_CHANNEL>(channel));
       pitch = ADC::pitch_value(static_cast<ADC_CHANNEL>(channel));
     } else {
@@ -73,8 +73,7 @@ SETTINGS_DECLARE(OC::IOSettings, OC::IO_SETTING_LAST) {
       pitch = ADC::unsmoothed_pitch_value(static_cast<ADC_CHANNEL>(channel));
     }
 
-    auto mult_factor = io_settings.get_value(IOSettings::channel_setting(IO_SETTING_CV1_GAIN, channel));
-
+    auto mult_factor = io_settings.input_gain(channel);
     ioframe->cv.values[channel] = CVUtils::Attenuate(val, mult_factor);
     ioframe->cv.pitch_values[channel] = CVUtils::Attenuate(pitch, mult_factor);
   }

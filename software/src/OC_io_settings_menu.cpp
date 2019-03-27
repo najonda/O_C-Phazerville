@@ -81,7 +81,7 @@ void IOSettingsMenu::Draw() const
   char label[16];
 
   while (settings_list.available()) {
-    const int setting = settings_list.Next(list_item);
+    const IO_SETTING setting = static_cast<IO_SETTING>(settings_list.Next(list_item));
     const int value = io_settings_->get_value(IOSettings::channel_setting(setting, selected_channel_));
     const auto &attr = IOSettings::value_attr(IOSettings::channel_setting(setting, selected_channel_));
 
@@ -164,7 +164,9 @@ void IOSettingsMenu::DispatchEvent(const UI::Event &event)
     case CONTROL_ENCODER_R:
     if (cursor_.editing()) {
       io_settings_->change_value(
-          IOSettings::channel_setting(cursor_.cursor_pos(), selected_channel_),
+          IOSettings::channel_setting(
+              static_cast<IO_SETTING>(cursor_.cursor_pos()),
+              selected_channel_),
           event.value);
     } else {
       cursor_.Scroll(event.value);
