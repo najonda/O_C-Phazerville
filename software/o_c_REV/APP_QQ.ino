@@ -1305,7 +1305,7 @@ void QQ_menu() {
         case CHANNEL_SOURCE_OUT1:
         case CHANNEL_SOURCE_OUT2:
         case CHANNEL_SOURCE_OUT3: {
-          char s[] = "OutA";
+          char s[] = "  #A";
           s[3] += channel.source_to_output_channel(channel.get_source());
           list_item.DrawDefault(s, value, attr);
         } break;
