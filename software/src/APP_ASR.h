@@ -741,134 +741,143 @@ SETTINGS_DECLARE(ASRApp, ASR_SETTING_LAST) {
 
 /* -------------------------------------------------------------------*/
 
-class ASRState {
-public:
+ASR asr;
 
-  void Init() {
-    cursor.Init(ASR_SETTING_SCALE, ASR_SETTING_LAST - 1);
-    scale_editor.Init(false);
-    left_encoder_value = OC::Scales::SCALE_SEMI;
-  }
+namespace OC {
+
+OC_APP_TRAITS(AppASR, TWOCCS("AS"), "CopierMaschine", "ASR");
+class OC_APP_CLASS(AppASR) {
+public:
+  OC_APP_INTERFACE_DECLARE(AppASR);
+
+private:
+  int left_encoder_value_;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  ScaleEditor<ASR> scale_editor_;
 
   inline bool editing() const {
-    return cursor.editing();
+    return cursor_.editing();
   }
 
   inline int cursor_pos() const {
-    return cursor.cursor_pos();
+    return cursor_.cursor_pos();
   }
 
-  int left_encoder_value;
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  menu::ScreenCursor<menu::kScreenLines> cursor_state;
-  OC::ScaleEditor<ASRApp> scale_editor;
+  void HandleTopButton();
+  void HandleTowerButton();
+  void HandleTightButton();
+  void HandleTeftButton();
+  void HandleLeftButtonLong();
+  void HandleDownButtonLong();
 };
 
-ASRState asr_state;
-ASRApp asr;
+AppASR APP_ASR;
 
-void ASR_init() {
-
+void AppASR::Init() {
   asr.InitDefaults();
   asr.init();
-  asr_state.Init();
+
+  left_encoder_value_ = Scales::SCALE_SEMI;
+  cursor_.Init(ASR_SETTING_SCALE, ASR_SETTING_LAST - 1);
+  scale_editor_.Init(false);
+
   asr.update_enabled_settings();
-  asr_state.cursor.AdjustEnd(asr.num_enabled_settings() - 1);
+  cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
 }
 
-static constexpr size_t ASR_storageSize() {
-  return ASRApp::storageSize();
+size_t AppASR::storage_size() const {
+  return ASR::storageSize();
 }
 
-static size_t ASR_restore(const void *storage) {
+size_t AppASR::Restore(const void *storage) {
   // init nicely
   size_t storage_size = asr.Restore(storage);
-  asr_state.left_encoder_value = asr.get_scale(DUMMY);
-  asr.set_scale(asr_state.left_encoder_value);
+  left_encoder_value_ = asr.get_scale(DUMMY); 
+  asr.set_scale(left_encoder_value_);
   asr.clear_freeze();
   asr.set_display_mask(asr.get_mask());
   asr.update_enabled_settings();
-  asr_state.cursor.AdjustEnd(asr.num_enabled_settings() - 1);
+  cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
   return storage_size;
 }
 
-void ASR_handleAppEvent(OC::AppEvent event) {
+void AppASR::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      asr_state.cursor.set_editing(false);
-      asr_state.scale_editor.Close();
+    case APP_EVENT_RESUME:
+      cursor_.set_editing(false);
+      scale_editor_.Close();
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       asr.update_enabled_settings();
-      asr_state.cursor.AdjustEnd(asr.num_enabled_settings() - 1);
+      cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
       break;
   }
 }
 
-void ASR_loop() {
+void AppASR::Loop() {
 }
 
-void ASR_process(OC::IOFrame *ioframe) {
+void AppASR::Process(IOFrame *ioframe) {
   asr.update(ioframe);
 }
 
-void ASR_getIOConfig(OC::IOConfig &ioconfig)
+void AppASR::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("TAP1", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("TAP2", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("TAP3", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("TAP4", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_A].set("TAP1", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("TAP2", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("TAP3", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("TAP4", OUTPUT_MODE_PITCH);
 }
 
-void ASR_handleButtonEvent(const UI::Event &event) {
-  if (asr_state.scale_editor.active()) {
-    asr_state.scale_editor.HandleButtonEvent(event);
+void AppASR::HandleButtonEvent(const UI::Event &event) {
+  if (scale_editor_.active()) {
+    scale_editor_.HandleButtonEvent(event);
     return;
   }
 
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-        ASR_topButton();
+      case CONTROL_BUTTON_UP:
+        HandleTopButton();
         break;
-      case OC::CONTROL_BUTTON_DOWN:
-        ASR_lowerButton();
+      case CONTROL_BUTTON_DOWN:
+        HandleTowerButton();
         break;
-      case OC::CONTROL_BUTTON_L:
-        ASR_leftButton();
+      case CONTROL_BUTTON_L:
+        HandleTeftButton();
         break;
-      case OC::CONTROL_BUTTON_R:
-        ASR_rightButton();
+      case CONTROL_BUTTON_R:
+        HandleTightButton();
         break;
     }
   } else if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
-    if (OC::CONTROL_BUTTON_L == event.control)
-      ASR_leftButtonLong();
-    else if (OC::CONTROL_BUTTON_DOWN == event.control)
-      ASR_downButtonLong();
+    if (CONTROL_BUTTON_L == event.control)
+      HandleLeftButtonLong();
+    else if (CONTROL_BUTTON_DOWN == event.control)
+      HandleDownButtonLong();  
   }
 }
 
-void ASR_handleEncoderEvent(const UI::Event &event) {
+void AppASR::HandleEncoderEvent(const UI::Event &event) {
 
-  if (asr_state.scale_editor.active()) {
-    asr_state.scale_editor.HandleEncoderEvent(event);
+  if (scale_editor_.active()) {
+    scale_editor_.HandleEncoderEvent(event);
     return;
   }
 
-  if (OC::CONTROL_ENCODER_L == event.control) {
+  if (CONTROL_ENCODER_L == event.control) {
+    
+    int value = left_encoder_value_ + event.value;
+    CONSTRAIN(value, 0, Scales::NUM_SCALES - 1);
+    left_encoder_value_ = value;
+    
+  } else if (CONTROL_ENCODER_R == event.control) {
 
-    int value = asr_state.left_encoder_value + event.value;
-    CONSTRAIN(value, 0, OC::Scales::NUM_SCALES - 1);
-    asr_state.left_encoder_value = value;
+    if (editing()) {  
 
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
-
-    if (asr_state.editing()) {
-
-    ASRSettings setting = asr.enabled_setting_at(asr_state.cursor_pos());
+    ASRSettings setting = asr.enabled_setting_at(cursor_pos());
 
     if (ASR_SETTING_MASK != setting) {
 
@@ -879,83 +888,84 @@ void ASR_handleEncoderEvent(const UI::Event &event) {
 
             case ASR_SETTING_CV_SOURCE:
               asr.update_enabled_settings();
-              asr_state.cursor.AdjustEnd(asr.num_enabled_settings() - 1);
+              cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
               // hack/hide extra options when default CV source is selected
-              if (!asr.get_cv_source())
-                asr_state.cursor.Scroll(asr_state.cursor_pos());
+              if (!asr.get_cv_source()) 
+                cursor_.Scroll(cursor_pos());
             break;
             default:
             break;
           }
         }
     } else {
-      asr_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
-void ASR_topButton() {
+
+void AppASR::HandleTopButton() {
   if (asr.octave_toggle())
     asr.change_value(ASR_SETTING_OCTAVE, 1);
   else 
     asr.change_value(ASR_SETTING_OCTAVE, -1);
 }
 
-void ASR_lowerButton() {
+void AppASR::HandleTowerButton() {
    asr.toggle_manual_freeze();
 }
 
-void ASR_rightButton() {
+void AppASR::HandleTightButton() {
 
-  switch (asr.enabled_setting_at(asr_state.cursor_pos())) {
+  switch (asr.enabled_setting_at(cursor_pos())) {
 
       case ASR_SETTING_MASK: {
         int scale = asr.get_scale(DUMMY);
-        if (OC::Scales::SCALE_NONE != scale)
-          asr_state.scale_editor.Edit(&asr, scale);
+        if (Scales::SCALE_NONE != scale)
+          scale_editor_.Edit(&asr, scale);
         }
       break;
       default:
-        asr_state.cursor.toggle_editing();
+        cursor_.toggle_editing();
       break;  
   }
 }
 
-void ASR_leftButton() {
+void AppASR::HandleTeftButton() {
 
-  if (asr_state.left_encoder_value != asr.get_scale(DUMMY))
-    asr.set_scale(asr_state.left_encoder_value);
+  if (left_encoder_value_ != asr.get_scale(DUMMY))
+    asr.set_scale(left_encoder_value_);
 }
 
-void ASR_leftButtonLong() {
+void AppASR::HandleLeftButtonLong() {
 
-  int scale = asr_state.left_encoder_value;
-  asr.set_scale(asr_state.left_encoder_value);
-  if (scale != OC::Scales::SCALE_NONE) 
-      asr_state.scale_editor.Edit(&asr, scale);
+  int scale = left_encoder_value_;
+  asr.set_scale(left_encoder_value_);
+  if (scale != Scales::SCALE_NONE) 
+      scale_editor_.Edit(&asr, scale);
 }
 
-void ASR_downButtonLong() {
+void AppASR::HandleDownButtonLong() {
    asr.toggle_delay_mechanics();
 }
 
-size_t ASR_save(void *storage) {
+size_t AppASR::Save(void *storage) const {
   return asr.Save(storage);
 }
 
-void ASR_menu() {
+void AppASR::DrawMenu() const {
 
   menu::TitleBar<0, 4, 0>::Draw();
 
-  int scale = asr_state.left_encoder_value;
+  int scale = left_encoder_value_;
   graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);
-  graphics.print(OC::scale_names[scale]);
+  graphics.print(scale_names[scale]);
 
   if (asr.get_scale(DUMMY) == scale)
-    graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, OC::bitmap_indicator_4x8);
+    graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, bitmap_indicator_4x8);
 
   if (asr.freeze_state())
-    graphics.drawBitmap8(102, menu::QuadTitleBar::kTextY, 4, OC::bitmap_hold_indicator_4x8);  
+    graphics.drawBitmap8(102, menu::QuadTitleBar::kTextY, 4, bitmap_hold_indicator_4x8);  
 
   if (asr.poke_octave_toggle()) {
     graphics.setPrintPos(110, 2);
@@ -963,15 +973,15 @@ void ASR_menu() {
   }
 
   if (asr.get_delay_type())
-    graphics.drawBitmap8(118, menu::QuadTitleBar::kTextY, 4, OC::bitmap_hold_indicator_4x8);
-  else
-    graphics.drawBitmap8(118, menu::QuadTitleBar::kTextY, 4, OC::bitmap_indicator_4x8);
+    graphics.drawBitmap8(118, menu::QuadTitleBar::kTextY, 4, bitmap_hold_indicator_4x8);
+  else 
+    graphics.drawBitmap8(118, menu::QuadTitleBar::kTextY, 4, bitmap_indicator_4x8);
 
   uint8_t clock_state = (asr.clockState() + 3) >> 2;
   if (clock_state)
-    graphics.drawBitmap8(124, 2, 4, OC::bitmap_gate_indicators_8 + (clock_state << 2));
+    graphics.drawBitmap8(124, 2, 4, bitmap_gate_indicators_8 + (clock_state << 2));
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(asr_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
 
   while (settings_list.available()) {
@@ -983,7 +993,7 @@ void ASR_menu() {
     switch (setting) {
 
       case ASR_SETTING_MASK:
-      menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, asr.get_rotated_mask(), OC::Scales::GetScale(asr.get_scale(DUMMY)).num_notes);
+      menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, asr.get_rotated_mask(), Scales::GetScale(asr.get_scale(DUMMY)).num_notes);
       list_item.DrawNoValue<false>(value, attr);
       break;
       case ASR_SETTING_CV_SOURCE:
@@ -1003,11 +1013,11 @@ void ASR_menu() {
       break;
     }
   }
-  if (asr_state.scale_editor.active())
-    asr_state.scale_editor.Draw();
+  if (scale_editor_.active())
+    scale_editor_.Draw(); 
 }
 
-void ASR_screensaver() {
+void AppASR::DrawScreensaver() const {
 
 // Possible variants (w x h)
 // 4 x 32x64 px
@@ -1023,7 +1033,7 @@ void ASR_screensaver() {
     std::transform(
         std::begin(channel_history), std::end(channel_history),
         std::begin(channel_history),
-        [](int32_t pitch) { return OC::IO::pitch_rel_to_abs(pitch); } );
+        [](int32_t pitch) { return IO::pitch_rel_to_abs(pitch); } );
 
     uint32_t scroll_pos = asr.history(i).get_scroll_pos() >> 5;
 
@@ -1068,10 +1078,10 @@ void ASR_screensaver() {
   }
 }
 
+void AppASR::DrawDebugInfo() const {
 #ifdef ASR_DEBUG
-void ASR_debug() {
-  for (int i = 0; i < 1; ++i) {
-    uint8_t ypos = 10*(i + 1) + 2 ;
+  for (int i = 0; i < 1; ++i) { 
+    uint8_t ypos = 10*(i + 1) + 2 ; 
     graphics.setPrintPos(2, ypos);
     graphics.print(asr.get_int_seq_i());
     graphics.setPrintPos(32, ypos);
@@ -1083,7 +1093,9 @@ void ASR_debug() {
     graphics.setPrintPos(122, ypos);
     graphics.print(asr.get_int_seq_n());
  }
-}
 #endif // ASR_DEBUG
+}
+
+} // namespace OC
 
 #endif // ENABLE_APP_ASR

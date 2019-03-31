@@ -144,7 +144,7 @@ enum CHORDS_DIRECTIONS {
 extern uint_fast8_t MENU_REDRAW;
 using OC::DUMMY;
 
-class Chords : public settings::SettingsBase<Chords, CHORDS_SETTING_LAST> {
+class ChordQuantizer : public settings::SettingsBase<ChordQuantizer, CHORDS_SETTING_LAST> {
 public:
 
   int get_scale(uint8_t selected_scale_slot_) const {
@@ -968,7 +968,7 @@ private:
     uint16_t mask = get_mask();
 
     if (mask_rotate)
-      mask = OC::ScaleEditor<Chords>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      mask = OC::ScaleEditor<ChordQuantizer>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (force || (last_scale_ != scale || last_mask_ != mask)) {
       last_scale_ = scale;
@@ -994,7 +994,7 @@ const char* const chord_playmodes[] = {
 };
 
 // TOTAL EEPROM SIZE: 25 bytes
-SETTINGS_DECLARE(Chords, CHORDS_SETTING_LAST) {
+SETTINGS_DECLARE(ChordQuantizer, CHORDS_SETTING_LAST) {
   { OC::Scales::SCALE_SEMI, OC::Scales::SCALE_SEMI, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
   { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
   { 0, 0, OC::Chords::NUM_CHORD_PROGRESSIONS - 1, "progression", chords_slots, settings::STORAGE_TYPE_U8 },
@@ -1029,131 +1029,139 @@ SETTINGS_DECLARE(Chords, CHORDS_SETTING_LAST) {
   { 0, 0, 0, " ", NULL, settings::STORAGE_TYPE_U4 }  // MORE DUMMY
 };
 
-class ChordQuantizer {
+namespace OC {
+
+OC_APP_TRAITS(AppChordQuantizer, TWOCCS("CQ"), "Acid Curds", "Chords");
+class OC_APP_CLASS(AppChordQuantizer) {
 public:
-  void Init() {
-    cursor.Init(CHORDS_SETTING_SCALE, CHORDS_SETTING_LAST - 1);
-    scale_editor.Init(false);
-    chord_editor.Init();
-    left_encoder_value = OC::Scales::SCALE_SEMI;
-  }
+  OC_APP_INTERFACE_DECLARE(AppChordQuantizer);
+
+private:
+  ChordQuantizer chord_quantizer_;
+
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  OC::ScaleEditor<ChordQuantizer> scale_editor_;
+  OC::ChordEditor<ChordQuantizer> chord_editor_;
+  int left_encoder_value_;
 
   inline bool editing() const {
-    return cursor.editing();
+    return cursor_.editing();
   }
 
-  inline int cursor_pos() const {
-    return cursor.cursor_pos();
-  }
-
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  // menu::ScreenCursor<menu::kScreenLines> cursor;
-  OC::ScaleEditor<Chords> scale_editor;
-  OC::ChordEditor<Chords> chord_editor;
-  int left_encoder_value;
+  void HandleUpButtonLong();
+  void HandleDownButtonLong();
+  void HandleLeftButtonLong();
+  void HandleTopButton();
+  void HandleLowerButton();
+  void HandleLeftButton();
+  void HandleRightButton();
 };
 
-ChordQuantizer chords_state;
-Chords chords;
+AppChordQuantizer APP_CHORDS;
 
-void CHORDS_init() {
+void AppChordQuantizer::Init() {
 
-  chords.InitDefaults();
-  chords.Init();
-  chords_state.Init();
-  chords.update_enabled_settings();
-  chords_state.cursor.AdjustEnd(chords.num_enabled_settings() - 1);
+  chord_quantizer_.InitDefaults();
+  chord_quantizer_.Init();
+
+  cursor_.Init(CHORDS_SETTING_SCALE, CHORDS_SETTING_LAST - 1);
+  scale_editor_.Init(false);
+  chord_editor_.Init();
+  left_encoder_value_ = OC::Scales::SCALE_SEMI;
+
+  chord_quantizer_.update_enabled_settings();
+  cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
 }
 
-static constexpr size_t CHORDS_storageSize() {
-  return Chords::storageSize();
+size_t AppChordQuantizer::storage_size() const {
+  return ChordQuantizer::storageSize();
 }
 
-static size_t CHORDS_save(void *storage) {
-  return chords.Save(storage);
+size_t AppChordQuantizer::Save(void *storage) const {
+  return chord_quantizer_.Save(storage);
 }
 
-static size_t CHORDS_restore(const void *storage) {
+size_t AppChordQuantizer::Restore(const void *storage) {
 
-  size_t storage_size = chords.Restore(storage);
-  chords.update_enabled_settings();
-  chords_state.left_encoder_value = chords.get_scale(DUMMY);
-  chords.set_scale(chords_state.left_encoder_value);
-  chords_state.cursor.AdjustEnd(chords.num_enabled_settings() - 1);
+  size_t storage_size = chord_quantizer_.Restore(storage);
+  chord_quantizer_.update_enabled_settings();
+  left_encoder_value_ = chord_quantizer_.get_scale(DUMMY);
+  chord_quantizer_.set_scale(left_encoder_value_);
+  cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
   return storage_size;
 }
 
-void CHORDS_handleAppEvent(OC::AppEvent event) {
+void AppChordQuantizer::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      chords_state.cursor.set_editing(false);
-      chords_state.scale_editor.Close();
-      chords_state.chord_editor.Close();
+    case APP_EVENT_RESUME:
+      cursor_.set_editing(false);
+      scale_editor_.Close();
+      chord_editor_.Close();
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void CHORDS_process(OC::IOFrame *ioframe) {
-  chords.Update(ioframe);
+void AppChordQuantizer::Process(IOFrame *ioframe) {
+  chord_quantizer_.Update(ioframe);
 }
 
-void CHORDS_getIOConfig(OC::IOConfig &ioconfig)
+void AppChordQuantizer::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("3", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("5", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("12", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("3", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("5", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("12", OUTPUT_MODE_PITCH);
 }
 
-void CHORDS_loop() {
+void AppChordQuantizer::Loop() {
 }
 
-void CHORDS_menu() {
+void AppChordQuantizer::DrawMenu() const {
 
   menu::TitleBar<0, 4, 0>::Draw();
 
   // print scale
-  int scale = chords_state.left_encoder_value;
+  int scale = left_encoder_value_;
   graphics.movePrintPos(5, 0);
-  graphics.print(OC::scale_names[scale]);
-  if (chords.get_scale(DUMMY) == scale)
-    graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, OC::bitmap_indicator_4x8);
+  graphics.print(scale_names[scale]);
+  if (chord_quantizer_.get_scale(DUMMY) == scale)
+    graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, bitmap_indicator_4x8);
 
   // active progression #
   graphics.setPrintPos(106, 2);
-  if (chords.poke_octave_toggle())
+  if (chord_quantizer_.poke_octave_toggle())
     graphics.print("+");
   else
     graphics.print("#");
-  graphics.print(chords.get_active_progression() + 0x1);
+  graphics.print(chord_quantizer_.get_active_progression() + 0x1);
 
-  uint8_t clock_state = (chords.clockState() + 3) >> 2;
-  if (clock_state && !chords_state.chord_editor.active())
-    graphics.drawBitmap8(121, 2, 4, OC::bitmap_gate_indicators_8 + (clock_state << 2));
+  uint8_t clock_state = (chord_quantizer_.clockState() + 3) >> 2;
+  if (clock_state && !chord_editor_.active())
+    graphics.drawBitmap8(121, 2, 4, bitmap_gate_indicators_8 + (clock_state << 2));
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(chords_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
 
   while (settings_list.available()) {
 
-    const int setting = chords.enabled_setting_at(settings_list.Next(list_item));
-    const int value = chords.get_value(setting);
-    const settings::value_attr &attr = Chords::value_attr(setting);
+    const int setting = chord_quantizer_.enabled_setting_at(settings_list.Next(list_item));
+    const int value = chord_quantizer_.get_value(setting);
+    const settings::value_attr &attr = ChordQuantizer::value_attr(setting);
 
     switch(setting) {
 
       case CHORDS_SETTING_MASK:
-        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, chords.get_rotated_mask(), OC::Scales::GetScale(chords.get_scale(DUMMY)).num_notes);
+        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, chord_quantizer_.get_rotated_mask(), Scales::GetScale(chord_quantizer_.get_scale(DUMMY)).num_notes);
         list_item.DrawNoValue<false>(value, attr);
         break;
       case CHORDS_SETTING_DUMMY:
       case CHORDS_SETTING_CHORD_EDIT:
         // to do: draw something that makes sense, presumably some pre-made icons would work best.
-        menu::DrawMiniChord(menu::kDisplayWidth, list_item.y, chords.get_display_num_chords(), chords.active_chord());
+        menu::DrawMiniChord(menu::kDisplayWidth, list_item.y, chord_quantizer_.get_display_num_chords(), chord_quantizer_.active_chord());
         list_item.DrawNoValue<false>(value, attr);
         break;
       case CHORDS_SETTING_MORE_DUMMY:
@@ -1161,92 +1169,138 @@ void CHORDS_menu() {
         break;
       case CHORDS_SETTING_CHORD_SLOT:
         //special case:
-        list_item.DrawValueMax(value, attr, chords.get_num_chords(chords.get_progression()));
+        list_item.DrawValueMax(value, attr, chord_quantizer_.get_num_chords(chord_quantizer_.get_progression()));
         break;
       default:
         list_item.DrawDefault(value, attr);
         break;
       }
 
-   if (chords_state.scale_editor.active())
-     chords_state.scale_editor.Draw();
-   else if (chords_state.chord_editor.active())
-     chords_state.chord_editor.Draw();
+   if (scale_editor_.active())
+     scale_editor_.Draw();
+   else if (chord_editor_.active())
+     chord_editor_.Draw();
   }
 }
 
-void CHORDS_handleEncoderEvent(const UI::Event &event) {
+void AppChordQuantizer::HandleButtonEvent(const UI::Event &event) {
 
-  if (chords_state.scale_editor.active()) {
-    chords_state.scale_editor.HandleEncoderEvent(event);
+  if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
+     switch (event.control) {
+      case CONTROL_BUTTON_UP:
+         HandleUpButtonLong();
+        break;
+      case CONTROL_BUTTON_DOWN:
+        HandleDownButtonLong();
+        break;
+       case CONTROL_BUTTON_L:
+        if (!(chord_editor_.active()))
+          HandleLeftButtonLong();
+        break;
+      default:
+        break;
+     }
+  }
+
+  if (scale_editor_.active()) {
+    scale_editor_.HandleButtonEvent(event);
     return;
   }
-  else if (chords_state.chord_editor.active()) {
-    chords_state.chord_editor.HandleEncoderEvent(event);
+  else if (chord_editor_.active()) {
+    chord_editor_.HandleButtonEvent(event);
     return;
   }
 
-  if (OC::CONTROL_ENCODER_L == event.control) {
+  if (UI::EVENT_BUTTON_PRESS == event.type) {
+    switch (event.control) {
+      case CONTROL_BUTTON_UP:
+        HandleTopButton();
+        break;
+      case CONTROL_BUTTON_DOWN:
+        HandleLowerButton();
+        break;
+      case CONTROL_BUTTON_L:
+        HandleLeftButton();
+        break;
+      case CONTROL_BUTTON_R:
+        HandleRightButton();
+        break;
+    }
+  }
+}
 
-    int value = chords_state.left_encoder_value + event.value;
-    CONSTRAIN(value, OC::Scales::SCALE_SEMI, OC::Scales::NUM_SCALES - 1);
-    chords_state.left_encoder_value = value;
+void AppChordQuantizer::HandleEncoderEvent(const UI::Event &event) {
 
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
+  if (scale_editor_.active()) {
+    scale_editor_.HandleEncoderEvent(event);
+    return;
+  }
+  else if (chord_editor_.active()) {
+    chord_editor_.HandleEncoderEvent(event);
+    return;
+  }
 
-    if (chords_state.editing()) {
+  if (CONTROL_ENCODER_L == event.control) {
 
-      CHORDS_SETTINGS setting = chords.enabled_setting_at(chords_state.cursor_pos());
+    int value = left_encoder_value_ + event.value;
+    CONSTRAIN(value, Scales::SCALE_SEMI, Scales::NUM_SCALES - 1);
+    left_encoder_value_ = value;
+
+  } else if (CONTROL_ENCODER_R == event.control) {
+
+    if (editing()) {
+
+      CHORDS_SETTINGS setting = chord_quantizer_.enabled_setting_at(cursor_.cursor_pos());
 
       if (CHORDS_SETTING_MASK != setting) {
 
-        if (chords.change_value(setting, event.value))
-          chords.force_update();
+        if (chord_quantizer_.change_value(setting, event.value))
+          chord_quantizer_.force_update();
 
         switch (setting) {
           case CHORDS_SETTING_CHORD_SLOT:
           // special case, slot shouldn't be > num.chords
-            if (chords.get_chord_slot() > chords.get_num_chords(chords.get_progression()))
-              chords.set_chord_slot(chords.get_num_chords(chords.get_progression()));
+            if (chord_quantizer_.get_chord_slot() > chord_quantizer_.get_num_chords(chord_quantizer_.get_progression()))
+              chord_quantizer_.set_chord_slot(chord_quantizer_.get_num_chords(chord_quantizer_.get_progression()));
             break;
           case CHORDS_SETTING_DIRECTION:
           case CHORDS_SETTING_PLAYMODES:
           // show options, or don't:
-            chords.update_enabled_settings();
-            chords_state.cursor.AdjustEnd(chords.num_enabled_settings() - 1);
+            chord_quantizer_.update_enabled_settings();
+            cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
             break;
           default:
             break;
         }
       }
     } else {
-      chords_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
-void CHORDS_topButton() {
+void AppChordQuantizer::HandleTopButton() {
 
-  if (chords.get_menu_page() == MENU_PARAMETERS) {
+  if (chord_quantizer_.get_menu_page() == MENU_PARAMETERS) {
 
-    if (chords.octave_toggle())
-      chords.change_value(CHORDS_SETTING_OCTAVE, 1);
+    if (chord_quantizer_.octave_toggle())
+      chord_quantizer_.change_value(CHORDS_SETTING_OCTAVE, 1);
     else
-      chords.change_value(CHORDS_SETTING_OCTAVE, -1);
+      chord_quantizer_.change_value(CHORDS_SETTING_OCTAVE, -1);
   }
   else  {
-    chords.set_menu_page(MENU_PARAMETERS);
-    chords.update_enabled_settings();
-    chords_state.cursor.set_editing(false);
+    chord_quantizer_.set_menu_page(MENU_PARAMETERS);
+    chord_quantizer_.update_enabled_settings();
+    cursor_.set_editing(false);
   }
 }
 
-void CHORDS_lowerButton() {
+void AppChordQuantizer::HandleLowerButton() {
   // go the CV mapping
 
-  if (!chords_state.chord_editor.active() && !chords_state.scale_editor.active()) {
+  if (!chord_editor_.active() && !scale_editor_.active()) {
 
-    uint8_t _menu_page = chords.get_menu_page();
+    uint8_t _menu_page = chord_quantizer_.get_menu_page();
 
     switch (_menu_page) {
 
@@ -1258,103 +1312,78 @@ void CHORDS_lowerButton() {
       break;
     }
 
-    chords.set_menu_page(_menu_page);
-    chords.update_enabled_settings();
-    chords_state.cursor.set_editing(false);
+    chord_quantizer_.set_menu_page(_menu_page);
+    chord_quantizer_.update_enabled_settings();
+    cursor_.set_editing(false);
   }
 }
 
-void CHORDS_rightButton() {
+void AppChordQuantizer::HandleRightButton() {
 
-  switch (chords.enabled_setting_at(chords_state.cursor_pos())) {
+  switch (chord_quantizer_.enabled_setting_at(cursor_.cursor_pos())) {
 
     case CHORDS_SETTING_MASK: {
-      int scale = chords.get_scale(DUMMY);
-      if (OC::Scales::SCALE_NONE != scale)
-        chords_state.scale_editor.Edit(&chords, scale);
+      int scale = chord_quantizer_.get_scale(DUMMY);
+      if (Scales::SCALE_NONE != scale)
+        scale_editor_.Edit(&chord_quantizer_, scale);
       }
     break;
     case CHORDS_SETTING_CHORD_EDIT:
-      chords_state.chord_editor.Edit(&chords, chords.get_chord_slot(), chords.get_num_chords(chords.get_progression()), chords.get_progression());
+      chord_editor_.Edit(&chord_quantizer_, chord_quantizer_.get_chord_slot(), chord_quantizer_.get_num_chords(chord_quantizer_.get_progression()), chord_quantizer_.get_progression());
     break;
     case CHORDS_SETTING_DUMMY:
     case CHORDS_SETTING_MORE_DUMMY:
-      chords.set_menu_page(MENU_PARAMETERS);
-      chords.update_enabled_settings();
+      chord_quantizer_.set_menu_page(MENU_PARAMETERS);
+      chord_quantizer_.update_enabled_settings();
     break;
     default:
-      chords_state.cursor.toggle_editing();
+      cursor_.toggle_editing();
     break;
   }
 }
 
-void CHORDS_leftButton() {
+void AppChordQuantizer::HandleLeftButton() {
 
-  if (chords_state.left_encoder_value != chords.get_scale(DUMMY) || chords_state.left_encoder_value == OC::Scales::SCALE_SEMI) {
-    chords.set_scale(chords_state.left_encoder_value);
+  if (left_encoder_value_ != chord_quantizer_.get_scale(DUMMY) || left_encoder_value_ == Scales::SCALE_SEMI) {
+    chord_quantizer_.set_scale(left_encoder_value_);
     // hide/show root
-    chords.update_enabled_settings();
+    chord_quantizer_.update_enabled_settings();
   }
 }
 
-void CHORDS_leftButtonLong() {
+void AppChordQuantizer::HandleLeftButtonLong() {
   // todo
 }
 
-void CHORDS_downButtonLong() {
-  chords.clear_CV_mapping();
-  chords_state.cursor.set_editing(false);
+void AppChordQuantizer::HandleDownButtonLong() {
+  chord_quantizer_.clear_CV_mapping();
+  cursor_.set_editing(false);
 }
 
-void CHORDS_upButtonLong() {
+void AppChordQuantizer::HandleUpButtonLong() {
   // screensaver short cut
 }
 
-void CHORDS_handleButtonEvent(const UI::Event &event) {
+void AppChordQuantizer::DrawScreensaver() const {
+#ifdef CHORDS_DEBUG_SCREENSAVER
+  debug::CycleMeasurement render_cycles;
+#endif
 
-  if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
-     switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-         CHORDS_upButtonLong();
-        break;
-      case OC::CONTROL_BUTTON_DOWN:
-        CHORDS_downButtonLong();
-        break;
-       case OC::CONTROL_BUTTON_L:
-        if (!(chords_state.chord_editor.active()))
-          CHORDS_leftButtonLong();
-        break;
-      default:
-        break;
-     }
-  }
+  chord_quantizer_.RenderScreensaver(0);
 
-  if (chords_state.scale_editor.active()) {
-    chords_state.scale_editor.HandleButtonEvent(event);
-    return;
-  }
-  else if (chords_state.chord_editor.active()) {
-    chords_state.chord_editor.HandleButtonEvent(event);
-    return;
-  }
-
-  if (UI::EVENT_BUTTON_PRESS == event.type) {
-    switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-        CHORDS_topButton();
-        break;
-      case OC::CONTROL_BUTTON_DOWN:
-        CHORDS_lowerButton();
-        break;
-      case OC::CONTROL_BUTTON_L:
-        CHORDS_leftButton();
-        break;
-      case OC::CONTROL_BUTTON_R:
-        CHORDS_rightButton();
-        break;
-    }
-  }
+#ifdef CHORDS_DEBUG_SCREENSAVER
+  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
+  uint32_t us = debug::cycles_to_us(render_cycles.read());
+  graphics.setPrintPos(0, 32);
+  graphics.printf("%u",  us);
+#endif
 }
+
+void AppChordQuantizer::DrawDebugInfo() const {
+}
+
+} // namespace OC
+
 
 static const weegfx::coord_t chords_kBottom = 60;
 
@@ -1367,7 +1396,7 @@ inline int32_t chords_render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coo
   return octave;
 }
 
-void Chords::RenderScreensaver(weegfx::coord_t start_x) const {
+void ChordQuantizer::RenderScreensaver(weegfx::coord_t start_x) const {
 
   int _active_chord = active_chord();
   int _num_progression = get_active_progression();
@@ -1383,22 +1412,6 @@ void Chords::RenderScreensaver(weegfx::coord_t start_x) const {
     else  
       menu::DrawChord(x + (j << 4) + 2, y, 4, j, _num_progression);
   }
-}
-
-
-void CHORDS_screensaver() {
-#ifdef CHORDS_DEBUG_SCREENSAVER
-  debug::CycleMeasurement render_cycles;
-#endif
-
-  chords.RenderScreensaver(0);
-
-#ifdef CHORDS_DEBUG_SCREENSAVER
-  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
-  uint32_t us = debug::cycles_to_us(render_cycles.read());
-  graphics.setPrintPos(0, 32);
-  graphics.printf("%u",  us);
-#endif
 }
 
 #endif // ENABLE_APP_CHORDS

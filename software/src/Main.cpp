@@ -90,7 +90,7 @@ void FASTRUN CORE_timer_ISR() {
 
   ++OC::CORE::ticks;
   if (OC::CORE::app_isr_enabled) {
-    OC::apps::Process(&io_frame);
+    OC::app_switcher.Process(&io_frame);
   }
 
   OC_DEBUG_RESET_CYCLES(OC::CORE::ticks, 16384, OC::DEBUG::ISR_cycles);
@@ -186,7 +186,7 @@ void setup() {
 #endif
 
   // initialize apps
-  OC::apps::Init(reset_settings);
+  OC::app_switcher.Init(reset_settings);
 }
 
 /*  ---------    main loop  --------  */
@@ -204,7 +204,7 @@ void FASTRUN loop() {
     }
 
     if (OC::UI_MODE_APP_IO_CONFIG == ui_mode) {
-      ui_mode = OC::ui.AppIOSettings(OC::apps::current_app);
+      ui_mode = OC::ui.AppIOSettings(OC::app_switcher.current_app());
     }
 
     // Refresh display
@@ -213,7 +213,7 @@ void FASTRUN loop() {
         if (OC::UI_MODE_MENU == ui_mode) {
           OC_DEBUG_RESET_CYCLES(menu_redraws, 512, OC::DEBUG::MENU_draw_cycles);
           OC_DEBUG_PROFILE_SCOPE(OC::DEBUG::MENU_draw_cycles);
-          OC::apps::current_app->DrawMenu();
+          OC::app_switcher.current_app()->DrawMenu();
           ++menu_redraws;
 
           #ifdef VOR
@@ -223,7 +223,7 @@ void FASTRUN loop() {
           #endif
 
         } else {
-          OC::apps::current_app->DrawScreensaver();
+          OC::app_switcher.current_app()->DrawScreensaver();
         }
         MENU_REDRAW = 0;
         LAST_REDRAW_TIME = millis();
@@ -231,17 +231,17 @@ void FASTRUN loop() {
     }
 
     // Run current app
-    OC::apps::current_app->loop();
+    OC::app_switcher.current_app()->Loop();
 
     // UI events
-    OC::UiMode mode = OC::ui.DispatchEvents(OC::apps::current_app);
+    OC::UiMode mode = OC::ui.DispatchEvents(OC::app_switcher.current_app());
 
     // State transition for app
     if (mode != ui_mode) {
       if (OC::UI_MODE_SCREENSAVER == mode)
-        OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_ON);
+        OC::app_switcher.current_app()->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_ON);
       else if (OC::UI_MODE_SCREENSAVER == ui_mode)
-        OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_OFF);
+        OC::app_switcher.current_app()->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_OFF);
       ui_mode = mode;
     }
 

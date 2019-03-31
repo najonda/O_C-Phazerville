@@ -116,7 +116,7 @@ public:
     return s[param];
   }
 
-  int16_t get_channel_retrigger_bounces() {
+  int16_t get_channel_retrigger_bounces() const {
     return(bb_.get_retrigger_bounces()) ;
   }
 #endif // BBGEN_DEBUG
@@ -193,7 +193,6 @@ private:
   peaks::BouncingBall bb_;
   bool gate_raised_;
   int32_t s[kMaxBouncingBallParameters];
-
 };
 
 void BouncingBall::Init(OC::DigitalInput default_trigger) {
@@ -222,42 +221,15 @@ SETTINGS_DECLARE(BouncingBall, BB_SETTING_LAST) {
   { 0, 0, 1, "Hard reset", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
 };
 
-class QuadBouncingBalls {
+namespace OC {
+
+OC_APP_TRAITS(AppQuadBouncingBalls, TWOCCS("BB"), "Dialectic Ping Pong", "Balls");
+class OC_APP_CLASS(AppQuadBouncingBalls) {
 public:
+  OC_APP_INTERFACE_DECLARE(AppQuadBouncingBalls);
+
+private:
   static constexpr int32_t kCvSmoothing = 16;
-
-  // bb = env, balls_ = envelopes_, BouncingBall = EnvelopeGenerator
-  // QuadBouncingBalls = QuadEnvelopeGenerator, bbgen = envgen, BBGEN = ENVGEN
-
-  void Init() {
-    int input = OC::DIGITAL_INPUT_1;
-    for (auto &bb : balls_) {
-      bb.Init(static_cast<OC::DigitalInput>(input));
-      ++input;
-    }
-
-    ui.left_encoder_value = 0;
-    ui.left_edit_mode = MODE_EDIT_SETTINGS;
-    ui.selected_channel = 0;
-    ui.selected_segment = 0;
-    ui.cursor.Init(BB_SETTING_GRAVITY, BB_SETTING_LAST - 1);
-  }
-
-  void Process(OC::IOFrame *ioframe) {
-    // TODO[PLD] Do we need this excessive smoothing?
-    cv1.push(ioframe->cv.values[ADC_CHANNEL_1]);
-    cv2.push(ioframe->cv.values[ADC_CHANNEL_2]);
-    cv3.push(ioframe->cv.values[ADC_CHANNEL_3]);
-    cv4.push(ioframe->cv.values[ADC_CHANNEL_4]);
-
-    const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
-    uint32_t triggers = ioframe->digital_inputs.triggered();
-
-    balls_[0].Update(ioframe, triggers, cvs, DAC_CHANNEL_A);
-    balls_[1].Update(ioframe, triggers, cvs, DAC_CHANNEL_B);
-    balls_[2].Update(ioframe, triggers, cvs, DAC_CHANNEL_C);
-    balls_[3].Update(ioframe, triggers, cvs, DAC_CHANNEL_D);
-  }
 
   enum LeftEditMode {
     MODE_SELECT_CHANNEL,
@@ -273,9 +245,11 @@ public:
     menu::ScreenCursor<menu::kScreenLines> cursor;
   } ui;
 
-  BouncingBall &selected() {
-    return balls_[ui.selected_channel];
-  }
+  BouncingBall &selected() { return balls_[ui.selected_channel];  }
+  const BouncingBall &selected() const { return balls_[ui.selected_channel]; }
+
+  void HandleTopButton();
+  void HandleTowerButton();
 
   BouncingBall balls_[4];
 
@@ -285,34 +259,60 @@ public:
   SmoothedValue<int32_t, kCvSmoothing> cv4;
 };
 
-QuadBouncingBalls bbgen;
+AppQuadBouncingBalls APP_BBGEN;
 
-void BBGEN_init() {
-  bbgen.Init();
+void AppQuadBouncingBalls::Init() {
+  int input = OC::DIGITAL_INPUT_1;
+  for (auto &bb : balls_) {
+    bb.Init(static_cast<OC::DigitalInput>(input));
+    ++input;
+  }
+
+  ui.left_encoder_value = 0;
+  ui.left_edit_mode = MODE_EDIT_SETTINGS;
+  ui.selected_channel = 0;
+  ui.selected_segment = 0;
+  ui.cursor.Init(BB_SETTING_GRAVITY, BB_SETTING_LAST - 1);
 }
 
-static constexpr size_t BBGEN_storageSize() {
+void FASTRUN AppQuadBouncingBalls::Process(OC::IOFrame *ioframe) {
+// TODO[PLD] Do we need this excessive smoothing?
+  cv1.push(ioframe->cv.values[ADC_CHANNEL_1]);
+  cv2.push(ioframe->cv.values[ADC_CHANNEL_2]);
+  cv3.push(ioframe->cv.values[ADC_CHANNEL_3]);
+  cv4.push(ioframe->cv.values[ADC_CHANNEL_4]);
+
+  const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
+  uint32_t triggers = ioframe->digital_inputs.triggered();
+
+  balls_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, cvs);
+  balls_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
+  balls_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
+  balls_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
+}
+
+size_t AppQuadBouncingBalls::storage_size() const {
   return 4 * BouncingBall::storageSize();
 }
 
-static size_t BBGEN_save(void *storage) {
+size_t AppQuadBouncingBalls::Save(void *storage) const {
   size_t s = 0;
-  for (auto &bb : bbgen.balls_)
+  for (auto &bb : balls_)
     s += bb.Save(static_cast<byte *>(storage) + s);
   return s;
 }
 
-static size_t BBGEN_restore(const void *storage) {
+size_t AppQuadBouncingBalls::Restore(const void *storage) {
   size_t s = 0;
-  for (auto &bb : bbgen.balls_)
+  for (auto &bb : balls_)
     s += bb.Restore(static_cast<const byte *>(storage) + s);
   return s;
 }
 
-void BBGEN_handleAppEvent(OC::AppEvent event) {
+void AppQuadBouncingBalls::HandleAppEvent(OC::AppEvent event) {
   switch (event) {
     case OC::APP_EVENT_RESUME:
-      bbgen.ui.cursor.set_editing(false);
+      ui.cursor.set_editing(false);
       break;
     case OC::APP_EVENT_SUSPEND:
     case OC::APP_EVENT_SCREENSAVER_ON:
@@ -321,20 +321,20 @@ void BBGEN_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void BBGEN_loop() {
+void AppQuadBouncingBalls::Loop() {
 }
 
-void BBGEN_menu() {
+void AppQuadBouncingBalls::DrawMenu() const {
 
   menu::QuadTitleBar::Draw();
   for (uint_fast8_t i = 0; i < 4; ++i) {
     menu::QuadTitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
   }
-  menu::QuadTitleBar::Selected(bbgen.ui.selected_channel);
+  menu::QuadTitleBar::Selected(ui.selected_channel);
 
-  auto const &bb = bbgen.selected();
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(bbgen.ui.cursor);
+  auto const &bb = selected();
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(ui.cursor);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
@@ -342,79 +342,77 @@ void BBGEN_menu() {
   }
 }
 
-void BBGEN_topButton() {
-  auto &selected_bb = bbgen.selected();
-  selected_bb.change_value(BB_SETTING_GRAVITY + bbgen.ui.selected_segment, 32);
+void AppQuadBouncingBalls::HandleTopButton() {
+  auto &selected_bb = selected();
+  selected_bb.change_value(BB_SETTING_GRAVITY + ui.selected_segment, 32);
 }
 
-void BBGEN_lowerButton() {
-  auto &selected_bb = bbgen.selected();
-  selected_bb.change_value(BB_SETTING_GRAVITY + bbgen.ui.selected_segment, -32);
+void AppQuadBouncingBalls::HandleTowerButton() {
+  auto &selected_bb = selected();
+  selected_bb.change_value(BB_SETTING_GRAVITY + ui.selected_segment, -32);
 }
 
-void BBGEN_handleButtonEvent(const UI::Event &event) {
+void AppQuadBouncingBalls::HandleButtonEvent(const UI::Event &event) {
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case OC::CONTROL_BUTTON_UP:
-        BBGEN_topButton();
+        HandleTopButton();
         break;
       case OC::CONTROL_BUTTON_DOWN:
-        BBGEN_lowerButton();
+        HandleTowerButton();
         break;
       case OC::CONTROL_BUTTON_L:
         break;
       case OC::CONTROL_BUTTON_R:
-        bbgen.ui.cursor.toggle_editing();
+        ui.cursor.toggle_editing();
         break;
     }
   }
 }
 
-void BBGEN_handleEncoderEvent(const UI::Event &event) {
+void AppQuadBouncingBalls::HandleEncoderEvent(const UI::Event &event) {
 
   if (OC::CONTROL_ENCODER_L == event.control) {
-    int left_value = bbgen.ui.selected_channel + event.value;
+    int left_value = ui.selected_channel + event.value;
     CONSTRAIN(left_value, 0, 3);
-    bbgen.ui.selected_channel = left_value;
+    ui.selected_channel = left_value;
   } else if (OC::CONTROL_ENCODER_R == event.control) {
-    if (bbgen.ui.cursor.editing()) {
-      auto &selected = bbgen.selected();
-      selected.change_value(bbgen.ui.cursor.cursor_pos(), event.value);
+    if (ui.cursor.editing()) {
+      auto &selected_ball = selected();
+      selected_ball.change_value(ui.cursor.cursor_pos(), event.value);
     } else {
-      bbgen.ui.cursor.Scroll(event.value);
+      ui.cursor.Scroll(event.value);
     }
   }
 }
 
-#ifdef BBGEN_DEBUG
-void BBGEN_debug() {
-  graphics.setPrintPos(2, 12);
-  graphics.print(bbgen.cv1.value());
-  graphics.setPrintPos(32, 12);
-  graphics.print(bbgen.balls_[0].get_channel_retrigger_bounces());
-  graphics.setPrintPos(2, 22);
-  graphics.print(bbgen.cv2.value());
-  graphics.setPrintPos(2, 32);
-  graphics.print(bbgen.cv3.value());
-  graphics.setPrintPos(2, 42);
-  graphics.print(bbgen.cv4.value());
-}
-#endif // BBGEN_DEBUG
-
-void BBGEN_screensaver() {
+void AppQuadBouncingBalls::DrawScreensaver() const {
   OC::scope_render();
 }
 
-void FASTRUN BBGEN_process(OC::IOFrame *ioframe) {
-  bbgen.Process(ioframe);
-}
-
-void BBGEN_getIOConfig(OC::IOConfig &ioconfig)
+void AppQuadBouncingBalls::GetIOConfig(OC::IOConfig &ioconfig) const
 {
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_UNI);
 }
+
+void AppQuadBouncingBalls::DrawDebugInfo() const {
+#ifdef BBGEN_DEBUG
+  graphics.setPrintPos(2, 12);
+  graphics.print(cv1.value());
+  graphics.setPrintPos(32, 12);
+  graphics.print(balls_[0].get_channel_retrigger_bounces());
+  graphics.setPrintPos(2, 22);
+  graphics.print(cv2.value());
+  graphics.setPrintPos(2, 32);
+  graphics.print(cv3.value());
+  graphics.setPrintPos(2, 42);
+  graphics.print(cv4.value());
+#endif // BBGEN_DEBUG
+}
+
+} // namespace OC
 
 #endif // ENABLE_APP_BBGEN

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "OC_ADC.h"
+#include "OC_apps.h"
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_debug.h"
@@ -154,6 +155,16 @@ static void debug_menu_adc2() {
   }
 }
 
+static void debug_menu_app() {
+  auto app = app_switcher.current_app();
+  if (app) {
+    graphics.print(app->name());
+    app->DrawDebugInfo();
+  } else {
+    graphics.print("?");
+  }
+}
+
 struct DebugMenu {
   const char *title;
   void (*display_fn)();
@@ -189,7 +200,8 @@ static const DebugMenu debug_menus[] = {
 #ifdef ASR_DEBUG  
   { " ASR", ASR_debug },
 #endif // ASR_DEBUG
- { nullptr, nullptr }
+  { " ", debug_menu_app },
+  { nullptr, nullptr }
 };
 
 void Ui::DebugStats() {
@@ -222,4 +234,4 @@ void Ui::DebugStats() {
   event_queue_.Poke();
 }
 
-}; // namespace OC
+} // namespace OC

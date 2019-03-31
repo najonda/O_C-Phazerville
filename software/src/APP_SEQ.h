@@ -815,7 +815,7 @@ public:
     pendulum_fwd_ = true;
     clock_display_.Init();
     arpeggiator_.Init();
-    update_enabled_settings(0);
+    update_enabled_settings();
   }
 
   bool rotate_scale(int32_t mask_rotate) {
@@ -1651,7 +1651,7 @@ public:
     return enabled_settings_[index];
   }
 
-  void update_enabled_settings(uint8_t channel_id) {
+  void update_enabled_settings() {
 
     SEQ_ChannelSetting *settings = enabled_settings_;
 
@@ -2033,97 +2033,108 @@ SETTINGS_DECLARE(SEQ_Channel, SEQ_CHANNEL_SETTING_LAST) {
   { peaks::RESET_BEHAVIOUR_SEGMENT_PHASE, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "dec/rel reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U8 },
 };
 
-class SEQ_State {
+namespace OC {
+
+OC_APP_TRAITS(AppDualSequencer, TWOCCS("SQ"), "Sequins", "2x Sequencer");
+class OC_APP_CLASS(AppDualSequencer) {
 public:
-  void Init() {
-    selected_channel = 0;
-    cursor.Init(SEQ_CHANNEL_SETTING_MODE, SEQ_CHANNEL_SETTING_LAST - 1);
-    pattern_editor.Init();
-    scale_editor.Init(false);
-  }
+  OC_APP_INTERFACE_DECLARE(AppDualSequencer);
+
+private:
+  int selected_channel_;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  OC::PatternEditor<SEQ_Channel> pattern_editor_;
+  OC::ScaleEditor<SEQ_Channel> scale_editor_;
+
+  SEQ_Channel seq_channel_[NUM_CHANNELS];
 
   inline bool editing() const {
-    return cursor.editing();
+    return cursor_.editing();
   }
 
   inline int cursor_pos() const {
-    return cursor.cursor_pos();
+    return cursor_.cursor_pos();
   }
 
-  int selected_channel;
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  menu::ScreenCursor<menu::kScreenLines> cursor_state;
-  OC::PatternEditor<SEQ_Channel> pattern_editor;
-  OC::ScaleEditor<SEQ_Channel> scale_editor;
+  void HandleUpButtonLong();
+  void HandleDownButtonLong();
+  void HandleLeftButtonLong();
+  void HandleUpButton();
+  void HandleDownButton();
+  void HandleLeftButton();
+  void HandleRightButton();
 };
 
-SEQ_State seq_state;
-SEQ_Channel seq_channel[NUM_CHANNELS];
+AppDualSequencer APP_A_SEQ;
 
-void SEQ_init() {
+void AppDualSequencer::Init() {
+
+  selected_channel_ = 0;
+  cursor_.Init(SEQ_CHANNEL_SETTING_MODE, SEQ_CHANNEL_SETTING_LAST - 1);
+  pattern_editor_.Init();
+  scale_editor_.Init(false);
 
   ext_frequency[SEQ_CHANNEL_TRIGGER_TR1]  = 0xFFFFFFFF;
   ext_frequency[SEQ_CHANNEL_TRIGGER_TR2]  = 0xFFFFFFFF;
   ext_frequency[SEQ_CHANNEL_TRIGGER_NONE] = 0xFFFFFFFF;
 
-  seq_state.Init();
   for (size_t i = 0; i < NUM_CHANNELS; ++i)
-    seq_channel[i].Init(static_cast<SEQ_ChannelTriggerSource>(SEQ_CHANNEL_TRIGGER_TR1), i);
-  seq_state.cursor.AdjustEnd(seq_channel[0].num_enabled_settings() - 1);
+    seq_channel_[i].Init(static_cast<SEQ_ChannelTriggerSource>(SEQ_CHANNEL_TRIGGER_TR1), i);
+  cursor_.AdjustEnd(seq_channel_[0].num_enabled_settings() - 1);
 }
 
-static constexpr size_t SEQ_storageSize() {
+size_t AppDualSequencer::storage_size() const {
   return NUM_CHANNELS * SEQ_Channel::storageSize();
 }
 
-static size_t SEQ_save(void *storage) {
+size_t AppDualSequencer::Save(void *storage) const {
 
   size_t used = 0;
   for (size_t i = 0; i < NUM_CHANNELS; ++i) {
-    used += seq_channel[i].Save(static_cast<char*>(storage) + used);
+    used += seq_channel_[i].Save(static_cast<char*>(storage) + used);
   }
   return used;
 }
 
-static size_t SEQ_restore(const void *storage) {
+size_t AppDualSequencer::Restore(const void *storage) {
 
   size_t used = 0;
 
   for (size_t i = 0; i < NUM_CHANNELS; ++i) {
-    used += seq_channel[i].Restore(static_cast<const char*>(storage) + used);
+    used += seq_channel_[i].Restore(static_cast<const char*>(storage) + used);
     // update display
-    seq_channel[i].pattern_changed(seq_channel[i].get_mask(seq_channel[i].get_sequence()), true);
-    seq_channel[i].set_display_num_sequence(seq_channel[i].get_sequence());
-    seq_channel[i].update_enabled_settings(i);
-    seq_channel[i].set_EoS_update();
+    seq_channel_[i].pattern_changed(seq_channel_[i].get_mask(seq_channel_[i].get_sequence()), true);
+    seq_channel_[i].set_display_num_sequence(seq_channel_[i].get_sequence());
+    seq_channel_[i].update_enabled_settings();
+    seq_channel_[i].set_EoS_update();
   }
-  seq_state.cursor.AdjustEnd(seq_channel[0].num_enabled_settings() - 1);
+  cursor_.AdjustEnd(seq_channel_[0].num_enabled_settings() - 1);
   return used;
 }
 
-void SEQ_handleAppEvent(OC::AppEvent event) {
+void AppDualSequencer::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-        seq_state.cursor.set_editing(false);
-        seq_state.pattern_editor.Close();
-        seq_state.scale_editor.Close();
+    case APP_EVENT_RESUME:
+        cursor_.set_editing(false);
+        pattern_editor_.Close();
+        scale_editor_.Close();
     break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
     {
-       SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+       SEQ_Channel &selected = seq_channel_[selected_channel_];
        selected.set_menu_page(PARAMETERS);
-       selected.update_enabled_settings(seq_state.selected_channel);
+       selected.update_enabled_settings();
     }
     break;
   }
 }
 
-void SEQ_loop() {
+void AppDualSequencer::Loop() {
 }
 
-void SEQ_process(OC::IOFrame *ioframe) {
+void AppDualSequencer::Process(IOFrame *ioframe) {
 
   ticks_src1++; // src #1 ticks
   ticks_src2++; // src #2 ticks
@@ -2131,125 +2142,125 @@ void SEQ_process(OC::IOFrame *ioframe) {
 
   uint32_t triggers = ioframe->digital_inputs.triggered();
 
-  if (triggers & (1 << OC::DIGITAL_INPUT_1)) {
+  if (triggers & (1 << DIGITAL_INPUT_1)) {
     ext_frequency[SEQ_CHANNEL_TRIGGER_TR1] = ticks_src1;
     ticks_src1 = 0x0;
   }
-  if (triggers & (1 << OC::DIGITAL_INPUT_3)) {
+  if (triggers & (1 << DIGITAL_INPUT_3)) {
     ext_frequency[SEQ_CHANNEL_TRIGGER_TR2] = ticks_src2;
     ticks_src2 = 0x0;
   }
 
   // update sequencer channels 1, 2:
-  seq_channel[0].Update(ioframe);
-  seq_channel[1].Update(ioframe);
+  seq_channel_[0].Update(ioframe);
+  seq_channel_[1].Update(ioframe);
   // update DAC channels A, B:
-  seq_channel[0].update_main_channel<DAC_CHANNEL_A>(ioframe);
-  seq_channel[1].update_main_channel<DAC_CHANNEL_B>(ioframe);
+  seq_channel_[0].update_main_channel<DAC_CHANNEL_A>(ioframe);
+  seq_channel_[1].update_main_channel<DAC_CHANNEL_B>(ioframe);
   // update DAC channels C, D:
-  seq_channel[0].update_aux_channel<DAC_CHANNEL_C>(ioframe);
-  seq_channel[1].update_aux_channel<DAC_CHANNEL_D>(ioframe);
+  seq_channel_[0].update_aux_channel<DAC_CHANNEL_C>(ioframe);
+  seq_channel_[1].update_aux_channel<DAC_CHANNEL_D>(ioframe);
 }
 
-void SEQ_getIOConfig(OC::IOConfig &ioconfig)
+void AppDualSequencer::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
-  switch(seq_channel[0].get_aux_mode()) {
-  case GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 gate", OC::OUTPUT_MODE_GATE); break;
-  case COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 copy", OC::OUTPUT_MODE_PITCH); break;
-  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 AD", OC::OUTPUT_MODE_UNI); break;
-  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADR", OC::OUTPUT_MODE_UNI); break;
-  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADSR", OC::OUTPUT_MODE_UNI); break;
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OUTPUT_MODE_PITCH);
+  switch(seq_channel_[0].get_aux_mode()) {
+  case GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 gate", OUTPUT_MODE_GATE); break;
+  case COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 copy", OUTPUT_MODE_PITCH); break;
+  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 AD", OUTPUT_MODE_UNI); break;
+  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADR", OUTPUT_MODE_UNI); break;
+  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ADSR", OUTPUT_MODE_UNI); break;
   default: break;
   }
 
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
-  switch(seq_channel[1].get_aux_mode()) {
-  case GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 gate", OC::OUTPUT_MODE_GATE); break;
-  case COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 copy", OC::OUTPUT_MODE_PITCH); break;
-  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 AD", OC::OUTPUT_MODE_UNI); break;
-  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADR", OC::OUTPUT_MODE_UNI); break;
-  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADSR", OC::OUTPUT_MODE_UNI); break;
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OUTPUT_MODE_PITCH);
+  switch(seq_channel_[1].get_aux_mode()) {
+  case GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 gate", OUTPUT_MODE_GATE); break;
+  case COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 copy", OUTPUT_MODE_PITCH); break;
+  case ENV_AD: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 AD", OUTPUT_MODE_UNI); break;
+  case ENV_ADR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADR", OUTPUT_MODE_UNI); break;
+  case ENV_ADSR: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ADSR", OUTPUT_MODE_UNI); break;
   default: break;
   }
 }
 
-void SEQ_handleButtonEvent(const UI::Event &event) {
+void AppDualSequencer::HandleButtonEvent(const UI::Event &event) {
 
   if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
      switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-         SEQ_upButtonLong();
+      case CONTROL_BUTTON_UP:
+         HandleUpButtonLong();
         break;
-      case OC::CONTROL_BUTTON_DOWN:
-        SEQ_downButtonLong();
+      case CONTROL_BUTTON_DOWN:
+        HandleDownButtonLong();
         break;
-       case OC::CONTROL_BUTTON_L:
-        if (!(seq_state.pattern_editor.active()))
-          SEQ_leftButtonLong();
+       case CONTROL_BUTTON_L:
+        if (!(pattern_editor_.active()))
+          HandleLeftButtonLong();
         break;
       default:
         break;
      }
   }
 
-  if (seq_state.pattern_editor.active()) {
-    seq_state.pattern_editor.HandleButtonEvent(event);
+  if (pattern_editor_.active()) {
+    pattern_editor_.HandleButtonEvent(event);
     return;
   }
-  else if (seq_state.scale_editor.active()) {
-    seq_state.scale_editor.HandleButtonEvent(event);
+  else if (scale_editor_.active()) {
+    scale_editor_.HandleButtonEvent(event);
     return;
   }
 
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case OC::CONTROL_BUTTON_UP:
-        SEQ_upButton();
+        HandleUpButton();
         break;
       case OC::CONTROL_BUTTON_DOWN:
-        SEQ_downButton();
+        HandleDownButton();
         break;
       case OC::CONTROL_BUTTON_L:
-        SEQ_leftButton();
+        HandleLeftButton();
         break;
       case OC::CONTROL_BUTTON_R:
-        SEQ_rightButton();
+        HandleRightButton();
         break;
     }
   }
 }
 
-void SEQ_handleEncoderEvent(const UI::Event &event) {
+void AppDualSequencer::HandleEncoderEvent(const UI::Event &event) {
 
-  if (seq_state.pattern_editor.active()) {
-    seq_state.pattern_editor.HandleEncoderEvent(event);
+  if (pattern_editor_.active()) {
+    pattern_editor_.HandleEncoderEvent(event);
     return;
   }
-  else if (seq_state.scale_editor.active()) {
-    seq_state.scale_editor.HandleEncoderEvent(event);
+  else if (scale_editor_.active()) {
+    scale_editor_.HandleEncoderEvent(event);
     return;
   }
 
-  if (OC::CONTROL_ENCODER_L == event.control) {
+  if (CONTROL_ENCODER_L == event.control) {
 
-    int selected_channel = seq_state.selected_channel + event.value;
+    int selected_channel = selected_channel_ + event.value;
     CONSTRAIN(selected_channel, 0, NUM_CHANNELS-1);
-    seq_state.selected_channel = selected_channel;
+    selected_channel_ = selected_channel;
 
-    SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+    SEQ_Channel &selected = seq_channel_[selected_channel];
 
-    selected.update_enabled_settings(seq_state.selected_channel);
-    seq_state.cursor.Init(SEQ_CHANNEL_SETTING_MODE, 0);
-    seq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+    selected.update_enabled_settings();
+    cursor_.Init(SEQ_CHANNEL_SETTING_MODE, 0);
+    cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
 
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
+  } else if (CONTROL_ENCODER_R == event.control) {
 
-       SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+       SEQ_Channel &selected = seq_channel_[selected_channel_];
 
-       if (seq_state.editing()) {
+       if (editing()) {
 
-          SEQ_ChannelSetting setting = selected.enabled_setting_at(seq_state.cursor_pos());
+          SEQ_ChannelSetting setting = selected.enabled_setting_at(cursor_pos());
 
           if (SEQ_CHANNEL_SETTING_SCALE_MASK != setting || SEQ_CHANNEL_SETTING_MASK1 != setting || SEQ_CHANNEL_SETTING_MASK2 != setting || SEQ_CHANNEL_SETTING_MASK3 != setting || SEQ_CHANNEL_SETTING_MASK4 != setting) {
 
@@ -2272,22 +2283,22 @@ void SEQ_handleEncoderEvent(const UI::Event &event) {
               case SEQ_CHANNEL_SETTING_MODE:
               case SEQ_CHANNEL_SETTING_SEQUENCE_PLAYMODE:
               case SEQ_CHANNEL_SETTING_SEQUENCE_DIRECTION:
-                 selected.update_enabled_settings(seq_state.selected_channel);
-                 seq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+                 selected.update_enabled_settings();
+                 cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
               break;
              default:
               break;
             }
         }
       } else {
-      seq_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
-void SEQ_upButton() {
+void AppDualSequencer::HandleUpButton() {
 
-  SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+  SEQ_Channel &selected = seq_channel_[selected_channel_];
 
   if (selected.get_menu_page() == PARAMETERS) {
 
@@ -2298,16 +2309,16 @@ void SEQ_upButton() {
   }
   else  {
     selected.set_menu_page(PARAMETERS);
-    selected.update_enabled_settings(seq_state.selected_channel);
-    seq_state.cursor.set_editing(false);
+    selected.update_enabled_settings();
+    cursor_.set_editing(false);
   }
 }
 
-void SEQ_downButton() {
+void AppDualSequencer::HandleDownButton() {
 
-  SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+  SEQ_Channel &selected = seq_channel_[selected_channel_];
 
-  if (!seq_state.pattern_editor.active() && !seq_state.scale_editor.active()) {
+  if (!pattern_editor_.active() && !scale_editor_.active()) {
 
       uint8_t _menu_page = selected.get_menu_page();
 
@@ -2323,36 +2334,36 @@ void SEQ_downButton() {
       }
 
       selected.set_menu_page(_menu_page);
-      selected.update_enabled_settings(seq_state.selected_channel);
-      seq_state.cursor.set_editing(false);
+      selected.update_enabled_settings();
+      cursor_.set_editing(false);
   }
   /*
-  SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+  SEQ_Channel &selected = seq_channel_[selected_channel_];
   if (selected.get_menu_page() == PARAMETERS)
     selected.change_value(SEQ_CHANNEL_SETTING_OCTAVE, -1);
   else {
     selected.set_menu_page(PARAMETERS);
-    selected.update_enabled_settings(seq_state.selected_channel);
-    seq_state.cursor.set_editing(false);
+    selected.update_enabled_settings(selected_channel_);
+    cursor_.set_editing(false);
   }
   */
 }
 
-void SEQ_rightButton() {
+void AppDualSequencer::HandleRightButton() {
 
-  SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+  SEQ_Channel &selected = seq_channel_[selected_channel_];
 
-  switch (selected.enabled_setting_at(seq_state.cursor_pos())) {
+  switch (selected.enabled_setting_at(cursor_pos())) {
 
     case SEQ_CHANNEL_SETTING_SCALE:
-      seq_state.cursor.toggle_editing();
+      cursor_.toggle_editing();
       selected.update_scale(true);
     break;
     case SEQ_CHANNEL_SETTING_SCALE_MASK:
     {
      int scale = selected.get_scale(DUMMY);
-     if (OC::Scales::SCALE_NONE != scale) {
-          seq_state.scale_editor.Edit(&selected, scale);
+     if (Scales::SCALE_NONE != scale) {
+          scale_editor_.Edit(&selected, scale);
         }
     }
     break;
@@ -2362,70 +2373,70 @@ void SEQ_rightButton() {
     case SEQ_CHANNEL_SETTING_MASK4:
     {
       int pattern = selected.get_sequence();
-      if (OC::Patterns::PATTERN_NONE != pattern) {
-        seq_state.pattern_editor.Edit(&selected, pattern);
+      if (Patterns::PATTERN_NONE != pattern) {
+        pattern_editor_.Edit(&selected, pattern);
       }
     }
     break;
     case SEQ_CHANNEL_SETTING_DUMMY:
       selected.set_menu_page(PARAMETERS);
-      selected.update_enabled_settings(seq_state.selected_channel);
+      selected.update_enabled_settings();
     break;
     default:
-     seq_state.cursor.toggle_editing();
+     cursor_.toggle_editing();
     break;
   }
 }
 
-void SEQ_leftButton() {
+void AppDualSequencer::HandleLeftButton() {
   // sync:
   for (int i = 0; i < NUM_CHANNELS; ++i)
-        seq_channel[i].sync();
+        seq_channel_[i].sync();
 }
 
-void SEQ_leftButtonLong() {
+void AppDualSequencer::HandleLeftButtonLong() {
   // copy scale
-  if (!seq_state.pattern_editor.active() && !seq_state.scale_editor.active()) {
+  if (!pattern_editor_.active() && !scale_editor_.active()) {
 
       uint8_t this_channel, the_other_channel, scale;
       uint16_t mask;
 
-      this_channel = seq_state.selected_channel;
-      scale = seq_channel[this_channel].get_scale(DUMMY);
-      mask = seq_channel[this_channel].get_rotated_scale_mask();
+      this_channel = selected_channel_;
+      scale = seq_channel_[this_channel].get_scale(DUMMY);
+      mask = seq_channel_[this_channel].get_rotated_scale_mask();
 
       the_other_channel = (~this_channel) & 1u;
-      seq_channel[the_other_channel].set_scale(scale);
-      seq_channel[the_other_channel].update_scale_mask(mask, DUMMY);
-      seq_channel[the_other_channel].update_scale(true);
+      seq_channel_[the_other_channel].set_scale(scale);
+      seq_channel_[the_other_channel].update_scale_mask(mask, DUMMY);
+      seq_channel_[the_other_channel].update_scale(true);
   }
 }
 
-void SEQ_upButtonLong() {
+void AppDualSequencer::HandleUpButtonLong() {
   // screensaver short cut (happens elsewhere)
 }
 
-void SEQ_downButtonLong() {
+void AppDualSequencer::HandleDownButtonLong() {
   // clear CV mappings:
-  SEQ_Channel &selected = seq_channel[seq_state.selected_channel];
+  SEQ_Channel &selected = seq_channel_[selected_channel_];
 
   if (selected.get_menu_page() == CV_MAPPING) {
     selected.clear_CV_mapping();
-    seq_state.cursor.set_editing(false);
+    cursor_.set_editing(false);
   }
   else { // toggle update behaviour:
-    seq_channel[0x0].toggle_EoS();
-    seq_channel[0x1].toggle_EoS();
+    seq_channel_[0x0].toggle_EoS();
+    seq_channel_[0x1].toggle_EoS();
   }
 }
 
-void SEQ_menu() {
+void AppDualSequencer::DrawMenu() const {
 
   menu::DualTitleBar::Draw();
 
   for (int i = 0, x = 0; i < NUM_CHANNELS; ++i, x += 21) {
 
-    const SEQ_Channel &channel = seq_channel[i];
+    const SEQ_Channel &channel = seq_channel_[i];
     menu::DualTitleBar::SetColumn(i);
 
     // draw gate/step indicator
@@ -2449,11 +2460,11 @@ void SEQ_menu() {
       graphics.print("+");
   }
 
-  const SEQ_Channel &channel = seq_channel[seq_state.selected_channel];
+  const SEQ_Channel &channel = seq_channel_[selected_channel_];
 
-  menu::DualTitleBar::Selected(seq_state.selected_channel);
+  menu::DualTitleBar::Selected(selected_channel_);
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(seq_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
 
   menu::SettingsListItem list_item;
 
@@ -2471,11 +2482,11 @@ void SEQ_menu() {
           menu::DrawEditIcon(6, list_item.y, value, attr);
           graphics.movePrintPos(6, 0);
         }
-        graphics.print(OC::scale_names[value]);
+        graphics.print(scale_names[value]);
         list_item.DrawCustom();
         break;
       case SEQ_CHANNEL_SETTING_SCALE_MASK:
-       menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), OC::Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
+       menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
        list_item.DrawNoValue<false>(value, attr);
       break;
       case SEQ_CHANNEL_SETTING_MASK1:
@@ -2506,28 +2517,37 @@ void SEQ_menu() {
     }
   }
 
-  if (seq_state.pattern_editor.active())
-    seq_state.pattern_editor.Draw();
-  else if (seq_state.scale_editor.active())
-    seq_state.scale_editor.Draw();
+  if (pattern_editor_.active())
+    pattern_editor_.Draw();
+  else if (scale_editor_.active())
+    scale_editor_.Draw();
+}
+void AppDualSequencer::DrawScreensaver() const {
+
+  seq_channel_[0].RenderScreensaver();
+  seq_channel_[1].RenderScreensaver();
 }
 
+void AppDualSequencer::DrawDebugInfo() const {
+}
+
+} // namespace OC
 
 void SEQ_Channel::RenderScreensaver() const {
 
       uint8_t seq_id = channel_id_;
-      uint8_t clock_x_pos = seq_channel[seq_id].get_clock_cnt();
-      int32_t _dac_value = seq_channel[seq_id].get_step_pitch();
+      uint8_t clock_x_pos = get_clock_cnt();
+      int32_t _dac_value = get_step_pitch();
       int32_t _dac_overflow = 0, _dac_overflow2 = 0;
 
       // reposition ARP:
-      if (seq_channel[seq_id].get_playmode() == PM_ARP)
+      if (get_playmode() == PM_ARP)
         clock_x_pos = 0x6 + (seq_id << 2);
 
       clock_x_pos = (seq_id << 6) + (clock_x_pos << 2);
 
       // clock/step indicator:
-      if(seq_channel[seq_id].step_state_ == OFF) {
+      if(step_state_ == OFF) {
         graphics.drawRect(clock_x_pos, 63, 5, 2);
         _dac_value = 0;
       }
@@ -2644,12 +2664,5 @@ void SEQ_Channel::RenderScreensaver() const {
         }
     }
 }
-
-void SEQ_screensaver() {
-
-  seq_channel[0].RenderScreensaver();
-  seq_channel[1].RenderScreensaver();
-}
-
 
 #endif // ENABLE_APP_SEQUINS

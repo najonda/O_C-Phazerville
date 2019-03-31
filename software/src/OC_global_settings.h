@@ -55,7 +55,8 @@ public:
   // TODO[PLD] We should be able to use these structs directly to save space
   Scale user_scales[Scales::SCALE_USER_LAST];
   Pattern user_patterns[Patterns::PATTERN_USER_ALL];
-  Chord user_chords[Chords::CHORDS_USER_LAST];
+  HS::TuringMachine user_turing_machines[HS::TURING_MACHINE_COUNT];
+  HS::VOSegment user_waveforms[HS::VO_SEGMENT_COUNT];
 
   // NOTE These structs are used directly, instead of maintaining two separate
   // copies in memory.

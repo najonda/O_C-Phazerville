@@ -640,66 +640,15 @@ SETTINGS_DECLARE(ReferenceChannel, REF_SETTING_LAST) {
   { 0, 0, 0, "-", NULL, settings::STORAGE_TYPE_U8 } // dummy
 };
 
-class ReferencesApp {
+namespace OC {
+
+OC_APP_TRAITS(AppReferences, TWOCCS("RF"), "References", "Voltages");
+class OC_APP_CLASS(AppReferences) {
 public:
-  ReferencesApp() { }
-  
+  OC_APP_INTERFACE_DECLARE(AppReferences);
+
+private:
   OC::Autotuner<ReferenceChannel> autotuner;
-
-  void Init() {
-    int dac_channel = DAC_CHANNEL_A;
-    for (auto &channel : channels_)
-      channel.Init(static_cast<DAC_CHANNEL>(dac_channel++));
-
-    ui.selected_channel = DAC_CHANNEL_FTM;
-    ui.cursor.Init(0, channels_[DAC_CHANNEL_FTM].num_enabled_settings() - 1);
-
-    freq_sum_ = 0;
-    freq_count_ = 0;
-    frequency_ = 0;
-    autotuner.Init();
-  }
-
-  void Process(OC::IOFrame *ioframe) {
-      
-  // It should be this simple:
-    //if (autotuner.active()) {
-      //autotuner.Process(ioframe);
-      //return;
-    //}
-
-    bool autotuner_active = false;
-    for (auto &channel : channels_) {
-      channel.Update(ioframe);
-      if (channel.autotuner_active()) {
-        channel.measure_frequency_and_calc_error(ioframe);
-        autotuner.Tick();
-        autotuner_active = true;
-      }
-    }
-
-    for (auto &channel : channels_)
-      channel.Update(ioframe);
-
-    if (FreqMeasure.available()) {
-      // average several readings together
-      freq_sum_ = freq_sum_ + FreqMeasure.read();
-      freq_count_ = freq_count_ + 1;
-      
-      if (milliseconds_since_last_freq_ > 750) {
-        frequency_ = FreqMeasure.countToFrequency(freq_sum_ / freq_count_);
-        freq_sum_ = 0;
-        freq_count_ = 0;
-        milliseconds_since_last_freq_ = 0;
-       }
-     } else if (milliseconds_since_last_freq_ > 100000) {
-      frequency_ = 0.0f;
-     }
-  }
-
-  ReferenceChannel &selected_channel() {
-    return channels_[ui.selected_channel];
-  }
 
   struct {
     int selected_channel;
@@ -707,6 +656,9 @@ public:
   } ui;
 
   ReferenceChannel channels_[DAC_CHANNEL_LAST];
+
+  ReferenceChannel &selected_channel() { return channels_[ui.selected_channel]; }
+  const ReferenceChannel &selected_channel() const { return channels_[ui.selected_channel]; }
 
   float get_frequency() const {
     return(frequency_) ;
@@ -771,40 +723,74 @@ private:
   elapsedMillis milliseconds_since_last_freq_;
 };
 
-ReferencesApp references_app;
+AppReferences APP_REFS;
 
 // App stubs
-void REFS_init() {
-  references_app.Init();
+
+void AppReferences::Init() {
+  int dac_channel = DAC_CHANNEL_A;
+  for (auto &channel : channels_)
+    channel.Init(static_cast<DAC_CHANNEL>(dac_channel++));
+
+  ui.selected_channel = DAC_CHANNEL_FTM;
+  ui.cursor.Init(0, channels_[DAC_CHANNEL_FTM].num_enabled_settings() - 1);
+
+  freq_sum_ = 0;
+  freq_count_ = 0;
+  frequency_ = 0;
+  autotuner.Init();
 }
 
-static constexpr size_t REFS_storageSize() {
+void AppReferences::Process(OC::IOFrame *ioframe) {
+    
+  bool autotuner_active = false;
+  for (auto &channel : channels_) {
+    channel.Update(ioframe);
+    if (channel.autotuner_active()) {
+      channel.measure_frequency_and_calc_error(ioframe);
+      autotuner.Tick();
+      autotuner_active = true;
+    }
+  }
+
+  if (!autotuner_active && FreqMeasure.available()) {
+    // average several readings together
+    freq_sum_ = freq_sum_ + FreqMeasure.read();
+    freq_count_ = freq_count_ + 1;
+    
+    if (milliseconds_since_last_freq_ > 750) {
+      frequency_ = FreqMeasure.countToFrequency(freq_sum_ / freq_count_);
+      freq_sum_ = 0;
+      freq_count_ = 0;
+      milliseconds_since_last_freq_ = 0;
+     }
+   } else if (milliseconds_since_last_freq_ > 100000) {
+    frequency_ = 0.0f;
+   }
+}
+
+size_t AppReferences::storage_size() const {
   return DAC_CHANNEL_LAST * ReferenceChannel::storageSize();
 }
 
-static size_t REFS_save(void *storage) {
+size_t AppReferences::Save(void *storage) const {
   size_t used = 0;
-  for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
-    used += references_app.channels_[i].Save(static_cast<char*>(storage) + used);
-  }
+  for (auto &channel : channels_)
+    used += channel.Save(static_cast<char*>(storage) + used);
   return used;
 }
 
-static size_t REFS_restore(const void *storage) {
+size_t AppReferences::Restore(const void *storage) {
   size_t used = 0;
-  for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i) {
-    used += references_app.channels_[i].Restore(static_cast<const char*>(storage) + used);
-    references_app.channels_[i].update_enabled_settings();
+  for (auto &channel : channels_) {
+    used += channel.Restore(static_cast<const char*>(storage) + used);
+    channel.update_enabled_settings();
   }
-  references_app.ui.cursor.AdjustEnd(references_app.channels_[0].num_enabled_settings() - 1);
+  ui.cursor.AdjustEnd(channels_[0].num_enabled_settings() - 1);
   return used;
 }
 
-void REFS_process(OC::IOFrame *ioframe) {
-  references_app.Process(ioframe);
-}
-
-void REFS_getIOConfig(OC::IOConfig &ioconfig)
+void AppReferences::GetIOConfig(OC::IOConfig &ioconfig) const
 {
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
@@ -812,31 +798,31 @@ void REFS_getIOConfig(OC::IOConfig &ioconfig)
   ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_PITCH);
 }
 
-void REFS_handleAppEvent(OC::AppEvent event) {
+void AppReferences::HandleAppEvent(OC::AppEvent event) {
   switch (event) {
     case OC::APP_EVENT_RESUME:
-      references_app.ui.cursor.set_editing(false);
+      ui.cursor.set_editing(false);
       FreqMeasure.begin();
-      references_app.autotuner.Close();
+      autotuner.Close();
       break;
     case OC::APP_EVENT_SUSPEND:
     case OC::APP_EVENT_SCREENSAVER_ON:
     case OC::APP_EVENT_SCREENSAVER_OFF:
       //references_app.autotuner.Reset();
       for (size_t i = 0; i < DAC_CHANNEL_LAST; ++i)
-        references_app.channels_[i].autotuner_reset();
+        channels_[i].autotuner_reset();
       break;
   }
 }
 
-void REFS_loop() {
-  references_app.autotuner.Update();
+void AppReferences::Loop() {
+  autotuner.Update();
 }
 
-void REFS_menu() {
+void AppReferences::DrawMenu() const {
   // autotuner ...
-  if (references_app.autotuner.active()) {
-    references_app.autotuner.Draw();
+  if (autotuner.active()) {
+    autotuner.Draw();
     return;
   }
 
@@ -845,10 +831,10 @@ void REFS_menu() {
     menu::QuadTitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
   }
-  menu::QuadTitleBar::Selected(references_app.ui.selected_channel);
+  menu::QuadTitleBar::Selected(ui.selected_channel);
 
-  const auto &channel = references_app.selected_channel();
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(references_app.ui.cursor);
+  const auto &channel = selected_channel();
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(ui.cursor);
   menu::SettingsListItem list_item;
 
   while (settings_list.available()) {
@@ -869,7 +855,104 @@ void REFS_menu() {
   }
 }
 
-void print_voltage(int octave, int fraction) {
+void AppReferences::DrawScreensaver() const {
+  channels_[0].RenderScreensaver( 0, 0);
+  channels_[1].RenderScreensaver(32, 1);
+  channels_[2].RenderScreensaver(64, 2);
+  channels_[3].RenderScreensaver(96, 3);
+  graphics.setPrintPos(2, 44);
+
+  float frequency_ = get_frequency() ;
+  float c0_freq_ = get_C0_freq() ;
+  float bpm_ = (60.0 * frequency_)/get_ppqn() ;
+
+  int32_t freq_decicents_deviation_ = round(12000.0 * log2f(frequency_ / c0_freq_)) + 500;
+  int8_t freq_octave_ = -2 + ((freq_decicents_deviation_)/ 12000) ;
+  int8_t freq_note_ = (freq_decicents_deviation_ - ((freq_octave_ + 2) * 12000)) / 1000;
+  int32_t freq_decicents_residual_ = ((freq_decicents_deviation_ - ((freq_octave_ - 1) * 12000)) % 1000) - 500;
+
+  if (frequency_ > 0.0) {
+    #ifdef FLIP_180
+    graphics.printf("TR1 %7.3f Hz", frequency_);
+    #else
+    graphics.printf("TR4 %7.3f Hz", frequency_);
+    #endif
+    graphics.setPrintPos(2, 56);
+    if (get_notes_or_bpm()) {
+      graphics.printf("%7.2f bpm %2.0fppqn", bpm_, get_ppqn());
+    } else if(frequency_ >= c0_freq_) {
+      graphics.printf("%+i %s %+7.1fc", freq_octave_, OC::Strings::note_names[freq_note_], freq_decicents_residual_ / 10.0) ;
+    }
+  } else {
+    graphics.print("TR4 no input") ;
+  }
+}
+
+void AppReferences::HandleButtonEvent(const UI::Event &event) {
+
+  if (autotuner.active()) {
+    autotuner.HandleButtonEvent(event);
+    return;
+  }
+  
+  if (OC::CONTROL_BUTTON_R == event.control) {
+
+    auto &channel = selected_channel();
+    switch (channel.enabled_setting_at(ui.cursor.cursor_pos())) {
+      case REF_SETTING_AUTOTUNE:
+      autotuner.Open(&channel);
+      break;
+      case REF_SETTING_DUMMY:
+      break;
+      default:
+      ui.cursor.toggle_editing();
+      break;
+    }
+  }
+}
+
+void AppReferences::HandleEncoderEvent(const UI::Event &event) {
+
+  if (autotuner.active()) {
+    autotuner.HandleEncoderEvent(event);
+    return;
+  }
+  
+  if (OC::CONTROL_ENCODER_L == event.control) {
+    
+    int previous = selected_channel().num_enabled_settings();
+    int selected = ui.selected_channel + event.value;
+    CONSTRAIN(selected, 0, DAC_CHANNEL_LAST - 0x1);
+    ui.selected_channel = selected;
+
+    // hack -- deal w/ menu items / channels
+    if ((ui.cursor.cursor_pos() > 4) && (previous > selected_channel().num_enabled_settings())) {
+      ui.cursor.Init(0, 0);
+      ui.cursor.AdjustEnd(selected_channel().num_enabled_settings() - 1);
+    }
+    else
+      ui.cursor.AdjustEnd(selected_channel().num_enabled_settings() - 1);
+  } else if (OC::CONTROL_ENCODER_R == event.control) {
+    if (ui.cursor.editing()) {
+        auto &channel = selected_channel();
+        ReferenceSetting setting = channel.enabled_setting_at(ui.cursor.cursor_pos());
+        if (setting == REF_SETTING_DUMMY) 
+          ui.cursor.set_editing(false);
+        channel.change_value(setting, event.value);
+        channel.update_enabled_settings();
+    } else {
+      ui.cursor.Scroll(event.value);
+    }
+  }
+}
+
+void AppReferences::DrawDebugInfo() const {
+}
+
+} // namespace OC
+
+
+static void print_voltage(int octave, int fraction) {
   graphics.printf("%01d", octave);
   graphics.movePrintPos(-1, 0); graphics.print('.');
   graphics.movePrintPos(-2, 0); graphics.printf("%03d", fraction);
@@ -961,116 +1044,4 @@ void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) 
       print_voltage(-octave, 0);
   }
 }
-
-/*
-void printFloat(float f) {
-  const int f_ = int(floor(f * 1000));
-  const int value = f_ / 1000;
-  const int cents = f_ % 1000;
-  graphics.printf("%6u.%03u", value, cents);
-}
-*/
-
-void REFS_screensaver() {
-  references_app.channels_[0].RenderScreensaver( 0, 0);
-  references_app.channels_[1].RenderScreensaver(32, 1);
-  references_app.channels_[2].RenderScreensaver(64, 2);
-  references_app.channels_[3].RenderScreensaver(96, 3);
-  graphics.setPrintPos(2, 44);
-
-  const float frequency_ = references_app.get_frequency() ;
-  const float c0_freq_ = references_app.get_C0_freq() ;
-  const float bpm_ = (60.0 * frequency_)/references_app.get_ppqn() ;
-
-  int32_t freq_decicents_deviation_ = round(12000.0 * log2f(frequency_ / c0_freq_)) + 500;
-  int8_t freq_octave_ = -2 + ((freq_decicents_deviation_)/ 12000) ;
-  int8_t freq_note_ = (freq_decicents_deviation_ - ((freq_octave_ + 2) * 12000)) / 1000;
-  int32_t freq_decicents_residual_ = ((freq_decicents_deviation_ - ((freq_octave_ - 1) * 12000)) % 1000) - 500;
-
-  if (frequency_ > 0.0) {
-    {
-    const int f = int(floor(frequency_ * 1000));
-    const int value = f / 1000;
-    const int cents = f % 1000;
-    #ifdef FLIP_180
-    graphics.printf("TR1 %7d.%03d Hz", value, cents);
-    #else
-    graphics.printf("TR4 %7d.%03d Hz", value, cents);
-    #endif
-    }
-    graphics.setPrintPos(2, 56);
-    if (references_app.get_notes_or_bpm()) {
-      const int f = int(floor(bpm_ * 100));
-      const int value = f / 100;
-      const int cents = f % 100;
-      graphics.printf("%5d.%02d bpm %2.0fppqn", value, cents, references_app.get_ppqn());
-    } else if(frequency_ >= c0_freq_) {
-      const int f = int(floor(freq_decicents_residual_));
-      const int value = f / 10;
-      const int cents = abs(f) % 10;
-      graphics.printf("%+i %s %+5d.%01dc", freq_octave_, OC::Strings::note_names[freq_note_], value, cents) ;
-    }
-  } else {
-    graphics.print("TR4 no input") ;
-  }
-}
-
-void REFS_handleButtonEvent(const UI::Event &event) {
-
-  if (references_app.autotuner.active()) {
-    references_app.autotuner.HandleButtonEvent(event);
-    return;
-  }
-  
-  if (OC::CONTROL_BUTTON_R == event.control && event.type == UI::EVENT_BUTTON_PRESS) {
-
-    auto &selected_channel = references_app.selected_channel();
-    switch (selected_channel.enabled_setting_at(references_app.ui.cursor.cursor_pos())) {
-      case REF_SETTING_AUTOTUNE:
-      references_app.autotuner.Open(&selected_channel);
-      break;
-      case REF_SETTING_DUMMY:
-      break;
-      default:
-      references_app.ui.cursor.toggle_editing();
-      break;
-    }
-  }
-}
-
-void REFS_handleEncoderEvent(const UI::Event &event) {
-
-  if (references_app.autotuner.active()) {
-    references_app.autotuner.HandleEncoderEvent(event);
-    return;
-  }
-  
-  if (OC::CONTROL_ENCODER_L == event.control) {
-    
-    int previous = references_app.selected_channel().num_enabled_settings();
-    int selected = references_app.ui.selected_channel + event.value;
-    CONSTRAIN(selected, 0, DAC_CHANNEL_LAST - 0x1);
-    references_app.ui.selected_channel = selected;
-
-    // hack -- deal w/ menu items / channels
-    if ((references_app.ui.cursor.cursor_pos() > 4) && (previous > references_app.selected_channel().num_enabled_settings())) {
-      references_app.ui.cursor.Init(0, 0);
-      references_app.ui.cursor.AdjustEnd(references_app.selected_channel().num_enabled_settings() - 1);
-    }
-    else
-      references_app.ui.cursor.AdjustEnd(references_app.selected_channel().num_enabled_settings() - 1);
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
-    if (references_app.ui.cursor.editing()) {
-        auto &selected_channel = references_app.selected_channel();
-        ReferenceSetting setting = selected_channel.enabled_setting_at(references_app.ui.cursor.cursor_pos());
-        if (setting == REF_SETTING_DUMMY) 
-          references_app.ui.cursor.set_editing(false);
-        selected_channel.change_value(setting, event.value);
-        selected_channel.update_enabled_settings();
-    } else {
-      references_app.ui.cursor.Scroll(event.value);
-    }
-  }
-}
-
 #endif // ENABLE_APP_REFERENCES

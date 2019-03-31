@@ -1169,116 +1169,130 @@ SETTINGS_DECLARE(QuantizerChannel, CHANNEL_SETTING_LAST) {
   { 0, 0, 4, "IntSeq reset", OC::Strings::trigger_input_names_none, settings::STORAGE_TYPE_U4 }
 };
 
-// WIP refactoring to better encapsulate and for possible app interface change
-class QuadQuantizer {
+namespace OC {
+
+OC_APP_TRAITS(AppQuadQuantizer, TWOCCS("QQ"), "Quantermain", "4x Quantizer");
+class OC_APP_CLASS(AppQuadQuantizer) {
 public:
-  void Init() {
-    selected_channel = 0;
-    cursor.Init(CHANNEL_SETTING_SCALE, CHANNEL_SETTING_LAST - 1);
-    scale_editor.Init(false);
-  }
+  OC_APP_INTERFACE_DECLARE(AppQuadQuantizer);
+
+private:
+  int selected_channel_;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  OC::ScaleEditor<QuantizerChannel> scale_editor_;
+
+  QuantizerChannel quantizer_channels_[4];
 
   inline bool editing() const {
-    return cursor.editing();
+    return cursor_.editing();
   }
 
   inline int cursor_pos() const {
-    return cursor.cursor_pos();
+    return cursor_.cursor_pos();
   }
 
-  int selected_channel;
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  OC::ScaleEditor<QuantizerChannel> scale_editor;
+  void HandleTopButton();
+  void HandleLowerButton();
+  void HandleRightButton();
+  void HandleLeftButton();
+  void HandleLeftButtonLong();
+  void HandleDownButtonLong();
 };
 
-QuadQuantizer qq_state;
-QuantizerChannel quantizer_channels[4];
+AppQuadQuantizer APP_QQ;
 
-void QQ_init() {
+void AppQuadQuantizer::Init() {
 
-  qq_state.Init();
+  selected_channel_ = 0;
+  cursor_.Init(CHANNEL_SETTING_SCALE, CHANNEL_SETTING_LAST - 1);
+  scale_editor_.Init(false);
+
   for (size_t i = 0; i < 4; ++i) {
-    quantizer_channels[i].Init(static_cast<ChannelSource>(CHANNEL_SOURCE_CV1 + i),
+    quantizer_channels_[i].Init(static_cast<ChannelSource>(CHANNEL_SOURCE_CV1 + i),
                                static_cast<ChannelTriggerSource>(CHANNEL_TRIGGER_TR1 + i));
   }
 
-  qq_state.cursor.AdjustEnd(quantizer_channels[0].num_enabled_settings() - 1);
+  cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
 }
 
-static constexpr size_t QQ_storageSize() {
+size_t AppQuadQuantizer::storage_size() const {
   return 4 * QuantizerChannel::storageSize();
 }
 
-static size_t QQ_save(void *storage) {
+size_t AppQuadQuantizer::Save(void *storage) const {
   size_t used = 0;
   for (size_t i = 0; i < 4; ++i) {
-    used += quantizer_channels[i].Save(static_cast<char*>(storage) + used);
+    used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
   }
   return used;
 }
 
-static size_t QQ_restore(const void *storage) {
+size_t AppQuadQuantizer::Restore(const void *storage) {
   size_t used = 0;
   for (size_t i = 0; i < 4; ++i) {
-    used += quantizer_channels[i].Restore(static_cast<const char*>(storage) + used);
-    quantizer_channels[i].update_scale_mask(quantizer_channels[i].get_mask(), 0x0);
-    quantizer_channels[i].update_enabled_settings();
+    used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);
+    quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(), 0x0);
+    quantizer_channels_[i].update_enabled_settings();
   }
-  qq_state.cursor.AdjustEnd(quantizer_channels[0].num_enabled_settings() - 1);
+  cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
   return used;
 }
 
-void QQ_handleAppEvent(OC::AppEvent event) {
+void AppQuadQuantizer::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      qq_state.cursor.set_editing(false);
-      qq_state.scale_editor.Close();
+    case APP_EVENT_RESUME:
+      cursor_.set_editing(false);
+      scale_editor_.Close();
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void QQ_process(OC::IOFrame *ioframe) {
-  quantizer_channels[0].Update(ioframe, DAC_CHANNEL_A);
-  quantizer_channels[1].Update(ioframe, DAC_CHANNEL_B);
-  quantizer_channels[2].Update(ioframe, DAC_CHANNEL_C);
-  quantizer_channels[3].Update(ioframe, DAC_CHANNEL_D);
+void AppQuadQuantizer::Process(IOFrame *ioframe) {
+  quantizer_channels_[0].Update(ioframe, DAC_CHANNEL_A);
+  quantizer_channels_[1].Update(ioframe, DAC_CHANNEL_B);
+  quantizer_channels_[2].Update(ioframe, DAC_CHANNEL_C);
+  quantizer_channels_[3].Update(ioframe, DAC_CHANNEL_D);
 }
 
-void QQ_getIOConfig(OC::IOConfig &ioconfig)
+void AppQuadQuantizer::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OUTPUT_MODE_PITCH);
 }
 
-void QQ_loop() {
+void AppQuadQuantizer::Loop() {
 }
 
-void QQ_menu() {
+void AppQuadQuantizer::DrawMenu() const {
 
-  menu::QuadTitleBar::Draw();
+  using TitleBar = menu::QuadTitleBar;
+
+  TitleBar::Draw();
   for (int i = 0, x = 0; i < 4; ++i, x += 32) {
-    const QuantizerChannel &channel = quantizer_channels[i];
-    menu::QuadTitleBar::SetColumn(i);
+    const QuantizerChannel &channel = quantizer_channels_[i];
+    TitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
     graphics.movePrintPos(2, 0);
     int octave = channel.get_octave();
     if (octave)
       graphics.pretty_print(octave);
 
-    menu::QuadTitleBar::DrawGateIndicator(i, channel.getTriggerState());
+    TitleBar::DrawGateIndicator(i, channel.getTriggerState());
+    //TitleBar::DrawOutputIcons(i, TitleBar::kColumnWidth - 5, i & 2);
+
   }
-  menu::QuadTitleBar::Selected(qq_state.selected_channel);
+  TitleBar::Selected(selected_channel_);
 
 
-  const QuantizerChannel &channel = quantizer_channels[qq_state.selected_channel];
+  const QuantizerChannel &channel = quantizer_channels_[selected_channel_];
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(qq_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int setting =
@@ -1293,11 +1307,11 @@ void QQ_menu() {
           menu::DrawEditIcon(6, list_item.y, value, attr);
           graphics.movePrintPos(6, 0);
         }
-        graphics.print(OC::scale_names[value]);
+        graphics.print(scale_names[value]);
         list_item.DrawCustom();
         break;
       case CHANNEL_SETTING_MASK:
-        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), OC::Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
+        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
         list_item.DrawNoValue<false>(value, attr);
         break;
       case CHANNEL_SETTING_TRIGGER:
@@ -1341,58 +1355,58 @@ void QQ_menu() {
     }
   }
 
-  if (qq_state.scale_editor.active())
-    qq_state.scale_editor.Draw();
+  if (scale_editor_.active())
+    scale_editor_.Draw();
 }
 
-void QQ_handleButtonEvent(const UI::Event &event) {
+void AppQuadQuantizer::HandleButtonEvent(const UI::Event &event) {
 
-  if (UI::EVENT_BUTTON_LONG_PRESS == event.type && OC::CONTROL_BUTTON_DOWN == event.control)
-    QQ_downButtonLong();
+  if (UI::EVENT_BUTTON_LONG_PRESS == event.type && CONTROL_BUTTON_DOWN == event.control)
+    HandleDownButtonLong();
 
-  if (qq_state.scale_editor.active()) {
-    qq_state.scale_editor.HandleButtonEvent(event);
+  if (scale_editor_.active()) {
+    scale_editor_.HandleButtonEvent(event);
     return;
   }
 
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-        QQ_topButton();
+      case CONTROL_BUTTON_UP:
+        HandleTopButton();
         break;
-      case OC::CONTROL_BUTTON_DOWN:
-        QQ_lowerButton();
+      case CONTROL_BUTTON_DOWN:
+        HandleLowerButton();
         break;
-      case OC::CONTROL_BUTTON_L:
-        QQ_leftButton();
+      case CONTROL_BUTTON_L:
+        HandleLeftButton();
         break;
-      case OC::CONTROL_BUTTON_R:
-        QQ_rightButton();
+      case CONTROL_BUTTON_R:
+        HandleRightButton();
         break;
     }
   } else if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
-    if (OC::CONTROL_BUTTON_L == event.control)
-      QQ_leftButtonLong();
+    if (CONTROL_BUTTON_L == event.control)
+      HandleLeftButtonLong();
   }
 }
 
-void QQ_handleEncoderEvent(const UI::Event &event) {
-  if (qq_state.scale_editor.active()) {
-    qq_state.scale_editor.HandleEncoderEvent(event);
+void AppQuadQuantizer::HandleEncoderEvent(const UI::Event &event) {
+  if (scale_editor_.active()) {
+    scale_editor_.HandleEncoderEvent(event);
     return;
   }
 
-  if (OC::CONTROL_ENCODER_L == event.control) {
-    int selected_channel = qq_state.selected_channel + event.value;
+  if (CONTROL_ENCODER_L == event.control) {
+    int selected_channel = selected_channel_ + event.value;
     CONSTRAIN(selected_channel, 0, 3);
-    qq_state.selected_channel = selected_channel;
+    selected_channel_ = selected_channel;
 
-    QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
-    qq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
-    QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
-    if (qq_state.editing()) {
-      ChannelSetting setting = selected.enabled_setting_at(qq_state.cursor_pos());
+    QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+    cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
+  } else if (CONTROL_ENCODER_R == event.control) {
+    QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+    if (editing()) {
+      ChannelSetting setting = selected.enabled_setting_at(cursor_pos());
       if (CHANNEL_SETTING_MASK != setting) {
 
         int event_value = event.value;
@@ -1421,74 +1435,112 @@ void QQ_handleEncoderEvent(const UI::Event &event) {
           case CHANNEL_SETTING_TRIGGER:
           case CHANNEL_SETTING_SOURCE:
             selected.update_enabled_settings();
-            qq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+            cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
           break;
           default:
           break;
         }
       }
     } else {
-      qq_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
-void QQ_topButton() {
-  QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
+void AppQuadQuantizer::HandleTopButton() {
+  QuantizerChannel &selected = quantizer_channels_[selected_channel_];
   if (selected.change_value(CHANNEL_SETTING_OCTAVE, 1)) {
     selected.force_update();
   }
 }
 
-void QQ_lowerButton() {
-  QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
+void AppQuadQuantizer::HandleLowerButton() {
+  QuantizerChannel &selected = quantizer_channels_[selected_channel_];
   if (selected.change_value(CHANNEL_SETTING_OCTAVE, -1)) {
     selected.force_update();
   }
 }
 
-void QQ_rightButton() {
-  QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
-  switch (selected.enabled_setting_at(qq_state.cursor_pos())) {
+void AppQuadQuantizer::HandleRightButton() {
+  QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+  switch (selected.enabled_setting_at(cursor_pos())) {
     case CHANNEL_SETTING_MASK: {
       int scale = selected.get_scale(DUMMY);
-      if (OC::Scales::SCALE_NONE != scale) {
-        qq_state.scale_editor.Edit(&selected, scale);
+      if (Scales::SCALE_NONE != scale) {
+        scale_editor_.Edit(&selected, scale);
       }
     }
     break;
     default:
-      qq_state.cursor.toggle_editing();
+      cursor_.toggle_editing();
       break;
   }
 }
 
-void QQ_leftButton() {
-  qq_state.selected_channel = (qq_state.selected_channel + 1) & 3;
-  QuantizerChannel &selected = quantizer_channels[qq_state.selected_channel];
-  qq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+void AppQuadQuantizer::HandleLeftButton() {
+  selected_channel_ = (selected_channel_ + 1) & 3;
+  QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+  cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
 }
 
-void QQ_leftButtonLong() {
-  QuantizerChannel &selected_channel = quantizer_channels[qq_state.selected_channel];
+void AppQuadQuantizer::HandleLeftButtonLong() {
+  QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
   int scale = selected_channel.get_scale(DUMMY);
   int root = selected_channel.get_root();
   for (int i = 0; i < 4; ++i) {
-    if (i != qq_state.selected_channel) {
-      quantizer_channels[i].apply_value(CHANNEL_SETTING_ROOT, root);
-      quantizer_channels[i].set_scale(scale);
+    if (i != selected_channel_) {
+      quantizer_channels_[i].apply_value(CHANNEL_SETTING_ROOT, root);
+      quantizer_channels_[i].set_scale(scale);
     }
   }
 }
 
-void QQ_downButtonLong() {
+void AppQuadQuantizer::HandleDownButtonLong() {
 
-  QuantizerChannel &selected_channel = quantizer_channels[qq_state.selected_channel];
+  QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
   selected_channel.update_scale_mask(0xFFFF, 0x0);
 }
 
-int32_t history[5];
-static const weegfx::coord_t kBottom = 60;
+void AppQuadQuantizer::DrawScreensaver() const {
+#ifdef QQ_DEBUG_SCREENSAVER
+  debug::CycleMeasurement render_cycles;
+#endif
+
+  quantizer_channels_[0].RenderScreensaver(0);
+  quantizer_channels_[1].RenderScreensaver(32);
+  quantizer_channels_[2].RenderScreensaver(64);
+  quantizer_channels_[3].RenderScreensaver(96);
+
+#ifdef QQ_DEBUG_SCREENSAVER
+  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
+  uint32_t us = debug::cycles_to_us(render_cycles.read());
+  graphics.setPrintPos(0, 32);
+  graphics.printf("%u",  us);
+#endif
+}
+
+
+void AppQuadQuantizer::DrawDebugInfo() const {
+#ifdef QQ_DEBUG
+  for (int i = 0; i < 4; ++i) {
+    uint8_t ypos = 10*(i + 1) + 2 ;
+    graphics.setPrintPos(2, ypos);
+    graphics.print(quantizer_channels_[i].get_int_seq_i());
+    graphics.setPrintPos(30, ypos);
+    graphics.print(quantizer_channels_[i].get_int_seq_l());
+    graphics.setPrintPos(58, ypos);
+    graphics.print(quantizer_channels_[i].get_int_seq_j());
+    graphics.setPrintPos(80, ypos);
+    graphics.print(quantizer_channels_[i].get_int_seq_k());
+    graphics.setPrintPos(104, ypos);
+    graphics.print(quantizer_channels_[i].get_int_seq_x());
+ }
+#endif // QQ_DEBUG
+}
+
+} // namespace OC
+
+static constexpr weegfx::coord_t kBottom = 60;
 
 inline int32_t render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t width) {
   CONSTRAIN(pitch, 0, 120 << 7);
@@ -1499,7 +1551,7 @@ inline int32_t render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t wi
 }
 
 void QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
-
+  int32_t history[5];
   // History
   scrolling_history_.Read(history);
   weegfx::coord_t scroll_pos = (scrolling_history_.get_scroll_pos() * 6) >> 8;
@@ -1556,41 +1608,5 @@ void QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
   int32_t octave = render_pitch(OC::IO::pitch_rel_to_abs(history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 28, kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
 }
-
-void QQ_screensaver() {
-#ifdef QQ_DEBUG_SCREENSAVER
-  debug::CycleMeasurement render_cycles;
-#endif
-
-  quantizer_channels[0].RenderScreensaver(0);
-  quantizer_channels[1].RenderScreensaver(32);
-  quantizer_channels[2].RenderScreensaver(64);
-  quantizer_channels[3].RenderScreensaver(96);
-
-#ifdef QQ_DEBUG_SCREENSAVER
-  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
-  uint32_t us = debug::cycles_to_us(render_cycles.read());
-  graphics.setPrintPos(0, 32);
-  graphics.printf("%u",  us);
-#endif
-}
-
-#ifdef QQ_DEBUG
-void QQ_debug() {
-  for (int i = 0; i < 4; ++i) {
-    uint8_t ypos = 10*(i + 1) + 2 ;
-    graphics.setPrintPos(2, ypos);
-    graphics.print(quantizer_channels[i].get_int_seq_i());
-    graphics.setPrintPos(30, ypos);
-    graphics.print(quantizer_channels[i].get_int_seq_l());
-    graphics.setPrintPos(58, ypos);
-    graphics.print(quantizer_channels[i].get_int_seq_j());
-    graphics.setPrintPos(80, ypos);
-    graphics.print(quantizer_channels[i].get_int_seq_k());
-    graphics.setPrintPos(104, ypos);
-    graphics.print(quantizer_channels[i].get_int_seq_x());
- }
-}
-#endif // QQ_DEBUG
 
 #endif // ENABLE_APP_QUANTERMAIN

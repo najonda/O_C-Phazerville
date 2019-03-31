@@ -44,9 +44,9 @@ void IOSettingsMenu::Init()
   selected_channel_ = 0;
 }
 
-void IOSettingsMenu::Edit(App *app)
+void IOSettingsMenu::Edit(AppBase *app)
 {
-  io_settings_ = &app->io_settings;
+  io_settings_ = &app->mutable_io_settings();
   app->GetIOConfig(io_config_);
 
   cursor_.Init(IO_SETTING_CV1_GAIN, IO_SETTING_A_TUNING);
@@ -176,7 +176,7 @@ void IOSettingsMenu::DispatchEvent(const UI::Event &event)
   }
 }
 
-UiMode Ui::AppIOSettings(OC::App *app)
+UiMode Ui::AppIOSettings(const OC::AppBase *app)
 {
   io_settings_menu_.Edit(app);
 
