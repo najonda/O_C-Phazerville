@@ -680,7 +680,27 @@ public:
 
 H1200State h1200_state;
 
-void FASTRUN H1200_process(OC::IOFrame *ioframe) {
+namespace OC {
+
+// Instantiate an app for the OC::Framework
+OC_APP_TRAITS(AppH1200, TWOCCS("HA"), "Harrington 1200", "Triads");
+class OC_APP_CLASS(AppH1200) {
+public:
+  OC_APP_INTERFACE_DECLARE(AppH1200);
+
+private:
+  void HandleTopButton();
+  void HandleLowerButton();
+  void HandleRightButton();
+  void HandleLeftButton();
+  void HandleLeftButtonLong();
+  void HandleDownButtonLong();
+};
+
+AppH1200 APP_H1200;
+
+
+void /*FASTRUN*/ AppH1200::Process(OC::IOFrame *ioframe) {
   uint32_t triggers = ioframe->digital_inputs.triggered();
 
   while (h1200_state.ui_actions.readable()) {
@@ -955,36 +975,36 @@ void FASTRUN H1200_process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_pitch_values(h1200_state.output_values_);
 }
 
-void H1200_getIOConfig(OC::IOConfig &ioconfig)
+void AppH1200::GetIOConfig(OC::IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("ROOT", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("+1", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("+2", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("+3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_A].set("ROOT", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("+1", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("+2", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("+3", OUTPUT_MODE_PITCH);
 }
 
-void H1200_init() {
+void AppH1200::Init() {
   h1200_settings.Init();
   h1200_state.Init();
   h1200_settings.update_enabled_settings();
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
 }
 
-size_t H1200_storageSize() {
+size_t AppH1200::storage_size() const {
   return H1200Settings::storageSize();
 }
 
-size_t H1200_save(void *storage) {
+size_t AppH1200::Save(void *storage) const {
   return h1200_settings.Save(storage);
 }
 
-size_t H1200_restore(const void *storage) {
+size_t AppH1200::Restore(const void *storage) {
   h1200_settings.update_enabled_settings();
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
   return h1200_settings.Restore(storage);
 }
 
-void H1200_handleAppEvent(OC::AppEvent event) {
+void AppH1200::HandleAppEvent(OC::AppEvent event) {
   switch (event) {
     case OC::APP_EVENT_RESUME:
       h1200_state.cursor.set_editing(false);
@@ -999,10 +1019,10 @@ void H1200_handleAppEvent(OC::AppEvent event) {
   }
 }
 
-void H1200_loop() {
+void AppH1200::Loop() {
 }
 
-void H1200_handleButtonEvent(const UI::Event &event) {
+void AppH1200::HandleButtonEvent(const UI::Event &event) {
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case OC::CONTROL_BUTTON_UP:
@@ -1028,7 +1048,7 @@ void H1200_handleButtonEvent(const UI::Event &event) {
   }
 }
 
-void H1200_handleEncoderEvent(const UI::Event &event) {
+void AppH1200::HandleEncoderEvent(const UI::Event &event) {
 
   if (OC::CONTROL_ENCODER_L == event.control) {
     if (h1200_settings.change_value(H1200_SETTING_INVERSION, event.value))
@@ -1067,7 +1087,7 @@ void H1200_handleEncoderEvent(const UI::Event &event) {
   }
 }
 
-void H1200_menu() {
+void AppH1200::DrawMenu() const {
 
   /* show mode change instantly, because it's somewhat confusing (inconsistent?) otherwise */
   const EMode current_mode = h1200_settings.mode(); // const EMode current_mode = h1200_state.tonnetz_state.current_chord().mode();
@@ -1104,7 +1124,7 @@ void H1200_menu() {
   }
 }
 
-void H1200_screensaver() {
+void AppH1200::DrawScreensaver() const {
   uint8_t y = 0;
   static const uint8_t x_col_0 = 66;
   static const uint8_t x_col_1 = 66 + 24;
@@ -1142,12 +1162,14 @@ void H1200_screensaver() {
   OC::visualize_pitch_classes(normalized, note_circle_x, note_circle_y);
 }
 
+void AppH1200::DrawDebugInfo() const {
 #ifdef H1200_DEBUG
-void H1200_debug() {
   int cv = OC::ADC::value<ADC_CHANNEL_4>();
   int scaled = ((OC::ADC::value<ADC_CHANNEL_4>() + 127) >> 8);
 
   graphics.setPrintPos(2, 12);
   graphics.printf("I: %4d %4d", cv, scaled);
-}
 #endif // H1200_DEBUG
+}
+
+} // namespace OC

@@ -22,7 +22,7 @@
 // SOFTWARE.
 //
 // Quadrrature LFO app, based on the Mutable Instruments Frames Easter egg 
-// quadrature wavetable LFO by Olivier Gillet (see frames_poly_lfo.h/cpp)
+// quadrature wavetable LFO by Olivier Gillet (see frames_poly_lfo_.h/cpp)
 
 
 #include "OC_apps.h"
@@ -231,43 +231,53 @@ SETTINGS_DECLARE(PolyLfo, POLYLFO_SETTING_LAST) {
   { 0, 0, 127, "D AM by C", NULL, settings::STORAGE_TYPE_U8 }, 
   { 0, 0, 6, "CV4: DEST", cv4_destinations, settings::STORAGE_TYPE_U8 },
   { 3, 0, 5, "TR4: MULT", tr4_multiplier, settings::STORAGE_TYPE_U8 }, 
- };
+};
 
-PolyLfo poly_lfo;
-struct {
+namespace OC {
 
-  POLYLFO_SETTINGS left_edit_mode;
-  menu::ScreenCursor<menu::kScreenLines> cursor;
+OC_APP_TRAITS(AppPolyLfo, TWOCCS("PL"), "Quadraturia", "Quadrature LFO");
+class OC_APP_CLASS(AppPolyLfo) {
+public:
+  OC_APP_INTERFACE_DECLARE(AppPolyLfo);
 
-} poly_lfo_state;
+private:
 
-void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
+  PolyLfo poly_lfo_;
+
+  POLYLFO_SETTINGS left_edit_mode_;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+
+};
+
+AppPolyLfo APP_POLYLFO;
+
+void FASTRUN AppPolyLfo::Process(OC::IOFrame *ioframe) {
 
   bool reset_phase = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_1>();
   bool freeze = ioframe->digital_inputs.raised<OC::DIGITAL_INPUT_2>();
   bool tempo_sync = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_3>();
  
   // TODO[PLD] Do we need the excessive smoothing?
-  poly_lfo.cv_freq.push(ioframe->cv.values[ADC_CHANNEL_1]);
-  poly_lfo.cv_shape.push(ioframe->cv.values[ADC_CHANNEL_2]);
-  poly_lfo.cv_spread.push(ioframe->cv.values[ADC_CHANNEL_3]);
-  poly_lfo.cv_mappable.push(ioframe->cv.values[ADC_CHANNEL_4]);
+  poly_lfo_.cv_freq.push(ioframe->cv.values[ADC_CHANNEL_1]);
+  poly_lfo_.cv_shape.push(ioframe->cv.values[ADC_CHANNEL_2]);
+  poly_lfo_.cv_spread.push(ioframe->cv.values[ADC_CHANNEL_3]);
+  poly_lfo_.cv_mappable.push(ioframe->cv.values[ADC_CHANNEL_4]);
 
   // Range in settings is (0-256] so this gets scaled to (0,65535]
   // CV value is 12 bit so also needs scaling
 
-  int32_t freq = SCALE8_16(poly_lfo.get_coarse()) + (poly_lfo.cv_freq.value() * 16) + poly_lfo.get_fine() * 2;
+  int32_t freq = SCALE8_16(poly_lfo_.get_coarse()) + (poly_lfo_.cv_freq.value() * 16) + poly_lfo_.get_fine() * 2;
   freq = USAT16(freq);
 
-  poly_lfo.lfo.set_freq_range(poly_lfo.get_freq_range());
+  poly_lfo_.lfo.set_freq_range(poly_lfo_.get_freq_range());
 
-  poly_lfo.lfo.set_sync(poly_lfo.get_tap_tempo());
+  poly_lfo_.lfo.set_sync(poly_lfo_.get_tap_tempo());
 
-  int32_t shape = SCALE8_16(poly_lfo.get_shape()) + (poly_lfo.cv_shape.value() * 16);
-  poly_lfo.lfo.set_shape(USAT16(shape));
+  int32_t shape = SCALE8_16(poly_lfo_.get_shape()) + (poly_lfo_.cv_shape.value() * 16);
+  poly_lfo_.lfo.set_shape(USAT16(shape));
 
-  int32_t spread = SCALE8_16(poly_lfo.get_spread() + 128) + (poly_lfo.cv_spread.value() * 16);
-  poly_lfo.lfo.set_spread(USAT16(spread));
+  int32_t spread = SCALE8_16(poly_lfo_.get_spread() + 128) + (poly_lfo_.cv_spread.value() * 16);
+  poly_lfo_.lfo.set_spread(USAT16(spread));
 
   int32_t coupling = 0;
   int32_t shape_spread = 0;
@@ -277,78 +287,78 @@ void FASTRUN POLYLFO_process(OC::IOFrame *ioframe) {
   int32_t c_am_by_b = 0;
   int32_t d_am_by_c = 0;
   
-  switch (poly_lfo.cv4_destination()) {
+  switch (poly_lfo_.cv4_destination()) {
     case 1:  // shape spread: -128, 127
-    shape_spread = poly_lfo.cv_mappable.value() << 4;
+    shape_spread = poly_lfo_.cv_mappable.value() << 4;
     break;
     case 2:  // attenuation: 0, 230
-    attenuation = poly_lfo.cv_mappable.value() << 4;
+    attenuation = poly_lfo_.cv_mappable.value() << 4;
     break;
     case 3:  // offset: -128, 127
-    offset = poly_lfo.cv_mappable.value() << 4;
+    offset = poly_lfo_.cv_mappable.value() << 4;
     break;
     case 4:  // "a->b", 0-127
-    b_am_by_a = (poly_lfo.cv_mappable.value() + 15) >> 5;
+    b_am_by_a = (poly_lfo_.cv_mappable.value() + 15) >> 5;
     break;
     case 5:  // "b->c", 0-127
-    c_am_by_b = (poly_lfo.cv_mappable.value() + 15) >> 5;
+    c_am_by_b = (poly_lfo_.cv_mappable.value() + 15) >> 5;
     break;
     case 6:  // "c->d", 0-127
-    d_am_by_c = (poly_lfo.cv_mappable.value() + 15) >> 5;
+    d_am_by_c = (poly_lfo_.cv_mappable.value() + 15) >> 5;
     break;
     case 0:  // coupling, -128, 127
     default: 
-    coupling = poly_lfo.cv_mappable.value() << 4;
+    coupling = poly_lfo_.cv_mappable.value() << 4;
     break;
   }
   
-  coupling += SCALE8_16(poly_lfo.get_coupling() + 127);
-  poly_lfo.lfo.set_coupling(USAT16(coupling));
+  coupling += SCALE8_16(poly_lfo_.get_coupling() + 127);
+  poly_lfo_.lfo.set_coupling(USAT16(coupling));
 
-  shape_spread += SCALE8_16(poly_lfo.get_shape_spread() + 127);
-  poly_lfo.lfo.set_shape_spread(USAT16(shape_spread));
+  shape_spread += SCALE8_16(poly_lfo_.get_shape_spread() + 127);
+  poly_lfo_.lfo.set_shape_spread(USAT16(shape_spread));
 
-  attenuation += SCALE8_16(poly_lfo.get_attenuation());
-  poly_lfo.lfo.set_attenuation(USAT16(attenuation));
+  attenuation += SCALE8_16(poly_lfo_.get_attenuation());
+  poly_lfo_.lfo.set_attenuation(USAT16(attenuation));
 
-  offset += SCALE8_16(poly_lfo.get_offset());
-  poly_lfo.lfo.set_offset(USAT16(offset));
+  offset += SCALE8_16(poly_lfo_.get_offset());
+  poly_lfo_.lfo.set_offset(USAT16(offset));
 
-  poly_lfo.lfo.set_freq_div_b(poly_lfo.get_freq_div_b());
-  poly_lfo.lfo.set_freq_div_c(poly_lfo.get_freq_div_c());
-  poly_lfo.lfo.set_freq_div_d(poly_lfo.get_freq_div_d());
+  poly_lfo_.lfo.set_freq_div_b(poly_lfo_.get_freq_div_b());
+  poly_lfo_.lfo.set_freq_div_c(poly_lfo_.get_freq_div_c());
+  poly_lfo_.lfo.set_freq_div_d(poly_lfo_.get_freq_div_d());
 
-  poly_lfo.lfo.set_b_xor_a(poly_lfo.get_b_xor_a());
-  poly_lfo.lfo.set_c_xor_a(poly_lfo.get_c_xor_a());
-  poly_lfo.lfo.set_d_xor_a(poly_lfo.get_d_xor_a());
+  poly_lfo_.lfo.set_b_xor_a(poly_lfo_.get_b_xor_a());
+  poly_lfo_.lfo.set_c_xor_a(poly_lfo_.get_c_xor_a());
+  poly_lfo_.lfo.set_d_xor_a(poly_lfo_.get_d_xor_a());
 
-  b_am_by_a += poly_lfo.get_b_am_by_a();
+  b_am_by_a += poly_lfo_.get_b_am_by_a();
   CONSTRAIN(b_am_by_a, 0, 127);
-  poly_lfo.lfo.set_b_am_by_a(b_am_by_a);
+  poly_lfo_.lfo.set_b_am_by_a(b_am_by_a);
 
-  c_am_by_b += poly_lfo.get_c_am_by_b();
+  c_am_by_b += poly_lfo_.get_c_am_by_b();
   CONSTRAIN(c_am_by_b, 0, 127);
-  poly_lfo.lfo.set_c_am_by_b(c_am_by_b);
+  poly_lfo_.lfo.set_c_am_by_b(c_am_by_b);
 
-  d_am_by_c += poly_lfo.get_d_am_by_c();
+  d_am_by_c += poly_lfo_.get_d_am_by_c();
   CONSTRAIN(d_am_by_c, 0, 127);
-  poly_lfo.lfo.set_d_am_by_c(d_am_by_c);
+  poly_lfo_.lfo.set_d_am_by_c(d_am_by_c);
   
   // div/multiply frequency if TR4 / gate high
-  int8_t freq_mult = digitalReadFast(TR4) ? 0xFF : poly_lfo.tr4_multiplier();
-  poly_lfo.set_freq_mult(freq_mult);
+  int8_t freq_mult = digitalReadFast(TR4) ? 0xFF : poly_lfo_.tr4_multiplier();
+  poly_lfo_.set_freq_mult(freq_mult);
 
-  if (!freeze && !poly_lfo.frozen())
-    poly_lfo.lfo.Render(freq, reset_phase, tempo_sync, freq_mult);
+  if (!freeze && !poly_lfo_.frozen())
+    poly_lfo_.lfo.Render(freq, reset_phase, tempo_sync, freq_mult);
 
   // TODO[PLD] Ranges & offsets
-  ioframe->outputs.set_raw_value(DAC_CHANNEL_A, poly_lfo.lfo.dac_code(0));
-  ioframe->outputs.set_raw_value(DAC_CHANNEL_B, poly_lfo.lfo.dac_code(1));
-  ioframe->outputs.set_raw_value(DAC_CHANNEL_C, poly_lfo.lfo.dac_code(2));
-  ioframe->outputs.set_raw_value(DAC_CHANNEL_D, poly_lfo.lfo.dac_code(3));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_A, poly_lfo_.lfo.dac_code(0));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_B, poly_lfo_.lfo.dac_code(1));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_C, poly_lfo_.lfo.dac_code(2));
+  ioframe->outputs.set_raw_value(DAC_CHANNEL_D, poly_lfo_.lfo.dac_code(3));
 }
 
-void POLYLFO_getIOConfig(OC::IOConfig &ioconfig)
+void AppPolyLfo::GetIOConfig(OC::IOConfig &ioconfig) const
 {
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_RAW);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_RAW);
@@ -356,55 +366,54 @@ void POLYLFO_getIOConfig(OC::IOConfig &ioconfig)
   ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_RAW);
 }
 
-void POLYLFO_init() {
-
-  poly_lfo_state.left_edit_mode = POLYLFO_SETTING_COARSE;
-  poly_lfo_state.cursor.Init(POLYLFO_SETTING_TAP_TEMPO, POLYLFO_SETTING_LAST - 1);
-  poly_lfo.Init();
+void AppPolyLfo::Init() {
+  left_edit_mode_ = POLYLFO_SETTING_COARSE;
+  cursor_.Init(POLYLFO_SETTING_TAP_TEMPO, POLYLFO_SETTING_LAST - 1);
+  poly_lfo_.Init();
 }
 
-size_t POLYLFO_storageSize() {
+size_t AppPolyLfo::storage_size() const {
   return PolyLfo::storageSize();
 }
 
-size_t POLYLFO_save(void *storage) {
-  return poly_lfo.Save(storage);
+size_t AppPolyLfo::Save(void *storage) const {
+  return poly_lfo_.Save(storage);
 }
 
-size_t POLYLFO_restore(const void *storage) {
-  return poly_lfo.Restore(storage);
+size_t AppPolyLfo::Restore(const void *storage) {
+  return poly_lfo_.Restore(storage);
 }
 
-void POLYLFO_loop() {
+void AppPolyLfo::Loop() {
 }
 
 static const size_t kSmallPreviewBufferSize = 32;
 uint16_t preview_buffer[kSmallPreviewBufferSize];
 
-void POLYLFO_menu() {
+void AppPolyLfo::DrawMenu() const {
 
   menu::DefaultTitleBar::Draw();
-  if (poly_lfo.get_tap_tempo()) {
+  if (poly_lfo_.get_tap_tempo()) {
     graphics.print("(T) Ch A: tap tempo") ;
   } else {
-    float menu_freq_ = poly_lfo.lfo.get_freq_ch1();
-    if (poly_lfo.freq_mult() < 0xFF) 
+    float menu_freq_ = poly_lfo_.lfo.get_freq_ch1();
+    if (poly_lfo_.freq_mult() < 0xFF) 
         graphics.drawBitmap8(122, menu::DefaultTitleBar::kTextY, 4, OC::bitmap_indicator_4x8); 
     if (menu_freq_ >= 0.1f) {
-        graphics.printf("(%s) Ch A: %6.2f Hz", PolyLfo::value_attr(poly_lfo_state.left_edit_mode).name, menu_freq_);
+        graphics.printf("(%s) Ch A: %6.2f Hz", PolyLfo::value_attr(left_edit_mode_).name, menu_freq_);
     } else {
-        graphics.printf("(%s) Ch A: %6.3fs", PolyLfo::value_attr(poly_lfo_state.left_edit_mode).name, 1.0f / menu_freq_);
+        graphics.printf("(%s) Ch A: %6.3fs", PolyLfo::value_attr(left_edit_mode_).name, 1.0f / menu_freq_);
     }
   }
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX - 1> settings_list(poly_lfo_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX - 1> settings_list(cursor_);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
-    const int value = poly_lfo.get_value(current);
+    const int value = poly_lfo_.get_value(current);
     if (POLYLFO_SETTING_SHAPE != current) {
       list_item.DrawDefault(value, PolyLfo::value_attr(current));
     } else {
-      poly_lfo.lfo.RenderPreview(value << 8, preview_buffer, kSmallPreviewBufferSize);
+      poly_lfo_.lfo.RenderPreview(value << 8, preview_buffer, kSmallPreviewBufferSize);
       const uint16_t *preview = preview_buffer;
       uint16_t count = kSmallPreviewBufferSize;
       weegfx::coord_t x = list_item.valuex;
@@ -417,82 +426,82 @@ void POLYLFO_menu() {
   }
 }
 
-void POLYLFO_screensaver() {
+void AppPolyLfo::DrawScreensaver() const {
   OC::scope_render();
 }
 
-void POLYLFO_handleAppEvent(OC::AppEvent event) {
+void AppPolyLfo::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      poly_lfo_state.cursor.set_editing(false);
+    case APP_EVENT_RESUME:
+      cursor_.set_editing(false);
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void POLYLFO_handleButtonEvent(const UI::Event &event) {
+void AppPolyLfo::HandleButtonEvent(const UI::Event &event) {
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
-        if (!poly_lfo.get_tap_tempo()) poly_lfo.change_value(POLYLFO_SETTING_COARSE, 32);
+      case CONTROL_BUTTON_UP:
+        if (!poly_lfo_.get_tap_tempo()) poly_lfo_.change_value(POLYLFO_SETTING_COARSE, 32);
         break;
-      case OC::CONTROL_BUTTON_DOWN:
-        if (!poly_lfo.get_tap_tempo()) poly_lfo.change_value(POLYLFO_SETTING_COARSE, -32);
+      case CONTROL_BUTTON_DOWN:
+        if (!poly_lfo_.get_tap_tempo()) poly_lfo_.change_value(POLYLFO_SETTING_COARSE, -32);
         break;
-      case OC::CONTROL_BUTTON_L:
-      if (!poly_lfo.get_tap_tempo()) {
-        if (POLYLFO_SETTING_COARSE == poly_lfo_state.left_edit_mode)
-          poly_lfo_state.left_edit_mode = POLYLFO_SETTING_FINE;
+      case CONTROL_BUTTON_L:
+      if (!poly_lfo_.get_tap_tempo()) {
+        if (POLYLFO_SETTING_COARSE == left_edit_mode_)
+          left_edit_mode_ = POLYLFO_SETTING_FINE;
         else
-          poly_lfo_state.left_edit_mode = POLYLFO_SETTING_COARSE;
+          left_edit_mode_ = POLYLFO_SETTING_COARSE;
       }
       break;
-      case OC::CONTROL_BUTTON_R:
-        poly_lfo_state.cursor.toggle_editing();
+      case CONTROL_BUTTON_R:
+        cursor_.toggle_editing();
         break;
     }
   }
   
   if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
      switch (event.control) {
-      case OC::CONTROL_BUTTON_DOWN:
-        poly_lfo.lfo.set_phase_reset_flag(true);
+      case CONTROL_BUTTON_DOWN:
+        poly_lfo_.lfo.set_phase_reset_flag(true);
         break;
       default:
         break;
      }
-  }
-  
+  } 
 }
 
-
-void POLYLFO_handleEncoderEvent(const UI::Event &event) {
-  if (OC::CONTROL_ENCODER_L == event.control) {
-    if (!poly_lfo.get_tap_tempo()) poly_lfo.change_value(poly_lfo_state.left_edit_mode, event.value);
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
-    if (poly_lfo_state.cursor.editing()) {
-      poly_lfo.change_value(poly_lfo_state.cursor.cursor_pos(), event.value);
+void AppPolyLfo::HandleEncoderEvent(const UI::Event &event) {
+  if (CONTROL_ENCODER_L == event.control) {
+    if (!poly_lfo_.get_tap_tempo()) poly_lfo_.change_value(left_edit_mode_, event.value);
+  } else if (CONTROL_ENCODER_R == event.control) {
+    if (cursor_.editing()) {
+      poly_lfo_.change_value(cursor_.cursor_pos(), event.value);
     } else {
-      poly_lfo_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
+void AppPolyLfo::DrawDebugInfo() const {
 #ifdef POLYLFO_DEBUG  
-void POLYLFO_debug() {
   graphics.setPrintPos(2, 12);
-  graphics.print(poly_lfo.cv_shape.value());
+  graphics.print(poly_lfo_.cv_shape.value());
   graphics.print(" ");
-  int32_t value = SCALE8_16(poly_lfo.get_shape());
+  int32_t value = SCALE8_16(poly_lfo_.get_shape());
   graphics.print(value);
   graphics.print(" ");
-  graphics.print(poly_lfo.cv_shape.value() * 16);
-  value += poly_lfo.cv_shape.value() * 16;
+  graphics.print(poly_lfo_.cv_shape.value() * 16);
+  value += poly_lfo_.cv_shape.value() * 16;
   graphics.setPrintPos(2, 22);
   graphics.print(value); graphics.print(" ");
   value = USAT16(value);
-}
 #endif // POLYLFO_DEBUG
+}
+
+} // namespace OC

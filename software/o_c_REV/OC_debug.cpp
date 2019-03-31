@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "OC_ADC.h"
+#include "OC_apps.h"
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_debug.h"
@@ -7,34 +8,6 @@
 #include "OC_ui.h"
 #include "util/util_misc.h"
 #include "extern/dspinst.h"
-
-#ifdef POLYLFO_DEBUG  
-extern void POLYLFO_debug();
-#endif // POLYLFO_DEBUG
-
-#ifdef BBGEN_DEBUG  
-extern void BBGEN_debug();
-#endif // BBGEN_DEBUG
-
-#ifdef ENVGEN_DEBUG  
-extern void ENVGEN_debug();
-#endif // ENVGEN_DEBUG
-
-#ifdef BYTEBEATGEN_DEBUG  
-extern void BYTEBEATGEN_debug();
-#endif // BYTEBEATGEN_DEBUG
-
-#ifdef H1200_DEBUG  
-extern void H1200_debug();
-#endif // H1200_DEBUG
-
-#ifdef QQ_DEBUG  
-extern void QQ_debug();
-#endif // QQ_DEBUG
-
-#ifdef ASR_DEBUG
-extern void ASR_debug();
-#endif // ASR_DEBUG
 
 namespace OC {
 
@@ -120,6 +93,16 @@ static void debug_menu_adc2() {
   }
 }
 
+static void debug_menu_app() {
+  auto app = app_switcher.current_app();
+  if (app) {
+    graphics.print(app->name());
+    app->DrawDebugInfo();
+  } else {
+    graphics.print("?");
+  }
+}
+
 struct DebugMenu {
   const char *title;
   void (*display_fn)();
@@ -130,28 +113,8 @@ static const DebugMenu debug_menus[] = {
   { " GFX", debug_menu_gfx },
   { " ADC", debug_menu_adc },
   { " ADC min/max", debug_menu_adc2 },
-#ifdef POLYLFO_DEBUG  
-  { " POLYLFO", POLYLFO_debug },
-#endif // POLYLFO_DEBUG
-#ifdef ENVGEN_DEBUG  
-  { " ENVGEN", ENVGEN_debug },
-#endif // ENVGEN_DEBUG
-#ifdef BBGEN_DEBUG  
-  { " BBGEN", BBGEN_debug },
-#endif // BBGEN_DEBUG
-#ifdef BYTEBEATGEN_DEBUG  
-  { " BYTEBEATGEN", BYTEBEATGEN_debug },
-#endif // BYTEBEATGEN_DEBUG
-#ifdef H1200_DEBUG  
-  { " H1200", H1200_debug },
-#endif // H1200_DEBUG
-#ifdef QQ_DEBUG  
-  { " QQ", QQ_debug },
-#endif // QQ_DEBUG
-#ifdef ASR_DEBUG  
-  { " ASR", ASR_debug },
-#endif // ASR_DEBUG
- { nullptr, nullptr }
+  { " ", debug_menu_app },
+  { nullptr, nullptr }
 };
 
 void Ui::DebugStats() {
@@ -184,4 +147,4 @@ void Ui::DebugStats() {
   event_queue_.Poke();
 }
 
-}; // namespace OC
+} // namespace OC

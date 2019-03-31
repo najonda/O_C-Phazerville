@@ -342,15 +342,15 @@ class MultistageEnvelope {
   }
  
 #ifdef ENVGEN_DEBUG
-  inline uint16_t get_amplitude_value() {
+  inline uint16_t get_amplitude_value() const {
     return(amplitude_) ;
   }
 
-   inline uint16_t get_sampled_amplitude_value() {
+   inline uint16_t get_sampled_amplitude_value() const {
     return(sampled_amplitude_) ;
   }
 
-   inline bool get_is_amplitude_sampled() {
+   inline bool get_is_amplitude_sampled() const {
     return(amplitude_sampled_) ;
   }
 #endif

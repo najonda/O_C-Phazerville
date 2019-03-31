@@ -42,6 +42,8 @@
  #define DQ_OFFSET_X 47
 #endif
 
+// TODO namespace DQ?
+
 const uint8_t NUMCHANNELS = 2;
 const uint8_t NUM_SCALE_SLOTS = 4;
 
@@ -1084,114 +1086,122 @@ SETTINGS_DECLARE(DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST) {
   { 0, 0, DQ_TRIG_AUX_LAST-1, " > LFSR TRIG", dq_tm_trig_out, settings::STORAGE_TYPE_U8 }
 };
 
-// WIP refactoring to better encapsulate and for possible app interface change
-class DualQuantizer {
+namespace OC {
+
+OC_APP_TRAITS(AppDualQuantizer, TWOCCS("DQ"), "Meta-Q", "2x Quantizer");
+class OC_APP_CLASS(AppDualQuantizer) {
 public:
-  void Init() {
-    selected_channel = 0;
-    cursor.Init(DQ_CHANNEL_SETTING_SCALE1, DQ_CHANNEL_SETTING_LAST - 1);
-    scale_editor.Init(true);
-  }
+  OC_APP_INTERFACE_DECLARE(AppDualQuantizer);
+
+private:
+  int selected_channel_;
+  menu::ScreenCursor<menu::kScreenLines> cursor_;
+  OC::ScaleEditor<DQ_QuantizerChannel> scale_editor_;
+  DQ_QuantizerChannel quantizer_channels_[NUMCHANNELS];
 
   inline bool editing() const {
-    return cursor.editing();
+    return cursor_.editing();
   }
 
   inline int cursor_pos() const {
-    return cursor.cursor_pos();
+    return cursor_.cursor_pos();
   }
 
-  int selected_channel;
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  OC::ScaleEditor<DQ_QuantizerChannel> scale_editor;
+  void HandleTopButton();
+  void HandleLowerButton();
+  void HandleLeftButton();
+  void HandleRightButton();
+  void HandleLeftButtonLong();
+  void HandleDownButtonLong();
 };
 
-DualQuantizer dq_state;
-DQ_QuantizerChannel dq_quantizer_channels[NUMCHANNELS];
+AppDualQuantizer APP_DQ;
 
-void DQ_init() {
+void AppDualQuantizer::Init() {
+  selected_channel_ = 0;
+  cursor_.Init(DQ_CHANNEL_SETTING_SCALE1, DQ_CHANNEL_SETTING_LAST - 1);
+  scale_editor_.Init(true);
 
-  dq_state.Init();
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
-    dq_quantizer_channels[i].Init(static_cast<DQ_ChannelSource>(DQ_CHANNEL_SOURCE_CV1 + 2*i), static_cast<DQ_ChannelTriggerSource>(DQ_CHANNEL_TRIGGER_TR1 + 2*i));
+    quantizer_channels_[i].Init(static_cast<DQ_ChannelSource>(DQ_CHANNEL_SOURCE_CV1 + 2*i), static_cast<DQ_ChannelTriggerSource>(DQ_CHANNEL_TRIGGER_TR1 + 2*i));
   }
 
-  dq_state.cursor.AdjustEnd(dq_quantizer_channels[0].num_enabled_settings() - 1);
+  cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
 }
 
-size_t DQ_storageSize() {
+size_t AppDualQuantizer::storage_size() const {
   return NUMCHANNELS * DQ_QuantizerChannel::storageSize();
 }
 
-size_t DQ_save(void *storage) {
+size_t AppDualQuantizer::Save(void *storage) const {
   size_t used = 0;
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
-    used += dq_quantizer_channels[i].Save(static_cast<char*>(storage) + used);
+    used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
   }
   return used;
 }
 
-size_t DQ_restore(const void *storage) {
+size_t AppDualQuantizer::Restore(const void *storage) {
   size_t used = 0;
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
-    used += dq_quantizer_channels[i].Restore(static_cast<const char*>(storage) + used);
-    //int scale = dq_quantizer_channels[i].get_scale_select();
+    used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);
+    //int scale = quantizer_channels_[i].get_scale_select();
     for (size_t j = SLOT1; j < LAST_SLOT; j++) {
-      dq_quantizer_channels[i].update_scale_mask(dq_quantizer_channels[i].get_mask(j), j);
+      quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(j), j);
     }
-    dq_quantizer_channels[i].update_enabled_settings();
+    quantizer_channels_[i].update_enabled_settings();
   }
-  dq_state.cursor.AdjustEnd(dq_quantizer_channels[0].num_enabled_settings() - 1);
+  cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
   return used;
 }
 
-void DQ_handleAppEvent(OC::AppEvent event) {
+void AppDualQuantizer::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      dq_state.cursor.set_editing(false);
-      dq_state.scale_editor.Close();
+    case APP_EVENT_RESUME:
+      cursor_.set_editing(false);
+      scale_editor_.Close();
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void DQ_process(OC::IOFrame *ioframe) {
-  dq_quantizer_channels[0].Update(ioframe, DAC_CHANNEL_A, DAC_CHANNEL_C);
-  dq_quantizer_channels[1].Update(ioframe, DAC_CHANNEL_B, DAC_CHANNEL_D);
+void AppDualQuantizer::Process(IOFrame *ioframe) {
+  quantizer_channels_[0].Update(ioframe, DAC_CHANNEL_A, DAC_CHANNEL_C);
+  quantizer_channels_[1].Update(ioframe, DAC_CHANNEL_B, DAC_CHANNEL_D);
 }
 
-void DQ_getIOConfig(OC::IOConfig &ioconfig)
+void AppDualQuantizer::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
-  switch (dq_quantizer_channels[0].get_aux_mode()) {
-  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Gate", OC::OUTPUT_MODE_GATE); break;
-  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Copy", OC::OUTPUT_MODE_PITCH); break;
-  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ASR", OC::OUTPUT_MODE_PITCH); break;
+  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OUTPUT_MODE_PITCH);
+  switch (quantizer_channels_[0].get_aux_mode()) {
+  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Gate", OUTPUT_MODE_GATE); break;
+  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_C].set("CH1 Copy", OUTPUT_MODE_PITCH); break;
+  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_C].set("CH1 ASR", OUTPUT_MODE_PITCH); break;
   default: break;
   }
   
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
-  switch (dq_quantizer_channels[1].get_aux_mode()) {
-  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Gate", OC::OUTPUT_MODE_GATE); break;
-  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Copy", OC::OUTPUT_MODE_PITCH); break;
-  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ASR", OC::OUTPUT_MODE_PITCH); break;
+  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OUTPUT_MODE_PITCH);
+  switch (quantizer_channels_[1].get_aux_mode()) {
+  case DQ_GATE: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Gate", OUTPUT_MODE_GATE); break;
+  case DQ_COPY: ioconfig.outputs[DAC_CHANNEL_D].set("CH2 Copy", OUTPUT_MODE_PITCH); break;
+  case DQ_ASR:  ioconfig.outputs[DAC_CHANNEL_D].set("CH2 ASR", OUTPUT_MODE_PITCH); break;
   default: break;
   }
 }
 
-void DQ_loop() {
+void AppDualQuantizer::Loop() {
 }
 
-void DQ_menu() {
+void AppDualQuantizer::DrawMenu() const {
 
   menu::DualTitleBar::Draw();
 
   for (int i = 0, x = 0; i < NUMCHANNELS; ++i, x += 21) {
 
-    const DQ_QuantizerChannel &channel = dq_quantizer_channels[i];
+    const DQ_QuantizerChannel &channel = quantizer_channels_[i];
     menu::DualTitleBar::SetColumn(i);
     menu::DualTitleBar::DrawGateIndicator(i, channel.getTriggerState());
 
@@ -1209,12 +1219,12 @@ void DQ_menu() {
     if (octave)
       graphics.pretty_print(octave);
   }
-  menu::DualTitleBar::Selected(dq_state.selected_channel);
+  menu::DualTitleBar::Selected(selected_channel_);
 
 
-  const DQ_QuantizerChannel &channel = dq_quantizer_channels[dq_state.selected_channel];
+  const DQ_QuantizerChannel &channel = quantizer_channels_[selected_channel_];
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(dq_state.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int setting =
@@ -1276,66 +1286,66 @@ void DQ_menu() {
     }
   }
 
-  if (dq_state.scale_editor.active())
-    dq_state.scale_editor.Draw();
+  if (scale_editor_.active())
+    scale_editor_.Draw();
 }
 
-void DQ_handleButtonEvent(const UI::Event &event) {
+void AppDualQuantizer::HandleButtonEvent(const UI::Event &event) {
 
   if (UI::EVENT_BUTTON_LONG_PRESS == event.type && OC::CONTROL_BUTTON_DOWN == event.control)
-    DQ_downButtonLong();
+    HandleDownButtonLong();
 
-  if (dq_state.scale_editor.active()) {
-    dq_state.scale_editor.HandleButtonEvent(event);
+  if (scale_editor_.active()) {
+    scale_editor_.HandleButtonEvent(event);
     return;
   }
 
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case OC::CONTROL_BUTTON_UP:
-        DQ_topButton();
+        HandleTopButton();
         break;
       case OC::CONTROL_BUTTON_DOWN:
-        DQ_lowerButton();
+        HandleLowerButton();
         break;
       case OC::CONTROL_BUTTON_L:
-        DQ_leftButton();
+        HandleLeftButton();
         break;
       case OC::CONTROL_BUTTON_R:
-        DQ_rightButton();
+        HandleRightButton();
         break;
     }
   } else {
     if (OC::CONTROL_BUTTON_L == event.control)
-      DQ_leftButtonLong();
+      HandleLeftButtonLong();
   }
 }
 
-void DQ_handleEncoderEvent(const UI::Event &event) {
-  if (dq_state.scale_editor.active()) {
-    dq_state.scale_editor.HandleEncoderEvent(event);
+void AppDualQuantizer::HandleEncoderEvent(const UI::Event &event) {
+  if (scale_editor_.active()) {
+    scale_editor_.HandleEncoderEvent(event);
     return;
   }
 
   if (OC::CONTROL_ENCODER_L == event.control) {
 
-    int selected_channel = dq_state.selected_channel + event.value;
+    int selected_channel = selected_channel_ + event.value;
     CONSTRAIN(selected_channel, 0, NUMCHANNELS - 0x1);
-    dq_state.selected_channel = selected_channel;
+    selected_channel_ = selected_channel;
 
-    DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
+    DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
     selected.update_enabled_settings();
-    dq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+    cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
     //??
-    dq_state.cursor.Scroll(0x0);
+    cursor_.Scroll(0x0);
 
   } else if (OC::CONTROL_ENCODER_R == event.control) {
 
-    DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
+    DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
 
-    if (dq_state.editing()) {
+    if (editing()) {
 
-      DQ_ChannelSetting setting = selected.enabled_setting_at(dq_state.cursor_pos());
+      DQ_ChannelSetting setting = selected.enabled_setting_at(cursor_pos());
       if (DQ_CHANNEL_SETTING_MASK1 != setting || DQ_CHANNEL_SETTING_MASK2 != setting || DQ_CHANNEL_SETTING_MASK3 != setting || DQ_CHANNEL_SETTING_MASK4 != setting) {
 
         int event_value = event.value;
@@ -1371,11 +1381,11 @@ void DQ_handleEncoderEvent(const UI::Event &event) {
           case DQ_CHANNEL_SETTING_SOURCE:
           case DQ_CHANNEL_SETTING_AUX_OUTPUT:
             selected.update_enabled_settings();
-            dq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+            cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
           break;
           case DQ_CHANNEL_SETTING_SCALE_SEQ:
             selected.update_enabled_settings();
-            dq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+            cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
             selected.reset_scale();
           break;
           default:
@@ -1383,54 +1393,54 @@ void DQ_handleEncoderEvent(const UI::Event &event) {
         }
       }
     } else {
-      dq_state.cursor.Scroll(event.value);
+      cursor_.Scroll(event.value);
     }
   }
 }
 
-void DQ_topButton() {
-  DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
+void AppDualQuantizer::HandleTopButton() {
+  DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
   if (selected.change_value(DQ_CHANNEL_SETTING_OCTAVE, 1)) {
     selected.force_update();
   }
 }
 
-void DQ_lowerButton() {
-  DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
+void AppDualQuantizer::HandleLowerButton() {
+  DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
   if (selected.change_value(DQ_CHANNEL_SETTING_OCTAVE, -1)) {
     selected.force_update();
   }
 }
 
-void DQ_rightButton() {
-  DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
-  switch (selected.enabled_setting_at(dq_state.cursor_pos())) {
+void AppDualQuantizer::HandleRightButton() {
+  DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+  switch (selected.enabled_setting_at(cursor_pos())) {
     case DQ_CHANNEL_SETTING_MASK1:
     case DQ_CHANNEL_SETTING_MASK2:
     case DQ_CHANNEL_SETTING_MASK3:
     case DQ_CHANNEL_SETTING_MASK4: {
       int scale = selected.get_scale(selected.get_scale_select());
       if (OC::Scales::SCALE_NONE != scale) {
-        dq_state.scale_editor.Edit(&selected, scale);
+        scale_editor_.Edit(&selected, scale);
       }
     }
     break;
     default:
-      dq_state.cursor.toggle_editing();
+      cursor_.toggle_editing();
       break;
   }
 }
 
-void DQ_leftButton() {
-  dq_state.selected_channel = (dq_state.selected_channel + 1) & 1u;
-  DQ_QuantizerChannel &selected = dq_quantizer_channels[dq_state.selected_channel];
-  dq_state.cursor.AdjustEnd(selected.num_enabled_settings() - 1);
+void AppDualQuantizer::HandleLeftButton() {
+  selected_channel_ = (selected_channel_ + 1) & 1u;
+  DQ_QuantizerChannel &selected = quantizer_channels_[selected_channel_];
+  cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
 }
 
-void DQ_leftButtonLong() {
+void AppDualQuantizer::HandleLeftButtonLong() {
 
   // copy scale settings to all slots:
-  DQ_QuantizerChannel &selected_channel = dq_quantizer_channels[dq_state.selected_channel];
+  DQ_QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
   int _slot = selected_channel.get_scale_select();
   int scale = selected_channel.get_scale(_slot);
   int mask = selected_channel.get_mask(_slot);
@@ -1439,18 +1449,38 @@ void DQ_leftButtonLong() {
 
   for (int i = 0; i < NUM_SCALE_SLOTS; ++i) {
     for (int j = 0; j < NUMCHANNELS; ++j)
-      dq_quantizer_channels[j].set_scale_at_slot(scale, mask, root, transpose, i);
+      quantizer_channels_[j].set_scale_at_slot(scale, mask, root, transpose, i);
   }
 }
 
-void DQ_downButtonLong() {
+void AppDualQuantizer::HandleDownButtonLong() {
   // reset mask
-  DQ_QuantizerChannel &selected_channel = dq_quantizer_channels[dq_state.selected_channel];
+  DQ_QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
   int scale_slot = selected_channel.get_scale_select();
   selected_channel.set_scale_at_slot(selected_channel.get_scale(scale_slot), 0xFFFF, selected_channel.get_root(scale_slot), selected_channel.get_transpose(scale_slot), scale_slot);
 }
 
-int32_t dq_history[5];
+void AppDualQuantizer::DrawScreensaver() const {
+#ifdef DQ_DEBUG_SCREENSAVER
+  debug::CycleMeasurement render_cycles;
+#endif
+
+  quantizer_channels_[0].RenderScreensaver(0);
+  quantizer_channels_[1].RenderScreensaver(64);
+
+#ifdef DQ_DEBUG_SCREENSAVER
+  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
+  uint32_t us = debug::cycles_to_us(render_cycles.read());
+  graphics.setPrintPos(0, 32);
+  graphics.printf("%u",  us);
+#endif
+}
+
+void AppDualQuantizer::DrawDebugInfo() const {
+}
+
+} // namespace OC
+
 static const weegfx::coord_t dq_kBottom = 60;
 
 inline int32_t dq_render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t width) {
@@ -1462,8 +1492,8 @@ inline int32_t dq_render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t
 }
 
 void DQ_QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
-
   // History
+  int32_t dq_history[5];
   scrolling_history_.Read(dq_history);
   weegfx::coord_t scroll_pos = (scrolling_history_.get_scroll_pos() * 6) >> 8;
 
@@ -1507,20 +1537,4 @@ void DQ_QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
 
   int32_t octave = dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 58, dq_kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
-}
-
-void DQ_screensaver() {
-#ifdef DQ_DEBUG_SCREENSAVER
-  debug::CycleMeasurement render_cycles;
-#endif
-
-  dq_quantizer_channels[0].RenderScreensaver(0);
-  dq_quantizer_channels[1].RenderScreensaver(64);
-
-#ifdef DQ_DEBUG_SCREENSAVER
-  graphics.drawHLine(0, menu::kMenuLineH, menu::kDisplayWidth);
-  uint32_t us = debug::cycles_to_us(render_cycles.read());
-  graphics.setPrintPos(0, 32);
-  graphics.printf("%u",  us);
-#endif
 }

@@ -240,7 +240,7 @@ void PolyLfo::Render(int32_t frequency, bool reset_phase, bool tempo_sync, uint8
   }
 }
 
-void PolyLfo::RenderPreview(uint16_t shape, uint16_t *buffer, size_t size) {
+void PolyLfo::RenderPreview(uint16_t shape, uint16_t *buffer, size_t size) const {
   uint16_t wavetable_index = shape;
   uint32_t phase = 0;
   uint32_t phase_increment = (0xff << 24) / size;

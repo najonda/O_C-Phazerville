@@ -590,15 +590,15 @@ public:
   }
 
 #ifdef ENVGEN_DEBUG
-  inline uint16_t get_amplitude_value() {
+  inline uint16_t get_amplitude_value() const {
     return(env_.get_amplitude_value()) ;
   }
 
-  inline uint16_t get_sampled_amplitude_value() {
+  inline uint16_t get_sampled_amplitude_value() const {
     return(env_.get_sampled_amplitude_value()) ;
   }
 
-  inline bool get_is_amplitude_sampled() {
+  inline bool get_is_amplitude_sampled() const {
     return(env_.get_is_amplitude_sampled()) ;
   }
 #endif
@@ -686,6 +686,7 @@ void EnvelopeGenerator::Init(OC::DigitalInput default_trigger) {
   update_enabled_settings();
 }
 
+
 const char* const envelope_types[ENV_TYPE_LAST] = {
   "AD", "ADSR", "ADR", "ASR", "ADSAR", "ADAR", "ADL2", "ADRL3", "ADL2R", "ADAL2R", "ADARL4"
 };
@@ -753,47 +754,15 @@ SETTINGS_DECLARE(EnvelopeGenerator, ENV_SETTING_LAST) {
   {0, 0, 1, "Inverted", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
 };
 
-class QuadEnvelopeGenerator {
+namespace OC {
+
+OC_APP_TRAITS(AppQuadEnvelopeGenerator, TWOCCS("EG"), "Piqued", "4x EG");
+class OC_APP_CLASS(AppQuadEnvelopeGenerator) {
 public:
+  OC_APP_INTERFACE_DECLARE(AppQuadEnvelopeGenerator);
+
+private:
   static constexpr int32_t kCvSmoothing = 16;
-
-  void Init() {
-    int input = OC::DIGITAL_INPUT_1;
-    for (auto &env : envelopes_) {
-      env.Init(static_cast<OC::DigitalInput>(input));
-      ++input;
-    }
-
-    ui.edit_mode = MODE_EDIT_SEGMENTS;
-    ui.selected_channel = 0;
-    ui.selected_segment = 0;
-    ui.segment_editing = false;
-    ui.cursor.Init(0, envelopes_[0].num_enabled_settings() - 1);
-    ui.euclidean_mask_draw.Init();
-    ui.euclidean_edit_length = false;
-  }
-
-  void Process(OC::IOFrame *ioframe) {
-    // TODO[PLD] Do we need the excessive smoothing?
-    cv1.push(ioframe->cv.values[ADC_CHANNEL_1]);
-    cv2.push(ioframe->cv.values[ADC_CHANNEL_2]);
-    cv3.push(ioframe->cv.values[ADC_CHANNEL_3]);
-    cv4.push(ioframe->cv.values[ADC_CHANNEL_4]);
-
-    const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
-    uint32_t triggers = ioframe->digital_inputs.triggered();
-
-    uint32_t internal_trigger_mask =
-        envelopes_[0].internal_trigger_mask() |
-        envelopes_[1].internal_trigger_mask() << 8 |
-        envelopes_[2].internal_trigger_mask() << 16 |
-        envelopes_[3].internal_trigger_mask() << 24;
-
-    envelopes_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, internal_trigger_mask, cvs);
-    envelopes_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, internal_trigger_mask, cvs);
-    envelopes_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, internal_trigger_mask, cvs);
-    envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
-  }
 
   bool euclidean_edit_active() const {
     return
@@ -832,48 +801,89 @@ public:
   SmoothedValue<int32_t, kCvSmoothing> cv2;
   SmoothedValue<int32_t, kCvSmoothing> cv3;
   SmoothedValue<int32_t, kCvSmoothing> cv4;
+
+  void HandleTopButton();
+  void HandleLowerButton();
+  void HandleRightButton();
+  void HandleLeftButton();
+
+  void DrawMenuPreview() const;
+  void DrawMenuSettings() const;
 };
 
-QuadEnvelopeGenerator envgen;
+AppQuadEnvelopeGenerator APP_ENVGEN;
 
-void ENVGEN_init() {
-  envgen.Init();
+void AppQuadEnvelopeGenerator::Init() {
+  int input = OC::DIGITAL_INPUT_1;
+  for (auto &env : envelopes_) {
+    env.Init(static_cast<OC::DigitalInput>(input));
+    ++input;
+  }
+
+  ui.edit_mode = MODE_EDIT_SEGMENTS;
+  ui.selected_channel = 0;
+  ui.selected_segment = 0;
+  ui.segment_editing = false;
+  ui.cursor.Init(0, envelopes_[0].num_enabled_settings() - 1);
+  ui.euclidean_edit_length = false;
 }
 
-size_t ENVGEN_storageSize() {
+void AppQuadEnvelopeGenerator::Process(OC::IOFrame *ioframe) {
+  // TODO[PLD] Do we need the excessive smoothing?
+  cv1.push(ioframe->cv.values[ADC_CHANNEL_1]);
+  cv2.push(ioframe->cv.values[ADC_CHANNEL_2]);
+  cv3.push(ioframe->cv.values[ADC_CHANNEL_3]);
+  cv4.push(ioframe->cv.values[ADC_CHANNEL_4]);
+
+  const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
+  uint32_t triggers = ioframe->digital_inputs.triggered();
+
+  uint32_t internal_trigger_mask =
+      envelopes_[0].internal_trigger_mask() |
+      envelopes_[1].internal_trigger_mask() << 8 |
+      envelopes_[2].internal_trigger_mask() << 16 |
+      envelopes_[3].internal_trigger_mask() << 24;
+
+  envelopes_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, internal_trigger_mask, cvs);
+  envelopes_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, internal_trigger_mask, cvs);
+  envelopes_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, internal_trigger_mask, cvs);
+  envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
+}
+
+size_t AppQuadEnvelopeGenerator::storage_size() const {
   return 4 * EnvelopeGenerator::storageSize();
 }
 
-size_t ENVGEN_save(void *storage) {
+size_t AppQuadEnvelopeGenerator::Save(void *storage) const {
   size_t s = 0;
-  for (auto &env : envgen.envelopes_)
+  for (auto &env : envelopes_)
     s += env.Save(static_cast<byte *>(storage) + s);
   return s;
 }
 
-size_t ENVGEN_restore(const void *storage) {
+size_t AppQuadEnvelopeGenerator::Restore(const void *storage) {
   size_t s = 0;
-  for (auto &env : envgen.envelopes_) {
+  for (auto &env : envelopes_) {
     s += env.Restore(static_cast<const byte *>(storage) + s);
     env.update_enabled_settings();
   }
 
-  envgen.ui.cursor.AdjustEnd(envgen.envelopes_[0].num_enabled_settings() - 1);
+  ui.cursor.AdjustEnd(envelopes_[0].num_enabled_settings() - 1);
   return s;
 }
 
-void ENVGEN_handleAppEvent(OC::AppEvent event) {
+void AppQuadEnvelopeGenerator::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
+    case APP_EVENT_RESUME:
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void ENVGEN_loop() {
+void AppQuadEnvelopeGenerator::Loop() {
 }
 
 static constexpr weegfx::coord_t kPreviewH = 32;
@@ -890,14 +900,14 @@ static constexpr uint16_t kPreviewTerminator = 0xffff;
 
 settings::value_attr segment_editing_attr = { 128, 0, 255, "DOH!", NULL, settings::STORAGE_TYPE_U16 };
 
-void ENVGEN_menu_preview() {
-  auto const &env = envgen.selected();
+void AppQuadEnvelopeGenerator::DrawMenuPreview() const {
+  auto const &env = selected();
 
   menu::SettingsListItem list_item;
   menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX>::AbsoluteLine(0, list_item);
   list_item.selected = false;
-  list_item.editing = envgen.ui.segment_editing;
-  const int selected_segment = envgen.ui.selected_segment;
+  list_item.editing = ui.segment_editing;
+  const int selected_segment = ui.selected_segment;
 
   segment_editing_attr.name = segment_names[selected_segment];
   list_item.DrawDefault(env.get_segment_value(selected_segment), segment_editing_attr);
@@ -948,12 +958,12 @@ void ENVGEN_menu_preview() {
   }
 }
 
-void ENVGEN_menu_settings() {
-  auto const &env = envgen.selected();
+void AppQuadEnvelopeGenerator::DrawMenuSettings() const {
+  auto const &env = selected();
 
   bool draw_euclidean_editor = false;
 
-  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(envgen.ui.cursor);
+  menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(ui.cursor);
   menu::SettingsListItem list_item;
 
   while (settings_list.available()) {
@@ -990,7 +1000,7 @@ void ENVGEN_menu_settings() {
       case ENV_SETTING_EUCLIDEAN_OFFSET:
         if (!list_item.editing) {
           // Use the live values
-          envgen.ui.euclidean_mask_draw.Render(menu::kDisplayWidth, list_item.y,
+          ui.euclidean_mask_draw.Render(menu::kDisplayWidth, list_item.y,
                                                env.get_s_euclidean_length(), env.get_s_euclidean_fill(), env.get_s_euclidean_offset(),
                                                env.get_euclidean_counter());
           list_item.DrawCustom();
@@ -1014,7 +1024,7 @@ void ENVGEN_menu_settings() {
     graphics.drawFrame(0, y, menu::kDisplayWidth, menu::kMenuLineH * 2 + 2);
 
     y += 2;
-    envgen.ui.euclidean_mask_draw.Render(menu::kDisplayWidth - 2, y,
+    ui.euclidean_mask_draw.Render(menu::kDisplayWidth - 2, y,
                                           env.get_euclidean_length(), env.get_euclidean_fill(), env.get_euclidean_offset(),
                                           env.get_euclidean_counter());
 
@@ -1027,7 +1037,7 @@ void ENVGEN_menu_settings() {
     list_item.x = 1;
     list_item.valuex = 38;
     list_item.endx = 60 - 2;
-    if (envgen.ui.euclidean_edit_length) {
+    if (ui.euclidean_edit_length) {
       auto attr = EnvelopeGenerator::value_attr(ENV_SETTING_EUCLIDEAN_LENGTH);
       attr.min_ = 1;
       attr.name = "Len";
@@ -1045,17 +1055,16 @@ void ENVGEN_menu_settings() {
   }
 }
 
-void ENVGEN_menu() {
+void AppQuadEnvelopeGenerator::DrawMenu() const {
 
   menu::QuadTitleBar::Draw();
   for (uint_fast8_t i = 0; i < 4; ++i) {
     menu::QuadTitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
-    menu::QuadTitleBar::DrawGateIndicator(i, envgen.envelopes_[i].getTriggerState());
-
+    menu::QuadTitleBar::DrawGateIndicator(i, envelopes_[i].getTriggerState());
 
     EnvelopeGenerator::DelayedTrigger trigger;
-    envgen.envelopes_[i].get_next_trigger(trigger);
+    envelopes_[i].get_next_trigger(trigger);
     if (trigger.delay) {
       weegfx::coord_t x = menu::QuadTitleBar::ColumnStartX(i) + 28;
       weegfx::coord_t h = (trigger.time_left * 8) / trigger.delay;
@@ -1063,111 +1072,111 @@ void ENVGEN_menu() {
     }
   }
   // If settings mode, draw level in title bar?
-  menu::QuadTitleBar::Selected(envgen.ui.selected_channel);
+  menu::QuadTitleBar::Selected(ui.selected_channel);
 
-  if (QuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == envgen.ui.edit_mode)
-    ENVGEN_menu_preview();
+  if (AppQuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == ui.edit_mode)
+    DrawMenuPreview();
   else
-    ENVGEN_menu_settings();
+    DrawMenuSettings();
 }
 
-void ENVGEN_topButton() {
-  auto &selected_env = envgen.selected();
-  selected_env.change_value(ENV_SETTING_SEG1_VALUE + envgen.ui.selected_segment, 32);
+void AppQuadEnvelopeGenerator::HandleTopButton() {
+  auto &selected_env = selected();
+  selected_env.change_value(ENV_SETTING_SEG1_VALUE + ui.selected_segment, 32);
 }
 
-void ENVGEN_lowerButton() {
-  auto &selected_env = envgen.selected();
-  selected_env.change_value(ENV_SETTING_SEG1_VALUE + envgen.ui.selected_segment, -32);
+void AppQuadEnvelopeGenerator::HandleLowerButton() {
+  auto &selected_env = selected();
+  selected_env.change_value(ENV_SETTING_SEG1_VALUE + ui.selected_segment, -32);
 }
 
-void ENVGEN_rightButton() {
+void AppQuadEnvelopeGenerator::HandleRightButton() {
 
-  if (QuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == envgen.ui.edit_mode) {
-    envgen.ui.segment_editing = !envgen.ui.segment_editing;
+  if (AppQuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == ui.edit_mode) {
+    ui.segment_editing = !ui.segment_editing;
   } else {
-    envgen.ui.cursor.toggle_editing();
-    envgen.ui.euclidean_edit_length = false;
+    ui.cursor.toggle_editing();
+    ui.euclidean_edit_length = false;
   }
 }
 
-void ENVGEN_leftButton() {
-  if (QuadEnvelopeGenerator::MODE_EDIT_SETTINGS == envgen.ui.edit_mode) {
-    if (!envgen.euclidean_edit_active()) {
-      envgen.ui.edit_mode = QuadEnvelopeGenerator::MODE_EDIT_SEGMENTS;
-      envgen.ui.cursor.set_editing(false);
+void AppQuadEnvelopeGenerator::HandleLeftButton() {
+  if (AppQuadEnvelopeGenerator::MODE_EDIT_SETTINGS == ui.edit_mode) {
+    if (!euclidean_edit_active()) {
+      ui.edit_mode = AppQuadEnvelopeGenerator::MODE_EDIT_SEGMENTS;
+      ui.cursor.set_editing(false);
     } else {
-      envgen.ui.euclidean_edit_length = !envgen.ui.euclidean_edit_length;
+      ui.euclidean_edit_length = !ui.euclidean_edit_length;
     }
   } else {
-    envgen.ui.edit_mode = QuadEnvelopeGenerator::MODE_EDIT_SETTINGS;
-    envgen.ui.segment_editing = false;
+    ui.edit_mode = AppQuadEnvelopeGenerator::MODE_EDIT_SETTINGS;
+    ui.segment_editing = false;
   }
 }
 
-void ENVGEN_handleButtonEvent(const UI::Event &event) {
+void AppQuadEnvelopeGenerator::HandleButtonEvent(const UI::Event &event) {
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
       case OC::CONTROL_BUTTON_UP:
-        ENVGEN_topButton();
+        HandleTopButton();
         break;
       case OC::CONTROL_BUTTON_DOWN:
-        ENVGEN_lowerButton();
+        HandleLowerButton();
         break;
       case OC::CONTROL_BUTTON_L:
-        ENVGEN_leftButton();
+        HandleLeftButton();
         break;
       case OC::CONTROL_BUTTON_R:
-        ENVGEN_rightButton();
+        HandleRightButton();
         break;
     }
   }
 }
 
-void ENVGEN_handleEncoderEvent(const UI::Event &event) {
+void AppQuadEnvelopeGenerator::HandleEncoderEvent(const UI::Event &event) {
 
   if (OC::CONTROL_ENCODER_L == event.control) {
-    if (envgen.euclidean_edit_active()) {
-      if (envgen.ui.euclidean_edit_length) {
+    if (euclidean_edit_active()) {
+      if (ui.euclidean_edit_length) {
         // Artificially constrain length here
-        int length = envgen.selected().get_euclidean_length() + event.value;
+        int length = selected().get_euclidean_length() + event.value;
         if (length > 0) {
-          envgen.selected().apply_value(ENV_SETTING_EUCLIDEAN_LENGTH, length);
+          selected().apply_value(ENV_SETTING_EUCLIDEAN_LENGTH, length);
           // constrain k, offset:
-          if (length < envgen.selected().get_euclidean_fill())
-             envgen.selected().apply_value(ENV_SETTING_EUCLIDEAN_FILL, length + 0x1);
-          if (length < envgen.selected().get_euclidean_offset())
-            envgen.selected().apply_value(ENV_SETTING_EUCLIDEAN_OFFSET, length);
+          if (length < selected().get_euclidean_fill())
+             selected().apply_value(ENV_SETTING_EUCLIDEAN_FILL, length + 0x1);
+          if (length < selected().get_euclidean_offset())
+            selected().apply_value(ENV_SETTING_EUCLIDEAN_OFFSET, length);
         }
       } else {
         // constrain k:
-        if (envgen.selected().get_euclidean_fill() <= envgen.selected().get_euclidean_length())
-          envgen.selected().change_value(ENV_SETTING_EUCLIDEAN_FILL, event.value);
+        if (selected().get_euclidean_fill() <= selected().get_euclidean_length())
+          selected().change_value(ENV_SETTING_EUCLIDEAN_FILL, event.value);
         else if (event.value < 0)
-          envgen.selected().change_value(ENV_SETTING_EUCLIDEAN_FILL, event.value);
+          selected().change_value(ENV_SETTING_EUCLIDEAN_FILL, event.value);
       }
     } else {
-      int left_value = envgen.ui.selected_channel + event.value;
+      int left_value = ui.selected_channel + event.value;
       CONSTRAIN(left_value, 0, 3);
-      envgen.ui.selected_channel = left_value;
-      auto &selected_env = envgen.selected();
-      CONSTRAIN(envgen.ui.selected_segment, 0, selected_env.num_editable_segments() - 1);
-      envgen.ui.cursor.AdjustEnd(selected_env.num_enabled_settings() - 1);
+      ui.selected_channel = left_value;
+      auto &selected_env = selected();
+      CONSTRAIN(ui.selected_segment, 0, selected_env.num_editable_segments() - 1);
+      ui.cursor.AdjustEnd(selected_env.num_enabled_settings() - 1);
     }
   } else if (OC::CONTROL_ENCODER_R == event.control) {
-    if (QuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == envgen.ui.edit_mode) {
-      auto &selected_env = envgen.selected();
-      if (envgen.ui.segment_editing) {
-        selected_env.change_value(ENV_SETTING_SEG1_VALUE + envgen.ui.selected_segment, event.value);
+    if (AppQuadEnvelopeGenerator::MODE_EDIT_SEGMENTS == ui.edit_mode) {
+      auto &selected_env = selected();
+      if (ui.segment_editing) {
+        selected_env.change_value(ENV_SETTING_SEG1_VALUE + ui.selected_segment, event.value);
       } else {
-        int selected_segment = envgen.ui.selected_segment + event.value;
+        int selected_segment = ui.selected_segment + event.value;
         CONSTRAIN(selected_segment, 0, selected_env.num_editable_segments() - 1);
-        envgen.ui.selected_segment = selected_segment;
+        ui.selected_segment = selected_segment;
       }
     } else {
-      if (envgen.ui.cursor.editing()) {
-        auto &selected_env = envgen.selected();
-        EnvelopeSettings setting = selected_env.enabled_setting_at(envgen.ui.cursor.cursor_pos());
+      if (ui.cursor.editing()) {
+        auto &selected_env = selected();
+        EnvelopeSettings setting = selected_env.enabled_setting_at(ui.cursor.cursor_pos());
 
         if (ENV_SETTING_EUCLIDEAN_OFFSET == setting) {
           // constrain offset
@@ -1182,9 +1191,9 @@ void ENVGEN_handleEncoderEvent(const UI::Event &event) {
 
         if (ENV_SETTING_TRIGGER_DELAY_MODE == setting || ENV_SETTING_EUCLIDEAN_LENGTH == setting)
           selected_env.update_enabled_settings();
-          envgen.ui.cursor.AdjustEnd(selected_env.num_enabled_settings() - 1);
+          ui.cursor.AdjustEnd(selected_env.num_enabled_settings() - 1);
       } else {
-        envgen.ui.cursor.Scroll(event.value);
+        ui.cursor.Scroll(event.value);
       }
     }
   }
@@ -1192,9 +1201,9 @@ void ENVGEN_handleEncoderEvent(const UI::Event &event) {
 
 int16_t fast_preview_values[peaks::kFastPreviewWidth + 32];
 
-template <int index, weegfx::coord_t startx, weegfx::coord_t y>
-void RenderFastPreview() {
-  uint16_t w = envgen.envelopes_[index].RenderFastPreview(fast_preview_values);
+template <weegfx::coord_t startx, weegfx::coord_t y>
+void RenderFastPreview(const EnvelopeGenerator &envelope) {
+  uint16_t w = envelope.RenderFastPreview(fast_preview_values);
   CONSTRAIN(w, 0, peaks::kFastPreviewWidth); // Just-in-case
   weegfx::coord_t x = startx;
   const int16_t *values = fast_preview_values;
@@ -1204,21 +1213,21 @@ void RenderFastPreview() {
   }
 }
 
-void ENVGEN_screensaver() {
+void AppQuadEnvelopeGenerator::DrawScreensaver() const {
 #ifdef ENVGEN_DEBUG_SCREENSAVER
   debug::CycleMeasurement render_cycles;
 #endif
 
   #ifdef BUCHLA_4U
-    RenderFastPreview<0, 0, 32>();
-    RenderFastPreview<1, 64, 32>();
-    RenderFastPreview<2, 0, 0>();
-    RenderFastPreview<3, 64, 0>();
+    RenderFastPreview<0, 32>(envelopes_[0]);
+    RenderFastPreview<64, 32>(envelopes_[1]);
+    RenderFastPreview<0, 0>(envelopes_[2]);
+    RenderFastPreview<64, 0>(envelopes_[3]);
   #else
-    RenderFastPreview<0, 0, 0>();
-    RenderFastPreview<1, 64, 0>();
-    RenderFastPreview<2, 0, 32>();
-    RenderFastPreview<3, 64, 32>();
+    RenderFastPreview<0, 0>(envelopes_[0]);
+    RenderFastPreview<64, 0>(envelopes_[1]);
+    RenderFastPreview<0, 32>(envelopes_[2]);
+    RenderFastPreview<64, 32>(envelopes_[3]);
   #endif
   OC::scope_render();
 
@@ -1229,29 +1238,26 @@ void ENVGEN_screensaver() {
 #endif
 }
 
+void AppQuadEnvelopeGenerator::DrawDebugInfo() const {
 #ifdef ENVGEN_DEBUG
-void ENVGEN_debug() {
   for (int i = 0; i < 4; ++i) {
     uint8_t ypos = 10*(i + 1) + 2 ;
     graphics.setPrintPos(2, ypos);
-    graphics.print(envgen.envelopes_[i].get_amplitude_value()) ;
+    graphics.print(envelopes_[i].get_amplitude_value()) ;
     graphics.setPrintPos(50, ypos);
-    graphics.print(envgen.envelopes_[i].get_sampled_amplitude_value()) ;
+    graphics.print(envelopes_[i].get_sampled_amplitude_value()) ;
     graphics.setPrintPos(100, ypos);
-    graphics.print(envgen.envelopes_[i].get_is_amplitude_sampled()) ;
+    graphics.print(envelopes_[i].get_is_amplitude_sampled()) ;
   }
-}
 #endif // ENVGEN_DEBUG
-
-// TODO[PLD] After conversion to ioframe, this function seemed to break RAM limits
-void /*FASTRUN*/ ENVGEN_process(OC::IOFrame *ioframe) {
-  envgen.Process(ioframe);
 }
 
-void ENVGEN_getIOConfig(OC::IOConfig &ioconfig)
+void AppQuadEnvelopeGenerator::GetIOConfig(OC::IOConfig &ioconfig) const
 {
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_UNI);
   ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_UNI);
 }
+
+} // namespace OC

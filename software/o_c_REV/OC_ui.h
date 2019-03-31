@@ -55,8 +55,8 @@ public:
   void DebugStats();
   void Calibrate();
   void AppSettings();
-  UiMode AppIOSettings(OC::App *app);
-  UiMode DispatchEvents(OC::App *app);
+  UiMode AppIOSettings(OC::AppBase *app);
+  UiMode DispatchEvents(OC::AppBase *app);
 
   void Poll();
   void Poke();

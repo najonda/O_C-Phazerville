@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Patrick Dowling
+// Copyright (c) 2016-2019 Patrick Dowling
 //
 // Author: Patrick Dowling (pld@gurkenkiste.com)
 //
@@ -24,56 +24,25 @@
 #include "OC_digital_inputs.h"
 #include "OC_global_settings.h"
 
-#define DECLARE_APP(id, name, prefix) \
-{ TWOCCS(id), \
-  name, \
-  {}, \
-  prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
-  prefix ## _handleAppEvent, \
-  prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
-  prefix ## _handleButtonEvent, \
-  prefix ## _handleEncoderEvent, \
-  prefix ## _process, \
-  prefix ## _getIOConfig \
-}
+namespace OC {
 
-#ifdef BORING_APP_NAMES
-OC::App available_apps[] = {
-  DECLARE_APP("AS", "ASR", ASR),
-  DECLARE_APP("HA", "Triads", H1200),
-  DECLARE_APP("AT", "Vectors", Automatonnetz),
-  DECLARE_APP("QQ", "4x Quantizer", QQ),
-  DECLARE_APP("DQ", "2x Quantizer", DQ),
-  DECLARE_APP("PL", "Quadrature LFO", POLYLFO),
-  DECLARE_APP("LR", "Lorenz", LORENZ),
-  DECLARE_APP("EG", "4x EG", ENVGEN),
-  DECLARE_APP("SQ", "2x Sequencer", SEQ),
-  DECLARE_APP("BB", "Balls", BBGEN),
-  DECLARE_APP("BY", "Bytebeats", BYTEBEATGEN),
-  DECLARE_APP("CQ", "Chords", CHORDS),
-  DECLARE_APP("RF", "Voltages", REFS)
+static AppBase * const available_apps[] = {
+  &APP_ASR,
+  &APP_H1200,
+  &APP_AUTOMATONNETZ,
+  &APP_QQ,
+  &APP_DQ,
+  &APP_POLYLFO,
+  &APP_LORENZ,
+  &APP_ENVGEN,
+  &APP_A_SEQ,
+  &APP_BBGEN,
+  &APP_BYTEBEATGEN,
+  &APP_CHORDS,
+  &APP_REFS
 };
-#else 
-OC::App available_apps[] = {
-  DECLARE_APP("AS", "CopierMaschine", ASR),
-  DECLARE_APP("HA", "Harrington 1200", H1200),
-  DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
-  DECLARE_APP("QQ", "Quantermain", QQ),
-  DECLARE_APP("DQ", "Meta-Q", DQ),
-  DECLARE_APP("PL", "Quadraturia", POLYLFO),
-  DECLARE_APP("LR", "Low-rents", LORENZ),
-  DECLARE_APP("EG", "Piqued", ENVGEN),
-  DECLARE_APP("SQ", "Sequins", SEQ),
-  DECLARE_APP("BB", "Dialectic Ping Pong", BBGEN),
-  DECLARE_APP("BY", "Viznutcracker sweet", BYTEBEATGEN),
-  DECLARE_APP("CQ", "Acid Curds", CHORDS),
-  DECLARE_APP("RF", "References", REFS)
-};
-#endif
-
 static constexpr int NUM_AVAILABLE_APPS = ARRAY_SIZE(available_apps);
 
-namespace OC {
 
 // App settings are packed into a single blob of binary data; each app's chunk
 // gets its own header with id and the length of the entire chunk. This makes
@@ -102,8 +71,10 @@ GlobalSettingsStorage global_settings_storage;
 AppData app_settings;
 AppDataStorage app_data_storage;
 
+AppSwitcher app_switcher;
+
 static constexpr int DEFAULT_APP_INDEX = 0;
-static const uint16_t DEFAULT_APP_ID = available_apps[DEFAULT_APP_INDEX].id;
+static const uint16_t DEFAULT_APP_ID = available_apps[DEFAULT_APP_INDEX]->id();
 
 void save_global_settings() {
   SERIAL_PRINTLN("Save global settings");
@@ -126,21 +97,21 @@ void save_app_data() {
   size_t start_app = random(NUM_AVAILABLE_APPS);
   for (size_t i = 0; i < NUM_AVAILABLE_APPS; ++i) {
     const auto &app = available_apps[(start_app + i) % NUM_AVAILABLE_APPS];
-    size_t storage_size = app.storageSize() + sizeof(AppChunkHeader);
+    size_t storage_size = app->storage_size() + sizeof(AppChunkHeader);
     if (storage_size & 1) ++storage_size; // Align chunks on 2-byte boundaries
-    if (storage_size > sizeof(AppChunkHeader) && app.Save) {
+    if (storage_size > sizeof(AppChunkHeader)) {
       if (data + storage_size > data_end) {
-        SERIAL_PRINTLN("%s: ERROR: %u BYTES NEEDED, %u BYTES AVAILABLE OF %u BYTES TOTAL", app.name, storage_size, data_end - data, AppData::kAppDataSize);
+        SERIAL_PRINTLN("%s: ERROR: %u BYTES NEEDED, %u BYTES AVAILABLE OF %u BYTES TOTAL", app->name(), storage_size, data_end - data, AppData::kAppDataSize);
         continue;
       }
 
       AppChunkHeader *chunk = reinterpret_cast<AppChunkHeader *>(data);
-      chunk->id = app.id;
+      chunk->id = app->id();
       chunk->length = storage_size;
       #ifdef PRINT_DEBUG
-        SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app.name, app.id, app.Save(chunk + 1), storage_size);
+        SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), app->Save(chunk + 1), storage_size);
       #else
-        app.Save(chunk + 1);
+        app->Save(chunk + 1);
       #endif
       app_settings.used += chunk->length;
       data += chunk->length;
@@ -165,7 +136,7 @@ void restore_app_data() {
       break;
     }
 
-    App *app = apps::find(chunk->id);
+    auto app = app_switcher.FindAppByID(chunk->id);
     if (!app) {
       SERIAL_PRINTLN("App %02x not found, ignoring chunk...", app->id);
       if (!chunk->length)
@@ -173,21 +144,20 @@ void restore_app_data() {
       data += chunk->length;
       continue;
     }
-    size_t expected_length = app->storageSize() + sizeof(AppChunkHeader);
+    size_t expected_length = app->storage_size() + sizeof(AppChunkHeader);
     if (expected_length & 0x1) ++expected_length;
     if (chunk->length != expected_length) {
-      SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storageSize=%u), skipping...", app->name, chunk->id, chunk->length, expected_length, app->storageSize());
+      SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storageSize=%u), skipping...", app->name, chunk->id, chunk->length, expected_length, app->storage_size());
       data += chunk->length;
       continue;
     }
 
-    if (app->Restore) {
       #ifdef PRINT_DEBUG
         SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name, chunk->id, app->Restore(chunk + 1), chunk->length - sizeof(AppChunkHeader), chunk->length);
       #else
         app->Restore(chunk + 1);
       #endif
-    }
+
     restored_bytes += chunk->length;
     data += chunk->length;
   }
@@ -195,35 +165,34 @@ void restore_app_data() {
   SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);
 }
 
-namespace apps {
-
-void set_current_app(int index) {
-  current_app = &available_apps[index];
-  global_settings.current_app_id = current_app->id;
+void AppSwitcher::set_current_app(int index)
+{
+  current_app_ = available_apps[index];
+  global_settings.current_app_id = current_app_->id();
 }
 
-App *current_app = &available_apps[DEFAULT_APP_INDEX];
-
-App *find(uint16_t id) {
-  for (auto &app : available_apps)
-    if (app.id == id) return &app;
+AppBase *AppSwitcher::FindAppByID(uint16_t id) const {
+  for (auto app : available_apps)
+    if (app->id() == id) return app;
   return nullptr;
 }
 
-int index_of(uint16_t id) {
+int AppSwitcher::IndexOfAppByID(uint16_t id) const {
   int i = 0;
-  for (const auto &app : available_apps) {
-    if (app.id == id) return i;
+  for (const auto app : available_apps) {
+    if (app->id() == id) return i;
     ++i;
   }
   return i;
 }
 
-void Init(bool reset_settings) {
+void AppSwitcher::Init(bool reset_settings) {
+
+  current_app_ = available_apps[DEFAULT_APP_INDEX];
 
   for (auto &app : available_apps) {
-    app.io_settings.InitDefaults();
-    app.Init();
+    app->mutable_io_settings().InitDefaults();
+    app->Init();
   }
 
   global_settings.Init();
@@ -279,10 +248,10 @@ void Init(bool reset_settings) {
     }
   }
 
-  int current_app_index = apps::index_of(global_settings.current_app_id);
+  int current_app_index = app_switcher.IndexOfAppByID(global_settings.current_app_id);
   if (current_app_index < 0 || current_app_index >= NUM_AVAILABLE_APPS) {
     SERIAL_PRINTLN("App id %02x not found, using default!", global_settings.current_app_id);
-    global_settings.current_app_id = DEFAULT_APP_INDEX;
+    global_settings.current_app_id = DEFAULT_APP_ID;
     current_app_index = DEFAULT_APP_INDEX;
   }
 
@@ -290,12 +259,10 @@ void Init(bool reset_settings) {
   ui.encoders_enable_acceleration(global_settings.encoders_enable_acceleration);
 
   set_current_app(current_app_index);
-  current_app->HandleAppEvent(APP_EVENT_RESUME);
+  current_app_->HandleAppEvent(APP_EVENT_RESUME);
 
   delay(100);
 }
-
-}; // namespace apps
 
 void draw_app_menu(const menu::ScreenCursor<5> &cursor) {
   GRAPHICS_BEGIN_FRAME(true);
@@ -310,8 +277,12 @@ void draw_app_menu(const menu::ScreenCursor<5> &cursor) {
     item.selected = current == cursor.cursor_pos();
     item.SetPrintPos();
     graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);
-    graphics.print(available_apps[current].name);
-    if (global_settings.current_app_id == available_apps[current].id)
+#ifdef BORING_APP_NAMES
+    graphics.print(available_apps[current]->boring_name());
+#else
+    graphics.print(available_apps[current]->name());
+#endif
+    if (global_settings.current_app_id == available_apps[current]->id())
        graphics.drawBitmap8(item.x + 2, item.y + 1, 4, bitmap_indicator_4x8);
     item.DrawCustom();
   }
@@ -330,11 +301,11 @@ void Ui::AppSettings() {
 
   SetButtonIgnoreMask();
 
-  apps::current_app->HandleAppEvent(APP_EVENT_SUSPEND);
+  app_switcher.current_app()->HandleAppEvent(APP_EVENT_SUSPEND);
 
   menu::ScreenCursor<5> cursor;
   cursor.Init(0, NUM_AVAILABLE_APPS - 1);
-  cursor.Scroll(apps::index_of(global_settings.current_app_id));
+  cursor.Scroll(app_switcher.IndexOfAppByID(global_settings.current_app_id));
 
   bool change_app = false;
   bool save = false;
@@ -370,7 +341,7 @@ void Ui::AppSettings() {
   delay(1);
 
   if (change_app) {
-    apps::set_current_app(cursor.cursor_pos());
+    app_switcher.set_current_app(cursor.cursor_pos());
     FreqMeasure.end();
     OC::DigitalInputs::reInit();
     if (save) {
@@ -386,7 +357,7 @@ void Ui::AppSettings() {
   OC::ui.encoders_enable_acceleration(global_settings.encoders_enable_acceleration);
 
   // Restore state
-  apps::current_app->HandleAppEvent(APP_EVENT_RESUME);
+  app_switcher.current_app()->HandleAppEvent(APP_EVENT_RESUME);
   CORE::app_isr_enabled = true;
 }
 

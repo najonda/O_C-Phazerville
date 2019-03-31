@@ -200,10 +200,6 @@ public:
     trigger_delays_.Init();
     strum_inhibit_ = false;
 
-    memset(&ui, 0, sizeof(ui));
-    ui.cell_cursor.Init(CELL_SETTING_TRANSFORM, CELL_SETTING_LAST - 1);
-    ui.grid_cursor.Init(GRID_SETTING_DX, GRID_SETTING_LAST - 1);
-
     history_ = 0;
     cell_transpose_ = cell_inversion_ = 0;
     user_actions_.Init();
@@ -288,14 +284,6 @@ public:
   OC::SemitoneQuantizer quantizer;
   TonnetzState tonnetz_state;
 
-  struct {
-    int selected_cell;
-    bool edit_cell;
-
-    menu::ScreenCursor<menu::kScreenLines> grid_cursor;
-    menu::ScreenCursor<menu::kScreenLines> cell_cursor;
-  } ui;
-
 private:
 
   enum CriticalSectionIDs {
@@ -348,19 +336,6 @@ SETTINGS_DECLARE(AutomatonnetzState, GRID_SETTING_LAST) {
   {OUTPUTA_MODE_ROOT, OUTPUTA_MODE_ROOT, OUTPUTA_MODE_LAST - 1, "OutA", outputa_mode_names, settings::STORAGE_TYPE_U4},
   {CLEAR_MODE_ZERO, CLEAR_MODE_ZERO, CLEAR_MODE_LAST - 1, "Clr", clear_mode_names, settings::STORAGE_TYPE_U4},
 };
-
-AutomatonnetzState automatonnetz_state;
-
-void Automatonnetz_init() {
-  automatonnetz_state.Init();
-  automatonnetz_state.ClearGrid(CLEAR_MODE_RAND_TRANSFORM);
-  automatonnetz_state.Reset();
-}
-
-size_t Automatonnetz_storageSize() {
-  return AutomatonnetzState::storageSize() +
-    GRID_CELLS * TransformCell::storageSize();
-}
 
 void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
   update_trigger_out();
@@ -505,27 +480,66 @@ void AutomatonnetzState::update_trigger_out() {
   }
 }
 
-void Automatonnetz_loop() {
+namespace OC {
+
+OC_APP_TRAITS(AppAutomatonnetz, TWOCCS("AT"), "Automatonnetz", "Vectors");
+class OC_APP_CLASS(AppAutomatonnetz) {
+public:
+  OC_APP_INTERFACE_DECLARE(AppAutomatonnetz);
+
+private:
+  AutomatonnetzState automatonnetz_state;
+
+  struct {
+    int selected_cell;
+    bool edit_cell;
+
+    menu::ScreenCursor<menu::kScreenLines> grid_cursor;
+    menu::ScreenCursor<menu::kScreenLines> cell_cursor;
+  } ui;
+
+  void DrawCellMenu() const;
+  void DrawGridMenu() const;
+};
+
+AppAutomatonnetz APP_AUTOMATONNETZ;
+
+void AppAutomatonnetz::Init() {
+  automatonnetz_state.Init();
+  automatonnetz_state.ClearGrid(CLEAR_MODE_RAND_TRANSFORM);
+  automatonnetz_state.Reset();
+
+  memset(&ui, 0, sizeof(ui));
+  ui.cell_cursor.Init(CELL_SETTING_TRANSFORM, CELL_SETTING_LAST - 1);
+  ui.grid_cursor.Init(GRID_SETTING_DX, GRID_SETTING_LAST - 1);
 }
 
-void FASTRUN Automatonnetz_process(OC::IOFrame *ioframe) {
+size_t AppAutomatonnetz::storage_size() const {
+  return AutomatonnetzState::storageSize() +
+    GRID_CELLS * TransformCell::storageSize();
+}
+
+void AppAutomatonnetz::Loop() {
+}
+
+void FASTRUN AppAutomatonnetz::Process(IOFrame *ioframe) {
   // All user actions, etc. handled in ::Update
   automatonnetz_state.Process(ioframe);
 }
 
-void Automatonnetz_getIOConfig(OC::IOConfig &ioconfig)
+void AppAutomatonnetz::GetIOConfig(IOConfig &ioconfig) const
 {
   switch (automatonnetz_state.output_mode()) {
-  case OUTPUTA_MODE_ROOT:  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OC::OUTPUT_MODE_PITCH); break;
-  case OUTPUTA_MODE_TRIG:  ioconfig.outputs[DAC_CHANNEL_A].set("Trig", OC::OUTPUT_MODE_GATE); break;
-  case OUTPUTA_MODE_ARP:   ioconfig.outputs[DAC_CHANNEL_A].set("Arp", OC::OUTPUT_MODE_PITCH); break;
-  case OUTPUTA_MODE_STRUM: ioconfig.outputs[DAC_CHANNEL_A].set("Strum", OC::OUTPUT_MODE_PITCH); break;
+  case OUTPUTA_MODE_ROOT:  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OUTPUT_MODE_PITCH); break;
+  case OUTPUTA_MODE_TRIG:  ioconfig.outputs[DAC_CHANNEL_A].set("Trig", OUTPUT_MODE_GATE); break;
+  case OUTPUTA_MODE_ARP:   ioconfig.outputs[DAC_CHANNEL_A].set("Arp", OUTPUT_MODE_PITCH); break;
+  case OUTPUTA_MODE_STRUM: ioconfig.outputs[DAC_CHANNEL_A].set("Strum", OUTPUT_MODE_PITCH); break;
   default: break;
   }
 
-  ioconfig.outputs[DAC_CHANNEL_B].set("1", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("2", OC::OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("3", OC::OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("1", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("2", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("3", OUTPUT_MODE_PITCH);
 }
 
 static const weegfx::coord_t kGridXStart = 0;
@@ -535,19 +549,17 @@ static const weegfx::coord_t kGridW = 12;
 static const weegfx::coord_t kMenuStartX = 62;
 static const weegfx::coord_t kLineHeight = 11;
 
-namespace automatonnetz {
-
-void draw_cell_menu() {
+void AppAutomatonnetz::DrawCellMenu() const {
 
   menu::TitleBar<kMenuStartX, 1, 2>::Draw();
   graphics.print("CELL ");
-  graphics.print(automatonnetz_state.ui.selected_cell / 5 + 1);
+  graphics.print(ui.selected_cell / 5 + 1);
   graphics.print(',');
-  graphics.print(automatonnetz_state.ui.selected_cell % 5 + 1);
+  graphics.print(ui.selected_cell % 5 + 1);
 
-  const TransformCell &cell = automatonnetz_state.grid.at(automatonnetz_state.ui.selected_cell);
+  const TransformCell &cell = automatonnetz_state.grid.at(ui.selected_cell);
 
-  menu::SettingsList<menu::kScreenLines, kMenuStartX, menu::kDefaultMenuEndX - 25> settings_list(automatonnetz_state.ui.cell_cursor);
+  menu::SettingsList<menu::kScreenLines, kMenuStartX, menu::kDefaultMenuEndX - 25> settings_list(ui.cell_cursor);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
@@ -555,7 +567,7 @@ void draw_cell_menu() {
   }
 }
 
-void draw_grid_menu() {
+void AppAutomatonnetz::DrawGridMenu() const {
   EMode mode = automatonnetz_state.tonnetz_state.current_chord().mode();
   int outputs[4];
   automatonnetz_state.tonnetz_state.get_outputs(outputs);
@@ -570,7 +582,7 @@ void draw_grid_menu() {
   else
     graphics.print('-');
 
-  menu::SettingsList<menu::kScreenLines, kMenuStartX, menu::kDefaultMenuEndX - 25> settings_list(automatonnetz_state.ui.grid_cursor);
+  menu::SettingsList<menu::kScreenLines, kMenuStartX, menu::kDefaultMenuEndX - 25> settings_list(ui.grid_cursor);
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
@@ -593,9 +605,7 @@ void draw_grid_menu() {
   }
 }
 
-}; // namespace automatonnetz
-
-void Automatonnetz_menu() {
+void AppAutomatonnetz::DrawMenu() const {
   uint16_t row = 0, col = 0;
   for (int i = 0; i < GRID_CELLS; ++i) {
 
@@ -606,7 +616,7 @@ void Automatonnetz_menu() {
     graphics.setPrintPos(x + 3, y + 3);
     graphics.print(tonnetz::transform_names[cell.transform()]);
 
-    if (i == automatonnetz_state.ui.selected_cell)
+    if (i == ui.selected_cell)
       graphics.drawFrame(x, y, kGridW, kGridH);
 
     if (col < GRID_DIMENSION - 1) {
@@ -622,10 +632,10 @@ void Automatonnetz_menu() {
                       kGridYStart + current_pos.y * kGridH + 1,
                       kGridW - 2, kGridH - 2);
 
-  if (automatonnetz_state.ui.edit_cell)
-    automatonnetz::draw_cell_menu();
+  if (ui.edit_cell)
+    DrawCellMenu();
   else
-    automatonnetz::draw_grid_menu();
+    DrawGridMenu();
 }
 
 static const weegfx::coord_t kScreenSaverGridX = kGridXStart + kGridW / 2;
@@ -640,7 +650,7 @@ inline vec2<size_t> extract_pos(uint32_t history) {
   return vec2<size_t>((history & 0xff) / GRID_DIMENSION, (history & 0xff) % GRID_DIMENSION);
 }
 
-void Automatonnetz_screensaver() {
+void AppAutomatonnetz::DrawScreensaver() const {
   int outputs[4];
   automatonnetz_state.tonnetz_state.get_outputs(outputs);
   uint32_t cell_history = automatonnetz_state.history();
@@ -667,7 +677,7 @@ void Automatonnetz_screensaver() {
   }
 }
 
-size_t Automatonnetz_save(void *dest) {
+size_t AppAutomatonnetz::Save(void *dest) const {
   char *storage = static_cast<char *>(dest);
   size_t used = automatonnetz_state.Save(storage);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)
@@ -676,7 +686,7 @@ size_t Automatonnetz_save(void *dest) {
   return used;
 }
 
-size_t Automatonnetz_restore(const void *dest) {
+size_t AppAutomatonnetz::Restore(const void *dest) {
   const char *storage = static_cast<const char *>(dest);
   size_t used = automatonnetz_state.Restore(storage);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)
@@ -685,43 +695,40 @@ size_t Automatonnetz_restore(const void *dest) {
   return used;
 }
 
-void Automatonnetz_handleAppEvent(OC::AppEvent event) {
+void AppAutomatonnetz::HandleAppEvent(AppEvent event) {
   switch (event) {
-    case OC::APP_EVENT_RESUME:
-      OC::ui.encoder_enable_acceleration(OC::CONTROL_ENCODER_L, false);
+    case APP_EVENT_RESUME:
+      OC::ui.encoder_enable_acceleration(CONTROL_ENCODER_L, false);
       automatonnetz_state.AddUserAction(USER_ACTION_RESET);
       break;
-    case OC::APP_EVENT_SUSPEND:
-    case OC::APP_EVENT_SCREENSAVER_ON:
-    case OC::APP_EVENT_SCREENSAVER_OFF:
+    case APP_EVENT_SUSPEND:
+    case APP_EVENT_SCREENSAVER_ON:
+    case APP_EVENT_SCREENSAVER_OFF:
       break;
   }
 }
 
-void Automatonnetz_rightButton() {
-}
-
-void Automatonnetz_handleButtonEvent(const UI::Event &event) {
+void AppAutomatonnetz::HandleButtonEvent(const UI::Event &event) {
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
-      case OC::CONTROL_BUTTON_UP:
+      case CONTROL_BUTTON_UP:
         automatonnetz_state.AddUserAction(USER_ACTION_RESET);
         break;
-      case OC::CONTROL_BUTTON_DOWN:
+      case CONTROL_BUTTON_DOWN:
         automatonnetz_state.AddUserAction(USER_ACTION_CLOCK);
         break;
-      case OC::CONTROL_BUTTON_L:
-        automatonnetz_state.ui.edit_cell = !automatonnetz_state.ui.edit_cell;
+      case CONTROL_BUTTON_L:
+        ui.edit_cell = !ui.edit_cell;
         break;
-      case OC::CONTROL_BUTTON_R:
-        if (automatonnetz_state.ui.edit_cell)
-          automatonnetz_state.ui.cell_cursor.toggle_editing();
+      case CONTROL_BUTTON_R:
+        if (ui.edit_cell)
+          ui.cell_cursor.toggle_editing();
         else
-          automatonnetz_state.ui.grid_cursor.toggle_editing();
+          ui.grid_cursor.toggle_editing();
         break;
     }
   } else {
-    if (OC::CONTROL_BUTTON_L == event.control) {
+    if (CONTROL_BUTTON_L == event.control) {
       automatonnetz_state.ClearGrid();
       // Forcing reset might make critical section even less necesary...
       automatonnetz_state.AddUserAction(USER_ACTION_RESET);
@@ -729,26 +736,31 @@ void Automatonnetz_handleButtonEvent(const UI::Event &event) {
   }
 }
 
-void Automatonnetz_handleEncoderEvent(const UI::Event &event) {
+void AppAutomatonnetz::HandleEncoderEvent(const UI::Event &event) {
 
-  if (OC::CONTROL_ENCODER_L == event.control) {
-    int selected = automatonnetz_state.ui.selected_cell + event.value;
+  if (CONTROL_ENCODER_L == event.control) {
+    int selected = ui.selected_cell + event.value;
     CONSTRAIN(selected, 0, GRID_CELLS - 1);
-    automatonnetz_state.ui.selected_cell = selected;
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
-    if (automatonnetz_state.ui.edit_cell) {
-      if (automatonnetz_state.ui.cell_cursor.editing()) {
-        TransformCell &cell = automatonnetz_state.grid.mutable_cell(automatonnetz_state.ui.selected_cell);
-        cell.change_value(automatonnetz_state.ui.cell_cursor.cursor_pos(), event.value);
+    ui.selected_cell = selected;
+  } else if (CONTROL_ENCODER_R == event.control) {
+    if (ui.edit_cell) {
+      if (ui.cell_cursor.editing()) {
+        TransformCell &cell = automatonnetz_state.grid.mutable_cell(ui.selected_cell);
+        cell.change_value(ui.cell_cursor.cursor_pos(), event.value);
       } else {
-        automatonnetz_state.ui.cell_cursor.Scroll(event.value);
+        ui.cell_cursor.Scroll(event.value);
       }
     } else {
-      if (automatonnetz_state.ui.grid_cursor.editing()) {
-        automatonnetz_state.change_value(automatonnetz_state.ui.grid_cursor.cursor_pos(), event.value);
+      if (ui.grid_cursor.editing()) {
+        automatonnetz_state.change_value(ui.grid_cursor.cursor_pos(), event.value);
       } else {
-        automatonnetz_state.ui.grid_cursor.Scroll(event.value);
+        ui.grid_cursor.Scroll(event.value);
       }
     }
   }
 }
+
+void AppAutomatonnetz::DrawDebugInfo() const {
+}
+
+} // namespace OC

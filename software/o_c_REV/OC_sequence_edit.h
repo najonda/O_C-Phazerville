@@ -45,7 +45,7 @@ public:
 
   void Close();
 
-  void Draw();
+  void Draw() const;
   void HandleButtonEvent(const UI::Event &event);
   void HandleEncoderEvent(const UI::Event &event);
   static uint16_t RotateMask(uint16_t mask, int num_slots, int amount);
@@ -89,7 +89,7 @@ private:
 };
 
 template <typename Owner>
-void PatternEditor<Owner>::Draw() {
+void PatternEditor<Owner>::Draw() const {
   size_t num_slots = num_slots_;
 
   weegfx::coord_t const w = 128;

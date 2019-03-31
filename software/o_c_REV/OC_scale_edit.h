@@ -67,7 +67,7 @@ public:
   }
 
   void Close();
-  void Draw();
+  void Draw() const;
   void HandleButtonEvent(const UI::Event &event);
   void HandleEncoderEvent(const UI::Event &event);
   static uint16_t RotateMask(uint16_t mask, int num_notes, int amount);
@@ -86,7 +86,7 @@ private:
   int8_t edit_this_scale_;
   bool SEQ_MODE;
   uint8_t edit_page_; 
-  uint32_t ticks_;
+  mutable uint32_t ticks_;
 
   void BeginEditing(bool mode);
   void move_cursor(int offset);
@@ -110,7 +110,7 @@ private:
 };
 
 template <typename Owner>
-void ScaleEditor<Owner>::Draw() {
+void ScaleEditor<Owner>::Draw() const {
 
   if (edit_page_ < _SCALING) {
   

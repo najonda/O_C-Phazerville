@@ -31,14 +31,14 @@
 
 namespace OC {
 
-struct App;
+class AppBase;
 
 class IOSettingsMenu {
 public:
 
   void Init();
 
-  void Edit(App *app);
+  void Edit(AppBase *app);
 
   void enable(bool enabled) {
     enabled_ = true;

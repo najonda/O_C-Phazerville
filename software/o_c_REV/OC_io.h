@@ -82,13 +82,17 @@ struct OutputDesc {
   OutputMode mode = OUTPUT_MODE_RAW;
 
   void set(const char *l, OutputMode m) {
-    strcpy(label, l);
+    strncpy(label, l, sizeof(label));
     mode = m;
   }
 };
 
 struct InputDesc {
   char label[9] = "";
+
+  void set(const char *l) {
+    strncpy(label, l, sizeof(label));
+  }
 };
 
 struct IOConfig {

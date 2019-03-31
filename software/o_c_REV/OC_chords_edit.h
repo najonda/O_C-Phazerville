@@ -74,7 +74,7 @@ public:
   }
 
   void Close();
-  void Draw();
+  void Draw() const;
   void HandleButtonEvent(const UI::Event &event);
   void HandleEncoderEvent(const UI::Event &event);
 
@@ -107,7 +107,7 @@ private:
 };
 
 template <typename Owner>
-void ChordEditor<Owner>::Draw() {
+void ChordEditor<Owner>::Draw() const {
     
     weegfx::coord_t w = 128;
     weegfx::coord_t x = 0;
