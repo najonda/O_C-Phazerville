@@ -27,6 +27,13 @@
 #include "OC_config.h"
 #include "OC_digital_inputs.h"
 #include "OC_global_settings.h"
+#include "util/util_misc.h"
+
+#ifdef APPS_DEBUG
+# define APPS_SERIAL_PRINTLN(msg, ...) serial_printf(msg "\n", ##__VA_ARGS__)
+#else
+# define APPS_SERIAL_PRINTLN(...)
+#endif
 
 #include "OC_calibration.h"
 #include "OC_patterns.h"
@@ -261,8 +268,8 @@ struct AppChunkHeader {
 
 struct AppData {
   static constexpr uint32_t FOURCC = FOURCC<'O','C','A',4>::value;
-
   static constexpr size_t kAppDataSize = EEPROM_APPDATA_BINARY_SIZE;
+
   char data[kAppDataSize];
   size_t used;
 };
@@ -282,7 +289,7 @@ static constexpr int DEFAULT_APP_INDEX = 0;
 static const uint16_t DEFAULT_APP_ID = available_apps[DEFAULT_APP_INDEX]->id();
 
 void save_global_settings() {
-  SERIAL_PRINTLN("Save global settings");
+  APPS_SERIAL_PRINTLN("Save global settings");
 
   memcpy(global_settings.user_scales, OC::user_scales, sizeof(OC::user_scales));
   memcpy(global_settings.user_patterns, OC::user_patterns, sizeof(OC::user_patterns));
@@ -290,7 +297,7 @@ void save_global_settings() {
   memcpy(global_settings.user_waveforms, HS::user_waveforms, sizeof(HS::user_waveforms));
   
   global_settings_storage.Save(global_settings);
-  SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
+  APPS_SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
 }
 
 static constexpr size_t total_storage_size() {
@@ -306,7 +313,7 @@ static constexpr size_t totalsize = total_storage_size();
 static_assert(totalsize < OC::AppData::kAppDataSize, "EEPROM Allocation Exceeded");
 
 void save_app_data() {
-  SERIAL_PRINTLN("Save app data... (%u bytes available)", OC::AppData::kAppDataSize);
+  APPS_SERIAL_PRINTLN("Save app data... (%u bytes available)", OC::AppData::kAppDataSize);
 
   app_settings.used = 0;
   char *data = app_settings.data;
@@ -319,7 +326,7 @@ void save_app_data() {
     if (storage_size & 1) ++storage_size; // Align chunks on 2-byte boundaries
     if (storage_size > sizeof(AppChunkHeader)) {
       if (data + storage_size > data_end) {
-        SERIAL_PRINTLN("%s: ERROR: %u BYTES NEEDED, %u BYTES AVAILABLE OF %u BYTES TOTAL", app->name(), storage_size, data_end - data, AppData::kAppDataSize);
+        APPS_SERIAL_PRINTLN("%s: ERROR: %u BYTES NEEDED, %u BYTES AVAILABLE OF %u BYTES TOTAL", app->name(), storage_size, data_end - data, AppData::kAppDataSize);
         continue;
       }
 
@@ -327,7 +334,7 @@ void save_app_data() {
       chunk->id = app->id();
       chunk->length = storage_size;
       #ifdef PRINT_DEBUG
-        SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), app->Save(chunk + 1), storage_size);
+        APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), app->Save(chunk + 1), storage_size);
       #else
         app->Save(chunk + 1);
       #endif
@@ -335,13 +342,13 @@ void save_app_data() {
       data += chunk->length;
     }
   }
-  SERIAL_PRINTLN("App settings used: %u/%u", app_settings.used, EEPROM_APPDATA_BINARY_SIZE);
+  APPS_SERIAL_PRINTLN("App settings used: %u/%u", app_settings.used, EEPROM_APPDATA_BINARY_SIZE);
   app_data_storage.Save(app_settings);
-  SERIAL_PRINTLN("Saved app settings in page_index %d", app_data_storage.page_index());
+  APPS_SERIAL_PRINTLN("Saved app settings in page_index %d", app_data_storage.page_index());
 }
 
 void restore_app_data() {
-  SERIAL_PRINTLN("Restoring app data from page_index %d, used=%u", app_data_storage.page_index(), app_settings.used);
+  APPS_SERIAL_PRINTLN("Restoring app data from page_index %d, used=%u", app_data_storage.page_index(), app_settings.used);
 
   const char *data = app_settings.data;
   const char *data_end = data + app_settings.used;
@@ -350,13 +357,13 @@ void restore_app_data() {
   while (data < data_end) {
     const AppChunkHeader *chunk = reinterpret_cast<const AppChunkHeader *>(data);
     if (data + chunk->length > data_end) {
-      SERIAL_PRINTLN("App chunk length %u exceeds available space (%u)", chunk->length, data_end - data);
+      APPS_SERIAL_PRINTLN("App chunk length %u exceeds available space (%u)", chunk->length, data_end - data);
       break;
     }
 
     auto app = app_switcher.FindAppByID(chunk->id);
     if (!app) {
-      SERIAL_PRINTLN("App %02x not found, ignoring chunk... skipping %u", chunk->id, chunk->length);
+      APPS_SERIAL_PRINTLN("App %02x not found, ignoring chunk... skipping %u", app->id(), chunk->length);
       if (!chunk->length)
         break;
       data += chunk->length;
@@ -365,7 +372,7 @@ void restore_app_data() {
     size_t expected_length = app->storage_size() + sizeof(AppChunkHeader);
     if (expected_length & 0x1) ++expected_length;
     if (chunk->length != expected_length) {
-      SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storageSize=%u), skipping...", app->name, chunk->id, chunk->length, expected_length, app->storage_size());
+      APPS_SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storageSize=%u), skipping...", app->name(), chunk->id, chunk->length, expected_length, app->storage_size());
       data += chunk->length;
       continue;
     }
@@ -374,7 +381,7 @@ void restore_app_data() {
     if (app->Restore) {
         restored = app->Restore(chunk + 1);
       #ifdef PRINT_DEBUG
-        SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name, chunk->id, restored, chunk->length - sizeof(AppChunkHeader), chunk->length);
+        APPS_SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name(), chunk->id, restored, chunk->length - sizeof(AppChunkHeader), chunk->length);
       #else
       #endif
     }
@@ -384,7 +391,7 @@ void restore_app_data() {
     data += restored;
   }
 
-  SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);
+  APPS_SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);
 }
 
 void AppSwitcher::set_current_app(int index)
@@ -428,13 +435,13 @@ void AppSwitcher::Init(bool reset_settings) {
 
   if (reset_settings) {
     if (ui.ConfirmReset()) {
-      SERIAL_PRINTLN("Erase EEPROM ...");
+      APPS_SERIAL_PRINTLN("Erase EEPROM ...");
       EEPtr d = EEPROM_GLOBALSETTINGS_START;
       size_t len = EEPROMStorage::LENGTH - EEPROM_GLOBALSETTINGS_START;
       while (len--)
         *d++ = 0;
-      SERIAL_PRINTLN("...done");
-      SERIAL_PRINTLN("Skip settings, using defaults...");
+      APPS_SERIAL_PRINTLN("...done");
+      APPS_SERIAL_PRINTLN("Skip settings, using defaults...");
       global_settings_storage.Init();
       app_data_storage.Init();
     } else {
@@ -443,16 +450,16 @@ void AppSwitcher::Init(bool reset_settings) {
   }
 
   if (!reset_settings) {
-    SERIAL_PRINTLN("Load global settings: size: %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
+    APPS_SERIAL_PRINTLN("Load global settings: size: %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
                   sizeof(GlobalSettings),
                   GlobalSettingsStorage::PAGESIZE,
                   GlobalSettingsStorage::PAGES,
                   GlobalSettingsStorage::LENGTH);
 
     if (!global_settings_storage.Load(global_settings)) {
-      SERIAL_PRINTLN("Settings invalid, using defaults!");
+      APPS_SERIAL_PRINTLN("Settings invalid, using defaults!");
     } else {
-      SERIAL_PRINTLN("Loaded settings from page_index %d, current_app_id is %02x",
+      APPS_SERIAL_PRINTLN("Loaded settings from page_index %d, current_app_id is %02x",
                     global_settings_storage.page_index(),global_settings.current_app_id);
       memcpy(user_scales, global_settings.user_scales, sizeof(user_scales));
       memcpy(user_patterns, global_settings.user_patterns, sizeof(user_patterns));
@@ -461,14 +468,14 @@ void AppSwitcher::Init(bool reset_settings) {
       Scales::Validate();
     }
 
-    SERIAL_PRINTLN("Load app data: size is %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
+    APPS_SERIAL_PRINTLN("Load app data: size is %u, PAGESIZE=%u, PAGES=%u, LENGTH=%u",
                   sizeof(AppData),
                   AppDataStorage::PAGESIZE,
                   AppDataStorage::PAGES,
                   AppDataStorage::LENGTH);
 
     if (!app_data_storage.Load(app_settings)) {
-      SERIAL_PRINTLN("Data not loaded, using defaults!");
+      APPS_SERIAL_PRINTLN("Data not loaded, using defaults!");
     } else {
       restore_app_data();
     }
@@ -476,12 +483,12 @@ void AppSwitcher::Init(bool reset_settings) {
 
   int current_app_index = app_switcher.IndexOfAppByID(global_settings.current_app_id);
   if (current_app_index < 0 || current_app_index >= NUM_AVAILABLE_APPS) {
-    SERIAL_PRINTLN("App id %02x not found, using default!", global_settings.current_app_id);
+    APPS_SERIAL_PRINTLN("App id %02x not found, using default!", global_settings.current_app_id);
     global_settings.current_app_id = DEFAULT_APP_ID;
     current_app_index = DEFAULT_APP_INDEX;
   }
 
-  SERIAL_PRINTLN("Encoder acceleration: %s", global_settings.encoders_enable_acceleration ? "enabled" : "disabled");
+  APPS_SERIAL_PRINTLN("Encoder acceleration: %s", global_settings.encoders_enable_acceleration ? "enabled" : "disabled");
   ui.encoders_enable_acceleration(global_settings.encoders_enable_acceleration);
 
   set_current_app(current_app_index);
@@ -577,7 +584,7 @@ void Ui::AppSettings() {
       case CONTROL_BUTTON_DOWN:
         if (UI::EVENT_BUTTON_PRESS == event.type) {
             bool enabled = !global_settings.encoders_enable_acceleration;
-            SERIAL_PRINTLN("Encoder acceleration: %s", enabled ? "enabled" : "disabled");
+            APPS_SERIAL_PRINTLN("Encoder acceleration: %s", enabled ? "enabled" : "disabled");
             ui.encoders_enable_acceleration(enabled);
             global_settings.encoders_enable_acceleration = enabled;
         }
