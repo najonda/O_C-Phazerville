@@ -437,6 +437,24 @@ public:
       return i + 1;
   }
 
+  inline bool UpdateTriggerDelay(bool triggered) {
+    trigger_delay_.Update();
+    if (triggered) {
+      auto delay = OC::trigger_delay_ticks[get_trigger_delay()];
+      if (delay) {
+        trigger_delay_.Push(delay);
+      } else {
+        // Force a trigger delay of 1 tick if using an internal source that's
+        // updated later than this channel to avoid stale values.
+        auto source = get_source();
+        if ((source >= CHANNEL_SOURCE_OUT1 && source <= CHANNEL_SOURCE_OUT3) &&
+            source_to_output_channel(source) > channel_index_)
+          trigger_delay_.Push(1);
+      }
+    }
+    return trigger_delay_.triggered();   
+  }
+
   inline void Update(OC::IOFrame *ioframe, DAC_CHANNEL dac_channel)
   {
     auto triggers = ioframe->digital_inputs.triggered();
@@ -453,12 +471,7 @@ public:
       int_seq_reset_ = (triggers & DIGITAL_INPUT_MASK(int_seq_reset_trigger_source - 1));
     }
 
-    trigger_delay_.Update();
-    if (triggered)
-      trigger_delay_.Push(OC::trigger_delay_ticks[get_trigger_delay()]);
-    triggered = trigger_delay_.triggered();
-
-    if (triggered) {
+    if (UpdateTriggerDelay(triggered)) {
       ++clock_;
       if (clock_ >= get_clkdiv()) {
         clock_ = 0;
