@@ -229,6 +229,26 @@ static AppBase * const available_apps[] = {
 
 static constexpr int NUM_AVAILABLE_APPS = ARRAY_SIZE(available_apps);
 
+void AppBase::InitDefaults()
+{
+  io_settings_.InitDefaults();
+  Init();
+}
+
+size_t AppBase::Save(void *data) const
+{
+  size_t len = io_settings_.Save(data);
+  len += SaveAppData(static_cast<uint8_t *>(data) + len);
+  return len;
+}
+
+size_t AppBase::Restore(const void *data)
+{
+  size_t len = io_settings_.Restore(data);
+  len += RestoreAppData(static_cast<const uint8_t *>(data) + len);
+  return len;
+}
+
 // App settings are packed into a single blob of binary data; each app's chunk
 // gets its own header with id and the length of the entire chunk. This makes
 // this a bit more flexible during development.
@@ -396,10 +416,8 @@ void AppSwitcher::Init(bool reset_settings) {
 
   current_app_ = available_apps[DEFAULT_APP_INDEX];
 
-  for (auto &app : available_apps) {
-    app->mutable_io_settings().InitDefaults();
-    app->Init();
-  }
+  for (auto &app : available_apps)
+    app->InitDefaults();
 
   global_settings.Init();
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;

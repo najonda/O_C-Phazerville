@@ -1228,11 +1228,11 @@ void AppQuadQuantizer::Init() {
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
 }
 
-size_t AppQuadQuantizer::storage_size() const {
+size_t AppQuadQuantizer::appdata_storage_size() const {
   return 4 * QuantizerChannel::storageSize();
 }
 
-size_t AppQuadQuantizer::Save(void *storage) const {
+size_t AppQuadQuantizer::SaveAppData(void *storage) const {
   size_t used = 0;
   for (size_t i = 0; i < 4; ++i) {
     used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
@@ -1240,7 +1240,7 @@ size_t AppQuadQuantizer::Save(void *storage) const {
   return used;
 }
 
-size_t AppQuadQuantizer::Restore(const void *storage) {
+size_t AppQuadQuantizer::RestoreAppData(const void *storage) {
   size_t used = 0;
   for (size_t i = 0; i < 4; ++i) {
     used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);

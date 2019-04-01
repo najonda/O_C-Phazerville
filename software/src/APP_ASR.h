@@ -785,11 +785,11 @@ void AppASR::Init() {
   cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
 }
 
-size_t AppASR::storage_size() const {
+size_t AppASR::appdata_storage_size() const {
   return ASR::storageSize();
 }
 
-size_t AppASR::Restore(const void *storage) {
+size_t AppASR::RestoreAppData(const void *storage) {
   // init nicely
   size_t storage_size = asr.Restore(storage);
   left_encoder_value_ = asr.get_scale(DUMMY); 
@@ -949,7 +949,7 @@ void AppASR::HandleDownButtonLong() {
    asr.toggle_delay_mechanics();
 }
 
-size_t AppASR::Save(void *storage) const {
+size_t AppASR::SaveAppData(void *storage) const {
   return asr.Save(storage);
 }
 

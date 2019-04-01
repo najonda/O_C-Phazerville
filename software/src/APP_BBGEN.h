@@ -291,18 +291,18 @@ void FASTRUN AppQuadBouncingBalls::Process(OC::IOFrame *ioframe) {
   balls_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
 }
 
-size_t AppQuadBouncingBalls::storage_size() const {
+size_t AppQuadBouncingBalls::appdata_storage_size() const {
   return 4 * BouncingBall::storageSize();
 }
 
-size_t AppQuadBouncingBalls::Save(void *storage) const {
+size_t AppQuadBouncingBalls::SaveAppData(void *storage) const {
   size_t s = 0;
   for (auto &bb : balls_)
     s += bb.Save(static_cast<byte *>(storage) + s);
   return s;
 }
 
-size_t AppQuadBouncingBalls::Restore(const void *storage) {
+size_t AppQuadBouncingBalls::RestoreAppData(const void *storage) {
   size_t s = 0;
   for (auto &bb : balls_)
     s += bb.Restore(static_cast<const byte *>(storage) + s);

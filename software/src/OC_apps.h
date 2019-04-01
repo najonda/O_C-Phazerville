@@ -61,10 +61,19 @@ public:
   inline uint16_t id() const { return id_; }
   inline const char *name() const { return name_; }
 
+  IOSettings &mutable_io_settings() { return io_settings_; }
+  const IOSettings &io_settings() const { return io_settings_; }
+
+  void InitDefaults();
+  size_t storage_size() const { return IOSettings::storageSize() + appdata_storage_size(); }
+  size_t Save(void *) const;
+  size_t Restore(const void *);
+
+  // Main implementation interface for derived classes
   virtual void Init() = 0;
-  virtual size_t storage_size() const = 0;
-  virtual size_t Save(void *) const = 0;
-  virtual size_t Restore(const void *) = 0;
+  virtual size_t appdata_storage_size() const = 0;
+  virtual size_t SaveAppData(void *) const = 0;
+  virtual size_t RestoreAppData(const void *) = 0;
   virtual void HandleAppEvent(AppEvent) = 0;
   virtual void Loop() = 0;
   virtual void DrawMenu() const = 0;
@@ -75,9 +84,6 @@ public:
   virtual void GetIOConfig(IOConfig &) const = 0;
   virtual void DrawDebugInfo() const = 0;
 
-  IOSettings &mutable_io_settings() { return io_settings_; }
-  const IOSettings &io_settings() const { return io_settings_; }
-
 private:
   const uint16_t id_;
   const char * const name_;
@@ -87,9 +93,7 @@ protected:
   IOSettings io_settings_;
 
   AppBase(uint16_t appid, const char *const appname, const char *const boring_name)
-  : id_(appid), name_(appname), boring_name_(boring_name) {
-    io_settings_.InitDefaults();
-  }
+  : id_(appid), name_(appname), boring_name_(boring_name) { }
 
   DISALLOW_COPY_AND_ASSIGN(AppBase);
 };
@@ -117,9 +121,9 @@ clazz : public AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>
 public: \
   clazz() : AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>() { } \
   virtual void Init() final; \
-  virtual size_t storage_size() const final; \
-  virtual size_t Save(void *) const final; \
-  virtual size_t Restore(const void *) final; \
+  virtual size_t appdata_storage_size() const final; \
+  virtual size_t SaveAppData(void *) const final; \
+  virtual size_t RestoreAppData(const void *) final; \
   virtual void HandleAppEvent(AppEvent) final; \
   virtual void Loop() final; \
   virtual void DrawMenu() const final; \

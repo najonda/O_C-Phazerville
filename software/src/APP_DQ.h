@@ -1161,11 +1161,11 @@ void AppDualQuantizer::Init() {
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
 }
 
-size_t AppDualQuantizer::storage_size() const {
+size_t AppDualQuantizer::appdata_storage_size() const {
   return NUMCHANNELS * DQ_QuantizerChannel::storageSize();
 }
 
-size_t AppDualQuantizer::Save(void *storage) const {
+size_t AppDualQuantizer::SaveAppData(void *storage) const {
   size_t used = 0;
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
     used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
@@ -1173,7 +1173,7 @@ size_t AppDualQuantizer::Save(void *storage) const {
   return used;
 }
 
-size_t AppDualQuantizer::Restore(const void *storage) {
+size_t AppDualQuantizer::RestoreAppData(const void *storage) {
   size_t used = 0;
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
     used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);

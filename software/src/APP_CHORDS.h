@@ -1073,15 +1073,15 @@ void AppChordQuantizer::Init() {
   cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
 }
 
-size_t AppChordQuantizer::storage_size() const {
+size_t AppChordQuantizer::appdata_storage_size() const {
   return ChordQuantizer::storageSize();
 }
 
-size_t AppChordQuantizer::Save(void *storage) const {
+size_t AppChordQuantizer::SaveAppData(void *storage) const {
   return chord_quantizer_.Save(storage);
 }
 
-size_t AppChordQuantizer::Restore(const void *storage) {
+size_t AppChordQuantizer::RestoreAppData(const void *storage) {
 
   size_t storage_size = chord_quantizer_.Restore(storage);
   chord_quantizer_.update_enabled_settings();
