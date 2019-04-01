@@ -372,15 +372,15 @@ void AppPolyLfo::Init() {
   poly_lfo_.Init();
 }
 
-size_t AppPolyLfo::storage_size() const {
+size_t AppPolyLfo::appdata_storage_size() const {
   return PolyLfo::storageSize();
 }
 
-size_t AppPolyLfo::Save(void *storage) const {
+size_t AppPolyLfo::SaveAppData(void *storage) const {
   return poly_lfo_.Save(storage);
 }
 
-size_t AppPolyLfo::Restore(const void *storage) {
+size_t AppPolyLfo::RestoreAppData(const void *storage) {
   return poly_lfo_.Restore(storage);
 }
 

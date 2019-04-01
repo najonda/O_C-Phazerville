@@ -770,18 +770,18 @@ void AppReferences::Process(OC::IOFrame *ioframe) {
    }
 }
 
-size_t AppReferences::storage_size() const {
+size_t AppReferences::appdata_storage_size() const {
   return DAC_CHANNEL_LAST * ReferenceChannel::storageSize();
 }
 
-size_t AppReferences::Save(void *storage) const {
+size_t AppReferences::SaveAppData(void *storage) const {
   size_t used = 0;
   for (auto &channel : channels_)
     used += channel.Save(static_cast<char*>(storage) + used);
   return used;
 }
 
-size_t AppReferences::Restore(const void *storage) {
+size_t AppReferences::RestoreAppData(const void *storage) {
   size_t used = 0;
   for (auto &channel : channels_) {
     used += channel.Restore(static_cast<const char*>(storage) + used);

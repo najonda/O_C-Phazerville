@@ -990,15 +990,15 @@ void AppH1200::Init() {
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
 }
 
-size_t AppH1200::storage_size() const {
+size_t AppH1200::appdata_storage_size() const {
   return H1200Settings::storageSize();
 }
 
-size_t AppH1200::Save(void *storage) const {
+size_t AppH1200::SaveAppData(void *storage) const {
   return h1200_settings.Save(storage);
 }
 
-size_t AppH1200::Restore(const void *storage) {
+size_t AppH1200::RestoreAppData(const void *storage) {
   h1200_settings.update_enabled_settings();
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
   return h1200_settings.Restore(storage);

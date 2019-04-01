@@ -454,18 +454,18 @@ void FASTRUN AppQuadByteBeats::Process(OC::IOFrame *ioframe) {
   bytebeats_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
 }
 
-size_t AppQuadByteBeats::storage_size() const {
+size_t AppQuadByteBeats::appdata_storage_size() const {
   return 4 * ByteBeat::storageSize();
 }
 
-size_t AppQuadByteBeats::Save(void *storage) const {
+size_t AppQuadByteBeats::SaveAppData(void *storage) const {
   size_t s = 0;
   for (auto &bytebeat : bytebeats_)
     s += bytebeat.Save(static_cast<byte *>(storage) + s);
   return s;
 }
 
-size_t AppQuadByteBeats::Restore(const void *storage) {
+size_t AppQuadByteBeats::RestoreAppData(const void *storage) {
   size_t s = 0;
   for (auto &bytebeat : bytebeats_) {
     s += bytebeat.Restore(static_cast<const byte *>(storage) + s);

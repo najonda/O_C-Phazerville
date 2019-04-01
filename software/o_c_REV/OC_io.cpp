@@ -24,6 +24,7 @@
 //
 #include <algorithm>
 #include "OC_io.h"
+#include "OC_io_settings.h"
 #include "OC_strings.h"
 #include "OC_scales.h"
 #include "OC_cv_utils.h"

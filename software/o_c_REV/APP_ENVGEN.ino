@@ -850,18 +850,18 @@ void AppQuadEnvelopeGenerator::Process(OC::IOFrame *ioframe) {
   envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
 }
 
-size_t AppQuadEnvelopeGenerator::storage_size() const {
+size_t AppQuadEnvelopeGenerator::appdata_storage_size() const {
   return 4 * EnvelopeGenerator::storageSize();
 }
 
-size_t AppQuadEnvelopeGenerator::Save(void *storage) const {
+size_t AppQuadEnvelopeGenerator::SaveAppData(void *storage) const {
   size_t s = 0;
   for (auto &env : envelopes_)
     s += env.Save(static_cast<byte *>(storage) + s);
   return s;
 }
 
-size_t AppQuadEnvelopeGenerator::Restore(const void *storage) {
+size_t AppQuadEnvelopeGenerator::RestoreAppData(const void *storage) {
   size_t s = 0;
   for (auto &env : envelopes_) {
     s += env.Restore(static_cast<const byte *>(storage) + s);

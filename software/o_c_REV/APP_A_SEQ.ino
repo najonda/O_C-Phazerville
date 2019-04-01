@@ -2072,11 +2072,11 @@ void AppDualSequencer::Init() {
   cursor_.AdjustEnd(seq_channel_[0].num_enabled_settings() - 1);
 }
 
-size_t AppDualSequencer::storage_size() const {
+size_t AppDualSequencer::appdata_storage_size() const {
   return NUM_CHANNELS * SEQ_Channel::storageSize();
 }
 
-size_t AppDualSequencer::Save(void *storage) const {
+size_t AppDualSequencer::SaveAppData(void *storage) const {
 
   size_t used = 0;
   for (size_t i = 0; i < NUM_CHANNELS; ++i) {
@@ -2085,7 +2085,7 @@ size_t AppDualSequencer::Save(void *storage) const {
   return used;
 }
 
-size_t AppDualSequencer::Restore(const void *storage) {
+size_t AppDualSequencer::RestoreAppData(const void *storage) {
 
   size_t used = 0;
 

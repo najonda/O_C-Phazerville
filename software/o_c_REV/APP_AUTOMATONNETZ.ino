@@ -514,7 +514,7 @@ void AppAutomatonnetz::Init() {
   ui.grid_cursor.Init(GRID_SETTING_DX, GRID_SETTING_LAST - 1);
 }
 
-size_t AppAutomatonnetz::storage_size() const {
+size_t AppAutomatonnetz::appdata_storage_size() const {
   return AutomatonnetzState::storageSize() +
     GRID_CELLS * TransformCell::storageSize();
 }
@@ -677,7 +677,7 @@ void AppAutomatonnetz::DrawScreensaver() const {
   }
 }
 
-size_t AppAutomatonnetz::Save(void *dest) const {
+size_t AppAutomatonnetz::SaveAppData(void *dest) const {
   char *storage = static_cast<char *>(dest);
   size_t used = automatonnetz_state.Save(storage);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)
@@ -686,7 +686,7 @@ size_t AppAutomatonnetz::Save(void *dest) const {
   return used;
 }
 
-size_t AppAutomatonnetz::Restore(const void *dest) {
+size_t AppAutomatonnetz::RestoreAppData(const void *dest) {
   const char *storage = static_cast<const char *>(dest);
   size_t used = automatonnetz_state.Restore(storage);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)

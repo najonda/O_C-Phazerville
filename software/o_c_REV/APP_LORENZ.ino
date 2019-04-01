@@ -253,15 +253,15 @@ void FASTRUN AppLorenzGenerator::Process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_raw_value(DAC_CHANNEL_D, lorenz_generator_.lorenz.dac_code(3));
 }
 
-size_t AppLorenzGenerator::storage_size() const {
+size_t AppLorenzGenerator::appdata_storage_size() const {
   return LorenzGenerator::storageSize();
 }
 
-size_t AppLorenzGenerator::Save(void *storage) const {
+size_t AppLorenzGenerator::SaveAppData(void *storage) const {
   return lorenz_generator_.Save(storage);
 }
 
-size_t AppLorenzGenerator::Restore(const void *storage) {
+size_t AppLorenzGenerator::RestoreAppData(const void *storage) {
   return lorenz_generator_.Restore(storage);
 }
 
