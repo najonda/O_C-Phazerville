@@ -27,10 +27,11 @@
 //#define IO_10V
 /* ------------ Debug for autotune ------------------------------------------------------------------  */
 //#define AUTOTUNE_DEBUG
+/* ------------ Debug for app load/save -------------------------------------------------------------  */
+//#define APPS_DEBUG
 
 #if defined(IO_10V)
   #define BUCHLA_4U
 #endif
 
 #endif
-

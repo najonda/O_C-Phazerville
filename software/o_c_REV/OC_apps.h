@@ -23,9 +23,10 @@
 #ifndef OC_APP_H_
 #define OC_APP_H_
 
+#include "OC_options.h"
+#include "OC_io.h"
 #include "UI/ui_events.h"
 #include "util/util_misc.h"
-#include "OC_io.h"
 
 namespace OC {
 
