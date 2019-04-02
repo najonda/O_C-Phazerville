@@ -83,7 +83,7 @@ void IOSettingsMenu::Draw() const
   while (settings_list.available()) {
     const IO_SETTING setting = static_cast<IO_SETTING>(settings_list.Next(list_item));
     const int value = io_settings_->get_value(IOSettings::channel_setting(setting, selected_channel_));
-    const auto &attr = IOSettings::value_attr(IOSettings::channel_setting(setting, selected_channel_));
+    const auto &attr = IOSettings::value_attributes(IOSettings::channel_setting(setting, selected_channel_));
 
     const auto &output_desc = io_config_.outputs[selected_channel_];
 

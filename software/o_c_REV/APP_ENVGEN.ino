@@ -854,22 +854,21 @@ size_t AppQuadEnvelopeGenerator::appdata_storage_size() const {
   return 4 * EnvelopeGenerator::storageSize();
 }
 
-size_t AppQuadEnvelopeGenerator::SaveAppData(void *storage) const {
-  size_t s = 0;
+size_t AppQuadEnvelopeGenerator::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (auto &env : envelopes_)
-    s += env.Save(static_cast<byte *>(storage) + s);
-  return s;
+    env.Save(stream_buffer);
+
+  return stream_buffer.written();
 }
 
-size_t AppQuadEnvelopeGenerator::RestoreAppData(const void *storage) {
-  size_t s = 0;
+size_t AppQuadEnvelopeGenerator::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (auto &env : envelopes_) {
-    s += env.Restore(static_cast<const byte *>(storage) + s);
+    env.Restore(stream_buffer);
     env.update_enabled_settings();
   }
 
   ui.cursor.AdjustEnd(envelopes_[0].num_enabled_settings() - 1);
-  return s;
+  return stream_buffer.read();
 }
 
 void AppQuadEnvelopeGenerator::HandleAppEvent(AppEvent event) {
@@ -898,7 +897,7 @@ uint16_t preview_segment_starts[peaks::kMaxNumSegments];
 uint16_t preview_loop_points[peaks::kMaxNumSegments];
 static constexpr uint16_t kPreviewTerminator = 0xffff;
 
-settings::value_attr segment_editing_attr = { 128, 0, 255, "DOH!", NULL, settings::STORAGE_TYPE_U16 };
+settings::ValueAttributes segment_editing_attr = { 128, 0, 255, "DOH!", NULL, settings::STORAGE_TYPE_U16 };
 
 void AppQuadEnvelopeGenerator::DrawMenuPreview() const {
   auto const &env = selected();
@@ -970,7 +969,7 @@ void AppQuadEnvelopeGenerator::DrawMenuSettings() const {
     const int setting =
       env.enabled_setting_at(settings_list.Next(list_item));
     const int value = env.get_value(setting);
-    const settings::value_attr &attr = EnvelopeGenerator::value_attr(setting);
+    const auto &attr = EnvelopeGenerator::value_attributes(setting);
 
     switch (setting) {
       case ENV_SETTING_TYPE:
@@ -1038,12 +1037,12 @@ void AppQuadEnvelopeGenerator::DrawMenuSettings() const {
     list_item.valuex = 38;
     list_item.endx = 60 - 2;
     if (ui.euclidean_edit_length) {
-      auto attr = EnvelopeGenerator::value_attr(ENV_SETTING_EUCLIDEAN_LENGTH);
+      auto attr = EnvelopeGenerator::value_attributes(ENV_SETTING_EUCLIDEAN_LENGTH);
       attr.min_ = 1;
       attr.name = "Len";
       list_item.DrawDefault(env.get_euclidean_length(), attr);
     } else {
-      auto attr = EnvelopeGenerator::value_attr(ENV_SETTING_EUCLIDEAN_FILL);
+      auto attr = EnvelopeGenerator::value_attributes(ENV_SETTING_EUCLIDEAN_FILL);
       list_item.DrawValueMax(env.get_euclidean_fill(), attr, env.get_euclidean_length() + 0x1);
     }
 
@@ -1051,7 +1050,7 @@ void AppQuadEnvelopeGenerator::DrawMenuSettings() const {
     list_item.x = 60;
     list_item.valuex = 106;
     list_item.endx = menu::kDisplayWidth - 2;
-    list_item.DrawValueMax(env.get_euclidean_offset(), EnvelopeGenerator::value_attr(ENV_SETTING_EUCLIDEAN_OFFSET), env.get_euclidean_length());
+    list_item.DrawValueMax(env.get_euclidean_offset(), EnvelopeGenerator::value_attributes(ENV_SETTING_EUCLIDEAN_OFFSET), env.get_euclidean_length());
   }
 }
 

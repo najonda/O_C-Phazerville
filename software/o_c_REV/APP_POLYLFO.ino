@@ -376,12 +376,14 @@ size_t AppPolyLfo::appdata_storage_size() const {
   return PolyLfo::storageSize();
 }
 
-size_t AppPolyLfo::SaveAppData(void *storage) const {
-  return poly_lfo_.Save(storage);
+size_t AppPolyLfo::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  poly_lfo_.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppPolyLfo::RestoreAppData(const void *storage) {
-  return poly_lfo_.Restore(storage);
+size_t AppPolyLfo::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  poly_lfo_.Restore(stream_buffer);
+  return stream_buffer.read();
 }
 
 void AppPolyLfo::Loop() {
@@ -400,9 +402,9 @@ void AppPolyLfo::DrawMenu() const {
     if (poly_lfo_.freq_mult() < 0xFF) 
         graphics.drawBitmap8(122, menu::DefaultTitleBar::kTextY, 4, OC::bitmap_indicator_4x8); 
     if (menu_freq_ >= 0.1f) {
-        graphics.printf("(%s) Ch A: %6.2f Hz", PolyLfo::value_attr(left_edit_mode_).name, menu_freq_);
+        graphics.printf("(%s) Ch A: %6.2f Hz", PolyLfo::value_attributes(left_edit_mode_).name, menu_freq_);
     } else {
-        graphics.printf("(%s) Ch A: %6.3fs", PolyLfo::value_attr(left_edit_mode_).name, 1.0f / menu_freq_);
+        graphics.printf("(%s) Ch A: %6.3fs", PolyLfo::value_attributes(left_edit_mode_).name, 1.0f / menu_freq_);
     }
   }
   menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX - 1> settings_list(cursor_);
@@ -411,7 +413,7 @@ void AppPolyLfo::DrawMenu() const {
     const int current = settings_list.Next(list_item);
     const int value = poly_lfo_.get_value(current);
     if (POLYLFO_SETTING_SHAPE != current) {
-      list_item.DrawDefault(value, PolyLfo::value_attr(current));
+      list_item.DrawDefault(value, PolyLfo::value_attributes(current));
     } else {
       poly_lfo_.lfo.RenderPreview(value << 8, preview_buffer, kSmallPreviewBufferSize);
       const uint16_t *preview = preview_buffer;
@@ -421,7 +423,7 @@ void AppPolyLfo::DrawMenu() const {
         graphics.setPixel(x++, list_item.y + 8 - (*preview++ >> 13));
 
       list_item.endx = menu::kDefaultMenuEndX - 39;
-      list_item.DrawDefault(value, PolyLfo::value_attr(current));
+      list_item.DrawDefault(value, PolyLfo::value_attributes(current));
     }
   }
 }

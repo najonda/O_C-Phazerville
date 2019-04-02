@@ -1133,18 +1133,16 @@ size_t AppDualQuantizer::appdata_storage_size() const {
   return NUMCHANNELS * DQ_QuantizerChannel::storageSize();
 }
 
-size_t AppDualQuantizer::SaveAppData(void *storage) const {
-  size_t used = 0;
+size_t AppDualQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
-    used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
+    quantizer_channels_[i].Save(stream_buffer);
   }
-  return used;
+  return stream_buffer.written();
 }
 
-size_t AppDualQuantizer::RestoreAppData(const void *storage) {
-  size_t used = 0;
+size_t AppDualQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
-    used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);
+    quantizer_channels_[i].Restore(stream_buffer);
     //int scale = quantizer_channels_[i].get_scale_select();
     for (size_t j = SLOT1; j < LAST_SLOT; j++) {
       quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(j), j);
@@ -1152,7 +1150,8 @@ size_t AppDualQuantizer::RestoreAppData(const void *storage) {
     quantizer_channels_[i].update_enabled_settings();
   }
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
-  return used;
+
+  return stream_buffer.read();
 }
 
 void AppDualQuantizer::HandleAppEvent(AppEvent event) {
@@ -1230,7 +1229,7 @@ void AppDualQuantizer::DrawMenu() const {
     const int setting =
         channel.enabled_setting_at(settings_list.Next(list_item));
     const int value = channel.get_value(setting);
-    const settings::value_attr &attr = DQ_QuantizerChannel::value_attr(setting);
+    const auto &attr = DQ_QuantizerChannel::value_attributes(setting);
 
     switch (setting) {
       case DQ_CHANNEL_SETTING_SCALE1:

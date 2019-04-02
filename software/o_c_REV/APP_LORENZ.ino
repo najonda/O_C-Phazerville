@@ -257,12 +257,14 @@ size_t AppLorenzGenerator::appdata_storage_size() const {
   return LorenzGenerator::storageSize();
 }
 
-size_t AppLorenzGenerator::SaveAppData(void *storage) const {
-  return lorenz_generator_.Save(storage);
+size_t AppLorenzGenerator::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  lorenz_generator_.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppLorenzGenerator::RestoreAppData(const void *storage) {
-  return lorenz_generator_.Restore(storage);
+size_t AppLorenzGenerator::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  lorenz_generator_.Restore(stream_buffer);
+  return stream_buffer.read();
 }
 
 void AppLorenzGenerator::Loop() {
@@ -288,7 +290,7 @@ void AppLorenzGenerator::DrawMenu() const {
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
-    list_item.DrawDefault(lorenz_generator_.get_value(current), LorenzGenerator::value_attr(current));
+    list_item.DrawDefault(lorenz_generator_.get_value(current), LorenzGenerator::value_attributes(current));
   }
 }
 

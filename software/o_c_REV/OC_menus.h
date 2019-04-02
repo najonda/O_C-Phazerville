@@ -155,7 +155,7 @@ inline void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, int mi
   graphics.drawBitmap8(x - 5, y + 1, OC::kBitmapEditIndicatorW, src);
 }
 
-inline void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, const settings::value_attr &attr) {
+inline void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, const settings::ValueAttributes &attr) {
   const uint8_t *src = OC::bitmap_edit_indicators_8;
   if (value == attr.max_)
     src += OC::kBitmapEditIndicatorW * 2;
@@ -301,7 +301,7 @@ struct SettingsListItem {
   SettingsListItem() { }
   ~SettingsListItem() { }
 
-  inline void DrawName(const settings::value_attr &attr) const {
+  inline void DrawName(const settings::ValueAttributes &attr) const {
     graphics.setPrintPos(x + kIndentDx, y + kTextDy);
     graphics.print(attr.name);
   }
@@ -316,7 +316,7 @@ struct SettingsListItem {
     graphics.print(name_string);
   }
 
-  inline void DrawDefault(int value, const settings::value_attr &attr) const {
+  inline void DrawDefault(int value, const settings::ValueAttributes &attr) const {
     DrawName(attr);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -331,7 +331,7 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
-  inline void DrawCustomName(const char *name, int value, const settings::value_attr &attr, weegfx::coord_t x_offset = 0) const {
+  inline void DrawCustomName(const char *name, int value, const settings::ValueAttributes &attr, weegfx::coord_t x_offset = 0) const {
     DrawCharName(name, x_offset);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -346,7 +346,7 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
-  inline void Draw_PW_Value_Char(int value, const settings::value_attr &attr, const char* name_string) const {
+  inline void Draw_PW_Value_Char(int value, const settings::ValueAttributes &attr, const char* name_string) const {
     DrawCharName(name_string);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -368,7 +368,7 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
   
-  inline void Draw_PW_Value(int value, const settings::value_attr &attr) const {
+  inline void Draw_PW_Value(int value, const settings::ValueAttributes &attr) const {
     DrawName(attr);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -390,7 +390,7 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
-  inline void DrawValueMax(int value, const settings::value_attr &attr, int16_t _max) const {
+  inline void DrawValueMax(int value, const settings::ValueAttributes &attr, int16_t _max) const {
     DrawName(attr);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -405,7 +405,7 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
-  inline void DrawDefault(const char *str, int value, const settings::value_attr &attr) const {
+  inline void DrawDefault(const char *str, int value, const settings::ValueAttributes &attr) const {
     DrawName(attr);
 
     graphics.setPrintPos(endx, y + kTextDy);
@@ -418,7 +418,7 @@ struct SettingsListItem {
   }
 
   template <bool editable>
-  inline void DrawNoValue(int value, const settings::value_attr &attr) const {
+  inline void DrawNoValue(int value, const settings::ValueAttributes &attr) const {
     DrawName(attr);
 
     if (editable && editing)

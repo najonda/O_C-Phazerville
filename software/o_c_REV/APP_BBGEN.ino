@@ -294,18 +294,17 @@ size_t AppQuadBouncingBalls::appdata_storage_size() const {
   return 4 * BouncingBall::storageSize();
 }
 
-size_t AppQuadBouncingBalls::SaveAppData(void *storage) const {
-  size_t s = 0;
+size_t AppQuadBouncingBalls::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (auto &bb : balls_)
-    s += bb.Save(static_cast<byte *>(storage) + s);
-  return s;
+    bb.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppQuadBouncingBalls::RestoreAppData(const void *storage) {
-  size_t s = 0;
+size_t AppQuadBouncingBalls::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (auto &bb : balls_)
-    s += bb.Restore(static_cast<const byte *>(storage) + s);
-  return s;
+    bb.Restore(stream_buffer);
+
+  return stream_buffer.read();
 }
 
 void AppQuadBouncingBalls::HandleAppEvent(OC::AppEvent event) {
@@ -337,7 +336,7 @@ void AppQuadBouncingBalls::DrawMenu() const {
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
-    list_item.DrawDefault(bb.get_value(current), BouncingBall::value_attr(current));
+    list_item.DrawDefault(bb.get_value(current), BouncingBall::value_attributes(current));
   }
 }
 

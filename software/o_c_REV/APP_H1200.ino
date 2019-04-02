@@ -994,14 +994,17 @@ size_t AppH1200::appdata_storage_size() const {
   return H1200Settings::storageSize();
 }
 
-size_t AppH1200::SaveAppData(void *storage) const {
-  return h1200_settings.Save(storage);
+size_t AppH1200::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  h1200_settings.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppH1200::RestoreAppData(const void *storage) {
+size_t AppH1200::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  h1200_settings.Restore(stream_buffer);
   h1200_settings.update_enabled_settings();
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
-  return h1200_settings.Restore(storage);
+
+  return stream_buffer.read();
 }
 
 void AppH1200::HandleAppEvent(OC::AppEvent event) {
@@ -1118,7 +1121,7 @@ void AppH1200::DrawMenu() const {
 
     const int setting = h1200_settings.enabled_setting_at(settings_list.Next(list_item));
     const int value = h1200_settings.get_value(setting);
-    const settings::value_attr &attr = H1200Settings::value_attr(setting);
+    const auto &attr = H1200Settings::value_attributes(setting);
 
     list_item.DrawDefault(value, attr);
   }
