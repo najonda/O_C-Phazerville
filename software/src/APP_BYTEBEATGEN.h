@@ -461,21 +461,21 @@ size_t AppQuadByteBeats::appdata_storage_size() const {
   return 4 * ByteBeat::storageSize();
 }
 
-size_t AppQuadByteBeats::SaveAppData(void *storage) const {
-  size_t s = 0;
+size_t AppQuadByteBeats::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (auto &bytebeat : bytebeats_)
-    s += bytebeat.Save(static_cast<byte *>(storage) + s);
-  return s;
+    bytebeat.Save(stream_buffer);
+
+  return stream_buffer.written();
 }
 
-size_t AppQuadByteBeats::RestoreAppData(const void *storage) {
-  size_t s = 0;
+size_t AppQuadByteBeats::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (auto &bytebeat : bytebeats_) {
-    s += bytebeat.Restore(static_cast<const byte *>(storage) + s);
+    bytebeat.Restore(stream_buffer);
     bytebeat.update_enabled_settings();
   }
   ui.cursor.AdjustEnd(bytebeats_[0].num_enabled_settings() - 1);
-  return s;
+
+  return stream_buffer.read();
 }
 
 void AppQuadByteBeats::HandleAppEvent(AppEvent event) {
@@ -508,7 +508,7 @@ void AppQuadByteBeats::DrawMenu() const {
   while (settings_list.available()) {
     const int setting = bytebeat.enabled_setting_at(settings_list.Next(list_item));
     const int value = bytebeat.get_value(setting);
-    const settings::value_attr &attr = ByteBeat::value_attr(setting);
+    const auto &attr = ByteBeat::value_attributes(setting);
     if (ByteBeat::indentSetting(static_cast<ByteBeatSettings>(setting)))
       list_item.x += menu::kIndentDx;
     list_item.DrawDefault(value, attr);

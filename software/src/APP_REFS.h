@@ -773,21 +773,19 @@ size_t AppReferences::appdata_storage_size() const {
   return DAC_CHANNEL_LAST * ReferenceChannel::storageSize();
 }
 
-size_t AppReferences::SaveAppData(void *storage) const {
-  size_t used = 0;
+size_t AppReferences::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (auto &channel : channels_)
-    used += channel.Save(static_cast<char*>(storage) + used);
-  return used;
+    channel.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppReferences::RestoreAppData(const void *storage) {
-  size_t used = 0;
+size_t AppReferences::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (auto &channel : channels_) {
-    used += channel.Restore(static_cast<const char*>(storage) + used);
+    channel.Restore(stream_buffer);
     channel.update_enabled_settings();
   }
   ui.cursor.AdjustEnd(channels_[0].num_enabled_settings() - 1);
-  return used;
+  return stream_buffer.read();
 }
 
 void AppReferences::GetIOConfig(OC::IOConfig &ioconfig) const
@@ -841,7 +839,7 @@ void AppReferences::DrawMenu() const {
     const int setting = 
       channel.enabled_setting_at(settings_list.Next(list_item));
     const int value = channel.get_value(setting);
-    const settings::value_attr &attr = ReferenceChannel::value_attr(setting);
+    const auto &attr = ReferenceChannel::value_attributes(setting);
 
     switch (setting) {
       case REF_SETTING_AUTOTUNE:

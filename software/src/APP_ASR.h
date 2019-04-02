@@ -789,16 +789,24 @@ size_t AppASR::appdata_storage_size() const {
   return ASR::storageSize();
 }
 
-size_t AppASR::RestoreAppData(const void *storage) {
+size_t AppASR::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  asr.Save(stream_buffer);
+
+  return stream_buffer.written();
+}
+
+size_t AppASR::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  asr.Restore(stream_buffer);
+
   // init nicely
-  size_t storage_size = asr.Restore(storage);
   left_encoder_value_ = asr.get_scale(DUMMY); 
   asr.set_scale(left_encoder_value_);
   asr.clear_freeze();
   asr.set_display_mask(asr.get_mask());
   asr.update_enabled_settings();
   cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
-  return storage_size;
+
+  return stream_buffer.read();
 }
 
 void AppASR::HandleAppEvent(AppEvent event) {
@@ -949,10 +957,6 @@ void AppASR::HandleDownButtonLong() {
    asr.toggle_delay_mechanics();
 }
 
-size_t AppASR::SaveAppData(void *storage) const {
-  return asr.Save(storage);
-}
-
 void AppASR::DrawMenu() const {
 
   menu::TitleBar<0, 4, 0>::Draw();
@@ -988,7 +992,7 @@ void AppASR::DrawMenu() const {
 
     const int setting = asr.enabled_setting_at(settings_list.Next(list_item));
     const int value = asr.get_value(setting);
-    const settings::value_attr &attr = ASRApp::value_attr(setting);
+    const auto &attr = ASR::value_attributes(setting); 
 
     switch (setting) {
 

@@ -2087,29 +2087,26 @@ size_t AppDualSequencer::appdata_storage_size() const {
   return NUM_CHANNELS * SEQ_Channel::storageSize();
 }
 
-size_t AppDualSequencer::SaveAppData(void *storage) const {
+size_t AppDualSequencer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
 
-  size_t used = 0;
-  for (size_t i = 0; i < NUM_CHANNELS; ++i) {
-    used += seq_channel_[i].Save(static_cast<char*>(storage) + used);
-  }
-  return used;
+  for (auto &channel : seq_channel_)
+    channel.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppDualSequencer::RestoreAppData(const void *storage) {
+size_t AppDualSequencer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
 
-  size_t used = 0;
-
-  for (size_t i = 0; i < NUM_CHANNELS; ++i) {
-    used += seq_channel_[i].Restore(static_cast<const char*>(storage) + used);
+  for (auto &channel : seq_channel_) {
+    channel.Restore(stream_buffer);
     // update display
-    seq_channel_[i].pattern_changed(seq_channel_[i].get_mask(seq_channel_[i].get_sequence()), true);
-    seq_channel_[i].set_display_num_sequence(seq_channel_[i].get_sequence());
-    seq_channel_[i].update_enabled_settings();
-    seq_channel_[i].set_EoS_update();
+    channel.pattern_changed(channel.get_mask(channel.get_sequence()), true);
+    channel.set_display_num_sequence(channel.get_sequence());
+    channel.update_enabled_settings();
+    channel.set_EoS_update();
   }
   cursor_.AdjustEnd(seq_channel_[0].num_enabled_settings() - 1);
-  return used;
+
+  return stream_buffer.read();
 }
 
 void AppDualSequencer::HandleAppEvent(AppEvent event) {
@@ -2472,7 +2469,7 @@ void AppDualSequencer::DrawMenu() const {
     const int setting =
         channel.enabled_setting_at(settings_list.Next(list_item));
     const int value = channel.get_value(setting);
-    const settings::value_attr &attr = SEQ_Channel::value_attr(setting);
+    const auto &attr = SEQ_Channel::value_attributes(setting);
 
     switch (setting) {
 

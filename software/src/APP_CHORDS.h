@@ -1077,18 +1077,19 @@ size_t AppChordQuantizer::appdata_storage_size() const {
   return ChordQuantizer::storageSize();
 }
 
-size_t AppChordQuantizer::SaveAppData(void *storage) const {
-  return chord_quantizer_.Save(storage);
+size_t AppChordQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  chord_quantizer_.Save(stream_buffer);
+  return stream_buffer.written();
 }
 
-size_t AppChordQuantizer::RestoreAppData(const void *storage) {
-
-  size_t storage_size = chord_quantizer_.Restore(storage);
+size_t AppChordQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  chord_quantizer_.Restore(stream_buffer);
   chord_quantizer_.update_enabled_settings();
   left_encoder_value_ = chord_quantizer_.get_scale(DUMMY);
   chord_quantizer_.set_scale(left_encoder_value_);
   cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
-  return storage_size;
+
+  return stream_buffer.read();
 }
 
 void AppChordQuantizer::HandleAppEvent(AppEvent event) {
@@ -1150,7 +1151,7 @@ void AppChordQuantizer::DrawMenu() const {
 
     const int setting = chord_quantizer_.enabled_setting_at(settings_list.Next(list_item));
     const int value = chord_quantizer_.get_value(setting);
-    const settings::value_attr &attr = ChordQuantizer::value_attr(setting);
+    const auto &attr = ChordQuantizer::value_attributes(setting);
 
     switch(setting) {
 

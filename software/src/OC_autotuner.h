@@ -260,7 +260,7 @@ private:
     while (settings_list.available()) {
       const int setting = settings_list.Next(list_item);
       const int value = settings_.get_value(setting);
-      const auto &attr = AutotunerSettings::value_attr(setting);
+      const auto &attr = AutotunerSettings::value_attributes(setting);
 
       if (AT_SETTING_ACTION == setting) {
         list_item.DrawCustomName(status_action_label_, value, attr);

@@ -1232,23 +1232,21 @@ size_t AppQuadQuantizer::appdata_storage_size() const {
   return 4 * QuantizerChannel::storageSize();
 }
 
-size_t AppQuadQuantizer::SaveAppData(void *storage) const {
-  size_t used = 0;
+size_t AppQuadQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
   for (size_t i = 0; i < 4; ++i) {
-    used += quantizer_channels_[i].Save(static_cast<char*>(storage) + used);
+    quantizer_channels_[i].Save(stream_buffer);
   }
-  return used;
+  return stream_buffer.written();
 }
 
-size_t AppQuadQuantizer::RestoreAppData(const void *storage) {
-  size_t used = 0;
+size_t AppQuadQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (size_t i = 0; i < 4; ++i) {
-    used += quantizer_channels_[i].Restore(static_cast<const char*>(storage) + used);
+    quantizer_channels_[i].Restore(stream_buffer);
     quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(), 0x0);
     quantizer_channels_[i].update_enabled_settings();
   }
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
-  return used;
+  return stream_buffer.read();
 }
 
 void AppQuadQuantizer::HandleAppEvent(AppEvent event) {
@@ -1311,7 +1309,7 @@ void AppQuadQuantizer::DrawMenu() const {
     const int setting =
         channel.enabled_setting_at(settings_list.Next(list_item));
     const int value = channel.get_value(setting);
-    const settings::value_attr &attr = QuantizerChannel::value_attr(setting);
+    const auto &attr = QuantizerChannel::value_attributes(setting);
 
     switch (setting) {
       case CHANNEL_SETTING_SCALE:

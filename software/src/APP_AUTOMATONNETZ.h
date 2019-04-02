@@ -578,7 +578,7 @@ void AppAutomatonnetz::DrawCellMenu() const {
   menu::SettingsListItem list_item;
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
-    list_item.DrawDefault(cell.get_value(current), TransformCell::value_attr(current));
+    list_item.DrawDefault(cell.get_value(current), TransformCell::value_attributes(current));
   }
 }
 
@@ -602,7 +602,7 @@ void AppAutomatonnetz::DrawGridMenu() const {
   while (settings_list.available()) {
     const int current = settings_list.Next(list_item);
     const int value = automatonnetz_state.get_value(current);
-    const settings::value_attr &attr = AutomatonnetzState::value_attr(current);
+    const auto &attr = AutomatonnetzState::value_attributes(current);
 
     if (current <= GRID_SETTING_DY) {
       const int integral = value / 8;
@@ -692,22 +692,20 @@ void AppAutomatonnetz::DrawScreensaver() const {
   }
 }
 
-size_t AppAutomatonnetz::SaveAppData(void *dest) const {
-  char *storage = static_cast<char *>(dest);
-  size_t used = automatonnetz_state.Save(storage);
+size_t AppAutomatonnetz::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
+  automatonnetz_state.Save(stream_buffer);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)
-    used += automatonnetz_state.cells_[cell].Save(storage + used);
+    automatonnetz_state.cells_[cell].Save(stream_buffer);
 
-  return used;
+  return stream_buffer.written();
 }
 
-size_t AppAutomatonnetz::RestoreAppData(const void *dest) {
-  const char *storage = static_cast<const char *>(dest);
-  size_t used = automatonnetz_state.Restore(storage);
+size_t AppAutomatonnetz::RestoreAppData(util::StreamBufferReader &stream_buffer) {
+  automatonnetz_state.Restore(stream_buffer);
   for (size_t cell = 0; cell < GRID_CELLS; ++cell)
-    used += automatonnetz_state.cells_[cell].Restore(storage + used);
+    automatonnetz_state.cells_[cell].Restore(stream_buffer);
 
-  return used;
+  return stream_buffer.read();
 }
 
 void AppAutomatonnetz::HandleAppEvent(AppEvent event) {

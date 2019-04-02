@@ -242,17 +242,17 @@ void AppBase::InitDefaults()
   Init();
 }
 
-size_t AppBase::Save(void *data) const
+size_t AppBase::Save(util::StreamBufferWriter &stream_buffer) const
 {
-  size_t len = io_settings_.Save(data);
-  len += SaveAppData(static_cast<uint8_t *>(data) + len);
+  size_t len = io_settings_.Save(stream_buffer);
+  len += SaveAppData(stream_buffer);
   return len;
 }
 
-size_t AppBase::Restore(const void *data)
+size_t AppBase::Restore(util::StreamBufferReader &stream_buffer)
 {
-  size_t len = io_settings_.Restore(data);
-  len += RestoreAppData(static_cast<const uint8_t *>(data) + len);
+  size_t len = io_settings_.Restore(stream_buffer);
+  len += RestoreAppData(stream_buffer);
   return len;
 }
 
@@ -333,11 +333,12 @@ void save_app_data() {
       AppChunkHeader *chunk = reinterpret_cast<AppChunkHeader *>(data);
       chunk->id = app->id();
       chunk->length = storage_size;
-      #ifdef PRINT_DEBUG
-        APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), app->Save(chunk + 1), storage_size);
-      #else
-        app->Save(chunk + 1);
-      #endif
+
+      util::StreamBufferWriter stream_buffer{chunk + 1, chunk->length};
+      auto result = app->Save(stream_buffer);
+      APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), result, storage_size);
+      // TODO[PLD] Check result
+
       app_settings.used += chunk->length;
       data += chunk->length;
     }
@@ -377,18 +378,13 @@ void restore_app_data() {
       continue;
     }
 
-    size_t restored = 0;
-    if (app->Restore) {
-        restored = app->Restore(chunk + 1);
-      #ifdef PRINT_DEBUG
-        APPS_SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name(), chunk->id, restored, chunk->length - sizeof(AppChunkHeader), chunk->length);
-      #else
-      #endif
-    }
-    restored = ((restored + sizeof(AppChunkHeader) + 1) >> 1) << 1; // round up
+    util::StreamBufferReader stream_buffer{chunk + 1, chunk->length};
+    auto result = app->Restore(stream_buffer);
+    APPS_SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name(), chunk->id, result, chunk->length - sizeof(AppChunkHeader), chunk->length);
+    // TODO[PLD] Check result
 
-    restored_bytes += restored;
-    data += restored;
+    restored_bytes += result;
+    data += result;
   }
 
   APPS_SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);

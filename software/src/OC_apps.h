@@ -67,14 +67,14 @@ public:
 
   void InitDefaults();
   size_t storage_size() const { return IOSettings::storageSize() + appdata_storage_size(); }
-  size_t Save(void *) const;
-  size_t Restore(const void *);
+  size_t Save(util::StreamBufferWriter &) const;
+  size_t Restore(util::StreamBufferReader &);
 
   // Main implementation interface for derived classes
   virtual void Init() = 0;
   virtual size_t appdata_storage_size() const = 0;
-  virtual size_t SaveAppData(void *) const = 0;
-  virtual size_t RestoreAppData(const void *) = 0;
+  virtual size_t SaveAppData(util::StreamBufferWriter &) const = 0;
+  virtual size_t RestoreAppData(util::StreamBufferReader &) = 0;
   virtual void HandleAppEvent(AppEvent) = 0;
   virtual void Loop() = 0;
   virtual void DrawMenu() const = 0;
@@ -123,8 +123,8 @@ public: \
   clazz() : AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>() { } \
   virtual void Init() final; \
   virtual size_t appdata_storage_size() const final; \
-  virtual size_t SaveAppData(void *) const final; \
-  virtual size_t RestoreAppData(const void *) final; \
+  virtual size_t SaveAppData(util::StreamBufferWriter &) const final; \
+  virtual size_t RestoreAppData(util::StreamBufferReader &) final; \
   virtual void HandleAppEvent(AppEvent) final; \
   virtual void Loop() final; \
   virtual void DrawMenu() const final; \
