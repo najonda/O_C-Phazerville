@@ -60,6 +60,7 @@
 #include "util/util_grid.h"
 #include "util/util_ringbuffer.h"
 #include "util/util_settings.h"
+#include "util/util_semitone_quantizer.h"
 #include "util/util_sync.h"
 #include "tonnetz/tonnetz_state.h"
 #include "OC_bitmaps.h"
@@ -103,6 +104,17 @@ enum CellEventMasks {
   CELL_EVENT_ALL = 0x7
 };
 
+const char *cell_event_masks[] = {
+  "none",
+  "rT__", // 0x1
+  "r_O_", // 0x2
+  "rTO_", // 0x1 + 0x2
+  "r__I", // 0x4
+  "rT_I", // 0x4 + 0x1
+  "r_OI", // 0x4 + 0x2
+  "rTOI", // 0x4 + 0x2 + 0x1
+};
+
 #define CELL_MAX_INVERSION 3
 #define CELL_MIN_INVERSION -3
 
@@ -135,26 +147,17 @@ public:
     if (masks & CELL_EVENT_RAND_INVERSION)
       apply_value(CELL_SETTING_INVERSION, CELL_MIN_INVERSION + random(2*CELL_MAX_INVERSION + 1));
   }
-};
 
-const char *cell_event_masks[] = {
-  "none",
-  "rT__", // 0x1
-  "r_O_", // 0x2
-  "rTO_", // 0x1 + 0x2
-  "r__I", // 0x4
-  "rT_I", // 0x4 + 0x1
-  "r_OI", // 0x4 + 0x2
-  "rTOI", // 0x4 + 0x2 + 0x1
-};
 
-// TOTAL EEPROM SIZE: 25 * 4 bytes
-SETTINGS_DECLARE(TransformCell, CELL_SETTING_LAST) {
-  {0, tonnetz::TRANSFORM_NONE, tonnetz::TRANSFORM_LAST, "Trfm", tonnetz::transform_names_str, settings::STORAGE_TYPE_U8},
-  {0, -12, 12, "Offs", NULL, settings::STORAGE_TYPE_I8},
-  {0, CELL_MIN_INVERSION, CELL_MAX_INVERSION, "Inv", NULL, settings::STORAGE_TYPE_I8},
-  {0, CELL_EVENT_NONE, CELL_EVENT_ALL, "Muta", cell_event_masks, settings::STORAGE_TYPE_U8}
+  // TOTAL EEPROM SIZE: 25 * 4 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    {0, tonnetz::TRANSFORM_NONE, tonnetz::TRANSFORM_LAST, "Trfm", tonnetz::transform_names_str, settings::STORAGE_TYPE_U8},
+    {0, -12, 12, "Offs", NULL, settings::STORAGE_TYPE_I8},
+    {0, CELL_MIN_INVERSION, CELL_MAX_INVERSION, "Inv", NULL, settings::STORAGE_TYPE_I8},
+    {0, CELL_EVENT_NONE, CELL_EVENT_ALL, "Muta", cell_event_masks, settings::STORAGE_TYPE_U8}
+  }};
 };
+SETTINGS_ARRAY_DEFINE(TransformCell);
 
 enum GridSettings {
   GRID_SETTING_DX,
@@ -186,6 +189,26 @@ enum ClearMode {
 enum UserAction {
   USER_ACTION_RESET,
   USER_ACTION_CLOCK,
+};
+
+// needed for Automatonnetz to work with or without Harrington 1200 compiled in the build
+#ifdef ENABLE_APP_H1200
+extern const char * const mode_names[];
+#else
+const char * const mode_names[] = {
+  "Maj", "Min"
+};
+#endif
+
+const char * const outputa_mode_names[] = {
+  "root",
+  "trig",
+  "arp",
+  "strm"
+};
+
+const char * const clear_mode_names[] = {
+  "zero", "rT", "rTev"
 };
 
 class AutomatonnetzState : public settings::SettingsBase<AutomatonnetzState, GRID_SETTING_LAST> {
@@ -287,7 +310,7 @@ public:
   TransformCell cells_[GRID_CELLS];
   CellGrid<TransformCell, GRID_DIMENSION, FRACTIONAL_BITS, (GRID_EPSILON != 0)> grid;
 
-  OC::SemitoneQuantizer quantizer;
+  util::SemitoneQuantizer quantizer;
   TonnetzState tonnetz_state;
 
 private:
@@ -315,42 +338,23 @@ private:
   void push_history(uint32_t pos) {
     history_ = (history_ << 8) | (pos & 0xff);
   }
-};
 
-// needed for Automatonnetz to work with or without Harrington 1200 compiled in the build
-#ifdef ENABLE_APP_H1200
-extern const char * const mode_names[];
-#else
-const char * const mode_names[] = {
-  "Maj", "Min"
+  // TOTAL EEPROM SIZE: 6 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    {8, 0, 8*GRID_DIMENSION - 1, "dx", NULL, settings::STORAGE_TYPE_I8},
+    {4, 0, 8*GRID_DIMENSION - 1, "dy", NULL, settings::STORAGE_TYPE_I8},
+    {MODE_MAJOR, 0, MODE_LAST-1, "Mode", mode_names, settings::STORAGE_TYPE_U8},
+    #ifdef BUCHLA_4U
+    {0, 0, 7, "Oct", NULL, settings::STORAGE_TYPE_I8},
+    #else
+    {0, -3, 3, "Oct", NULL, settings::STORAGE_TYPE_I8},
+    #endif
+    { 0, 0, OC::kNumDelayTimes - 1, "TrDly", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    {OUTPUTA_MODE_ROOT, OUTPUTA_MODE_ROOT, OUTPUTA_MODE_LAST - 1, "OutA", outputa_mode_names, settings::STORAGE_TYPE_U4},
+    {CLEAR_MODE_ZERO, CLEAR_MODE_ZERO, CLEAR_MODE_LAST - 1, "Clr", clear_mode_names, settings::STORAGE_TYPE_U4},
+  }};
 };
-#endif
-
-const char * const outputa_mode_names[] = {
-  "root",
-  "trig",
-  "arp",
-  "strm"
-};
-
-const char * const clear_mode_names[] = {
-  "zero", "rT", "rTev"
-};
-
-// TOTAL EEPROM SIZE: 6 bytes
-SETTINGS_DECLARE(AutomatonnetzState, GRID_SETTING_LAST) {
-  {8, 0, 8*GRID_DIMENSION - 1, "dx", NULL, settings::STORAGE_TYPE_I8},
-  {4, 0, 8*GRID_DIMENSION - 1, "dy", NULL, settings::STORAGE_TYPE_I8},
-  {MODE_MAJOR, 0, MODE_LAST-1, "Mode", mode_names, settings::STORAGE_TYPE_U8},
-  #ifdef BUCHLA_4U
-  {0, 0, 7, "Oct", NULL, settings::STORAGE_TYPE_I8},
-  #else
-  {0, -3, 3, "Oct", NULL, settings::STORAGE_TYPE_I8},
-  #endif
-  { 0, 0, OC::kNumDelayTimes - 1, "TrDly", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  {OUTPUTA_MODE_ROOT, OUTPUTA_MODE_ROOT, OUTPUTA_MODE_LAST - 1, "OutA", outputa_mode_names, settings::STORAGE_TYPE_U4},
-  {CLEAR_MODE_ZERO, CLEAR_MODE_ZERO, CLEAR_MODE_LAST - 1, "Clr", clear_mode_names, settings::STORAGE_TYPE_U4},
-};
+SETTINGS_ARRAY_DEFINE(AutomatonnetzState);
 
 void FASTRUN AutomatonnetzState::Process(OC::IOFrame *ioframe) {
   update_trigger_out();

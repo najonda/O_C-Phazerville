@@ -60,6 +60,10 @@ enum BallCVMapping {
   BB_CV_MAPPING_LAST
 };
 
+const char* const bb_cv_mapping_names[BB_CV_MAPPING_LAST] = {
+  "off", "grav", "bnce", "ampl", "vel", "retr"
+};
+
 class BouncingBall : public settings::SettingsBase<BouncingBall, BB_SETTING_LAST> {
 public:
 
@@ -193,7 +197,23 @@ private:
   peaks::BouncingBall bb_;
   bool gate_raised_;
   int32_t s[kMaxBouncingBallParameters];
+
+  // TOTAL EEPROM SIZE: 4 * 9 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { 128, 0, 255, "Gravity", NULL, settings::STORAGE_TYPE_U8 },
+    { 96, 0, 255, "Bounce loss", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Amplitude", NULL, settings::STORAGE_TYPE_U8 },
+    { 228, 0, 255, "Velocity", NULL, settings::STORAGE_TYPE_U8 },
+    { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Retrigger", NULL, settings::STORAGE_TYPE_U8 },
+    { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV1 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV2 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV3 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV4 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "Hard reset", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
+  }};
 };
+SETTINGS_ARRAY_DEFINE(BouncingBall);
 
 void BouncingBall::Init(OC::DigitalInput default_trigger) {
   InitDefaults();
@@ -201,25 +221,6 @@ void BouncingBall::Init(OC::DigitalInput default_trigger) {
   bb_.Init();
   gate_raised_ = false;
 }
-
-const char* const bb_cv_mapping_names[BB_CV_MAPPING_LAST] = {
-  "off", "grav", "bnce", "ampl", "vel", "retr"
-};
-
-// TOTAL EEPROM SIZE: 4 * 9 bytes
-SETTINGS_DECLARE(BouncingBall, BB_SETTING_LAST) {
-  { 128, 0, 255, "Gravity", NULL, settings::STORAGE_TYPE_U8 },
-  { 96, 0, 255, "Bounce loss", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Amplitude", NULL, settings::STORAGE_TYPE_U8 },
-  { 228, 0, 255, "Velocity", NULL, settings::STORAGE_TYPE_U8 },
-  { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Retrigger", NULL, settings::STORAGE_TYPE_U8 },
-  { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV1 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV2 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV3 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BB_CV_MAPPING_NONE, BB_CV_MAPPING_NONE, BB_CV_MAPPING_LAST - 1, "CV4 -> ", bb_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "Hard reset", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
-};
 
 namespace OC {
 

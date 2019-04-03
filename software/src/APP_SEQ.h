@@ -271,6 +271,34 @@ enum SQ_AUX_MODES {
   SQ_AUX_MODES_LAST
 };
 
+const char* const SEQ_CHANNEL_TRIGGER_sources[] = {
+  "TR1", "TR3", " - "
+};
+
+const char* const reset_trigger_sources[] = {
+  "RST2", "RST4", " - ", "=HI2", "=LO2", "=HI4", "=LO4"
+};
+
+const char* const display_multipliers[] = {
+  "/64", "/63", "/62", "/49", "/48", "/47", "/33", "/32", "/31", "/17", "/16", "/15", "/8", "/7", "/6", "/5", "/4", "/3", "/2", "-", "x2", "x3", "x4", "x5", "x6", "x7", "x8"
+};
+
+const char* const modes[] = {
+  "gate", "copy", "AD", "ADR", "ADSR",
+};
+
+const char* const cv_ranges[] = {
+  " 5V", "10V"
+};
+
+const char* const arp_directions[] = {
+  "up", "down", "u/d", "rnd"
+};
+
+const char* const arp_range[] = {
+  "1", "2", "3", "4"
+};
+
 uint64_t ext_frequency[SEQ_CHANNEL_TRIGGER_NONE + 1];
 
 class SEQ_Channel : public settings::SettingsBase<SEQ_Channel, SEQ_CHANNEL_SETTING_LAST> {
@@ -1938,100 +1966,72 @@ private:
   OC::DigitalInputDisplay clock_display_;
   peaks::MultistageEnvelope env_;
 
+  // TOTAL EEPROM SIZE: 2 * 54 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { 0, 0, 4, "aux. mode", modes, settings::STORAGE_TYPE_U4 },
+    { SEQ_CHANNEL_TRIGGER_TR1, 0, SEQ_CHANNEL_TRIGGER_NONE, "clock src", SEQ_CHANNEL_TRIGGER_sources, settings::STORAGE_TYPE_U4 },
+    { 0, 0, OC::kNumDelayTimes - 1, "trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    { 2, 0, SEQ_CHANNEL_TRIGGER_LAST - 1, "reset/mute", reset_trigger_sources, settings::STORAGE_TYPE_U8 },
+    { MULT_BY_ONE, 0, MULT_MAX, "mult/div", display_multipliers, settings::STORAGE_TYPE_U8 },
+    { 25, 0, PULSEW_MAX, "--> pw", NULL, settings::STORAGE_TYPE_U8 },
+    //
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names_short, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 5, "octave", NULL, settings::STORAGE_TYPE_I8 }, // octave
+    { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 5, "--> aux +/-", NULL, settings::STORAGE_TYPE_I8 }, // aux octave
+    { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // mask
+    // seq
+    { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 1
+    { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 2
+    { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 3
+    { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 4
+    { OC::Patterns::PATTERN_USER_0_1, 0, OC::Patterns::PATTERN_USER_LAST-1, "sequence #", OC::pattern_names_short, settings::STORAGE_TYPE_U8 },
+    { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 1
+    { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 2
+    { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 3
+    { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 4
+    { 0, 0, PM_LAST - 1, "playmode", OC::Strings::seq_playmodes, settings::STORAGE_TYPE_U8 },
+    { 0, 0, SEQ_DIRECTIONS_LAST - 1, "direction", OC::Strings::seq_directions, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 1, "CV adr. range", cv_ranges, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 3, "direction", arp_directions, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 3, "arp.range", arp_range, settings::STORAGE_TYPE_U8 },
+    { 64, 0, 255, "-->brown prob", NULL, settings::STORAGE_TYPE_U8 },
+    // cv sources
+    { 0, 0, 4, "mult/div CV ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "transpose   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "--> pw      ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "octave  +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "root    +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "--> aux +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "sequence #  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "mask rotate ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "direction   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "arp.range   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "direction   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "-->brwn.prb ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "seq.length  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "att dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "dec dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "sus lvl  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "rel dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "env loops ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 1, "-", NULL, settings::STORAGE_TYPE_U4 }, // DUMMY, use to store update behaviour
+    // envelope parameters
+    { 128, 0, 255, "--> att dur", NULL, settings::STORAGE_TYPE_U8 },
+    { peaks::ENV_SHAPE_QUARTIC, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> att shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
+    { 128, 0, 255, "--> dec dur", NULL, settings::STORAGE_TYPE_U8 },
+    { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> dec shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
+    { 128, 0, 255, "--> sus lvl", NULL, settings::STORAGE_TYPE_U16 },
+    { 128, 0, 255, "--> rel dur", NULL, settings::STORAGE_TYPE_U8 },
+    { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> rel shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
+    {1, 1, 127, "--> loops", NULL, settings::STORAGE_TYPE_U8 },
+    { peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "att reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U8 },
+    { peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_LAST - 1, "att fall gt", OC::Strings::falling_gate_behaviours, settings::STORAGE_TYPE_U8 },
+    { peaks::RESET_BEHAVIOUR_SEGMENT_PHASE, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "dec/rel reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U8 },
+  }};
 };
 
-const char* const SEQ_CHANNEL_TRIGGER_sources[] = {
-  "TR1", "TR3", " - "
-};
-
-const char* const reset_trigger_sources[] = {
-  "RST2", "RST4", " - ", "=HI2", "=LO2", "=HI4", "=LO4"
-};
-
-const char* const display_multipliers[] = {
-  "/64", "/63", "/62", "/49", "/48", "/47", "/33", "/32", "/31", "/17", "/16", "/15", "/8", "/7", "/6", "/5", "/4", "/3", "/2", "-", "x2", "x3", "x4", "x5", "x6", "x7", "x8"
-};
-
-const char* const modes[] = {
-  "gate", "copy", "AD", "ADR", "ADSR",
-};
-
-const char* const cv_ranges[] = {
-  " 5V", "10V"
-};
-
-const char* const arp_directions[] = {
-  "up", "down", "u/d", "rnd"
-};
-
-const char* const arp_range[] = {
-  "1", "2", "3", "4"
-};
-
-// TOTAL EEPROM SIZE: 2 * 54 bytes
-SETTINGS_DECLARE(SEQ_Channel, SEQ_CHANNEL_SETTING_LAST) {
-
-  { 0, 0, 4, "aux. mode", modes, settings::STORAGE_TYPE_U4 },
-  { SEQ_CHANNEL_TRIGGER_TR1, 0, SEQ_CHANNEL_TRIGGER_NONE, "clock src", SEQ_CHANNEL_TRIGGER_sources, settings::STORAGE_TYPE_U4 },
-  { 0, 0, OC::kNumDelayTimes - 1, "trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  { 2, 0, SEQ_CHANNEL_TRIGGER_LAST - 1, "reset/mute", reset_trigger_sources, settings::STORAGE_TYPE_U8 },
-  { MULT_BY_ONE, 0, MULT_MAX, "mult/div", display_multipliers, settings::STORAGE_TYPE_U8 },
-  { 25, 0, PULSEW_MAX, "--> pw", NULL, settings::STORAGE_TYPE_U8 },
-  //
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names_short, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 5, "octave", NULL, settings::STORAGE_TYPE_I8 }, // octave
-  { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 5, "--> aux +/-", NULL, settings::STORAGE_TYPE_I8 }, // aux octave
-  { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // mask
-  // seq
-  { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 1
-  { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 2
-  { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 3
-  { 65535, 0, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 }, // seq 4
-  { OC::Patterns::PATTERN_USER_0_1, 0, OC::Patterns::PATTERN_USER_LAST-1, "sequence #", OC::pattern_names_short, settings::STORAGE_TYPE_U8 },
-  { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 1
-  { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 2
-  { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 3
-  { OC::Patterns::kMax, OC::Patterns::kMin, OC::Patterns::kMax, "sequence length", NULL, settings::STORAGE_TYPE_U8 }, // seq 4
-  { 0, 0, PM_LAST - 1, "playmode", OC::Strings::seq_playmodes, settings::STORAGE_TYPE_U8 },
-  { 0, 0, SEQ_DIRECTIONS_LAST - 1, "direction", OC::Strings::seq_directions, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "CV adr. range", cv_ranges, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 3, "direction", arp_directions, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 3, "arp.range", arp_range, settings::STORAGE_TYPE_U8 },
-  { 64, 0, 255, "-->brown prob", NULL, settings::STORAGE_TYPE_U8 },
-  // cv sources
-  { 0, 0, 4, "mult/div CV ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "transpose   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "--> pw      ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "octave  +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "root    +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "--> aux +/- ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "sequence #  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "mask rotate ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "direction   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "arp.range   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "direction   ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "-->brwn.prb ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "seq.length  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "att dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "dec dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "sus lvl  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "rel dur  ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "env loops ->", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "-", NULL, settings::STORAGE_TYPE_U4 }, // DUMMY, use to store update behaviour
-  // envelope parameters
-  { 128, 0, 255, "--> att dur", NULL, settings::STORAGE_TYPE_U8 },
-  { peaks::ENV_SHAPE_QUARTIC, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> att shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
-  { 128, 0, 255, "--> dec dur", NULL, settings::STORAGE_TYPE_U8 },
-  { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> dec shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
-  { 128, 0, 255, "--> sus lvl", NULL, settings::STORAGE_TYPE_U16 },
-  { 128, 0, 255, "--> rel dur", NULL, settings::STORAGE_TYPE_U8 },
-  { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "--> rel shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U16 },
-  {1, 1, 127, "--> loops", NULL, settings::STORAGE_TYPE_U8 },
-  { peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "att reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U8 },
-  { peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_LAST - 1, "att fall gt", OC::Strings::falling_gate_behaviours, settings::STORAGE_TYPE_U8 },
-  { peaks::RESET_BEHAVIOUR_SEGMENT_PHASE, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "dec/rel reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U8 },
-};
+SETTINGS_ARRAY_DEFINE(SEQ_Channel);
 
 namespace OC {
 

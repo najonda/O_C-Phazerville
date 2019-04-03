@@ -69,6 +69,10 @@ const char * const lorenz_output_names[] = {
   "Lx1xRx2",
 };
 
+const char* const lorenz_freq_range_names[5] = {
+ "sloth",  "lazy",  "slow", "med", "fast", 
+};
+
 class LorenzGenerator : public settings::SettingsBase<LorenzGenerator, LORENZ_SETTING_LAST> {
 public:
 
@@ -128,7 +132,27 @@ public:
 
   streams::LorenzGenerator lorenz;
   bool frozen_;
+
+  // TOTAL EEPROM SIZE: 9 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    #ifdef BUCHLA_4U
+    { 0, 0, 255, "Freq 1", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Freq 2", NULL, settings::STORAGE_TYPE_U8 },
+    #else
+    { 128, 0, 255, "Freq 1", NULL, settings::STORAGE_TYPE_U8 },
+    { 128, 0, 255, "Freq 2", NULL, settings::STORAGE_TYPE_U8 },
+    #endif
+    { 63, 4, 127, "Rho/c 1", NULL, settings::STORAGE_TYPE_U8 }, 
+    { 63, 4, 127, "Rho/c 2", NULL, settings::STORAGE_TYPE_U8 }, 
+    { 2, 0, 4, "LFreq 1 Rng", lorenz_freq_range_names, settings::STORAGE_TYPE_U4 },
+    { 2, 0, 4, "LFreq 2 Rng", lorenz_freq_range_names, settings::STORAGE_TYPE_U4 },
+    {streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out A ", lorenz_output_names, settings::STORAGE_TYPE_U8},
+    {streams::LORENZ_OUTPUT_Y1, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out B ", lorenz_output_names, settings::STORAGE_TYPE_U8},
+    {streams::LORENZ_OUTPUT_X2, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out C ", lorenz_output_names, settings::STORAGE_TYPE_U8},
+    {streams::LORENZ_OUTPUT_Y2, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out D ", lorenz_output_names, settings::STORAGE_TYPE_U8},
+  }};
 };
+SETTINGS_ARRAY_DEFINE(LorenzGenerator);
 
 void LorenzGenerator::Init() {
   InitDefaults();
@@ -136,29 +160,6 @@ void LorenzGenerator::Init() {
   lorenz.Init(1);
   frozen_= false;
 }
-
-const char* const lorenz_freq_range_names[5] = {
- "sloth",  "lazy",  "slow", "med", "fast",
-};
-
-// TOTAL EEPROM SIZE: 9 bytes
-SETTINGS_DECLARE(LorenzGenerator, LORENZ_SETTING_LAST) {
-  #ifdef BUCHLA_4U
-  { 0, 0, 255, "Freq 1", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Freq 2", NULL, settings::STORAGE_TYPE_U8 },
-  #else
-  { 128, 0, 255, "Freq 1", NULL, settings::STORAGE_TYPE_U8 },
-  { 128, 0, 255, "Freq 2", NULL, settings::STORAGE_TYPE_U8 },
-  #endif
-  { 63, 4, 127, "Rho/c 1", NULL, settings::STORAGE_TYPE_U8 },
-  { 63, 4, 127, "Rho/c 2", NULL, settings::STORAGE_TYPE_U8 },
-  { 2, 0, 4, "LFreq 1 Rng", lorenz_freq_range_names, settings::STORAGE_TYPE_U4 },
-  { 2, 0, 4, "LFreq 2 Rng", lorenz_freq_range_names, settings::STORAGE_TYPE_U4 },
-  {streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out A ", lorenz_output_names, settings::STORAGE_TYPE_U8},
-  {streams::LORENZ_OUTPUT_Y1, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out B ", lorenz_output_names, settings::STORAGE_TYPE_U8},
-  {streams::LORENZ_OUTPUT_X2, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out C ", lorenz_output_names, settings::STORAGE_TYPE_U8},
-  {streams::LORENZ_OUTPUT_Y2, streams::LORENZ_OUTPUT_X1, streams::LORENZ_OUTPUT_LAST - 1, "Out D ", lorenz_output_names, settings::STORAGE_TYPE_U8},
-};
 
 namespace OC {
 

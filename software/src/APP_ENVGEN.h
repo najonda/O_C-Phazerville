@@ -126,6 +126,37 @@ enum IntTriggerType {
   INT_TRIGGER_LAST
 };
 
+const char* const envelope_types[ENV_TYPE_LAST] = {
+  "AD", "ADSR", "ADR", "ASR", "ADSAR", "ADAR", "ADL2", "ADRL3", "ADL2R", "ADAL2R", "ADARL4"
+};
+
+const char* const segment_names[] = {
+  "Attack", "Decay", "Sustain/Level", "Release"
+};
+
+const char* const cv_mapping_names[CV_MAPPING_LAST] = {
+  "None", "Att", "Dec", "Sus", "Rel", "ADR", "Eleng", "Efill", "Eoffs", "Delay", "Ampl", "Loops"
+};
+
+const char* const trigger_delay_modes[TRIGGER_DELAY_LAST] = {
+  "Off", "Queue", "Ring"
+};
+
+const char* const euclidean_lengths[] = {
+  "Off", "  2", "  3", "  4", "  5", "  6", "  7", "  8", "  9", " 10",
+  " 11", " 12", " 13", " 14", " 15", " 16", " 17", " 18", " 19", " 20",
+  " 21", " 22", " 23", " 24", " 25", " 26", " 27", " 28", " 29", " 30",
+  " 31", " 32",
+};
+
+const char* const time_multipliers[] = {
+  "1", "  2", "  4", "  8", "  16", "  32", "  64", " 128", " 256", " 512", "1024", "2048", "4096", "8192"
+};
+
+const char* const internal_trigger_types[INT_TRIGGER_LAST] = {
+  "EOC", // Keep length == 3
+};
+
 inline int TriggerSettingToChannel(int setting_value) __attribute__((always_inline));
 inline int TriggerSettingToChannel(int setting_value) {
   return (setting_value - OC::DIGITAL_INPUT_LAST) / INT_TRIGGER_LAST;
@@ -678,7 +709,45 @@ private:
 
     return triggered;
   }
+
+  // TOTAL EEPROM SIZE: 4 * 30 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { ENV_TYPE_AD, ENV_TYPE_FIRST, ENV_TYPE_LAST-1, "TYPE", envelope_types, settings::STORAGE_TYPE_U8 },
+    { 128, 0, 255, "S1", NULL, settings::STORAGE_TYPE_U16 }, // u16 in case resolution proves insufficent
+    { 128, 0, 255, "S2", NULL, settings::STORAGE_TYPE_U16 },
+    { 128, 0, 255, "S3", NULL, settings::STORAGE_TYPE_U16 },
+    { 128, 0, 255, "S4", NULL, settings::STORAGE_TYPE_U16 },
+    { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4 + 3 * INT_TRIGGER_LAST, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U4 },
+    { TRIGGER_DELAY_OFF, TRIGGER_DELAY_OFF, TRIGGER_DELAY_LAST - 1, "Tr delay mode", trigger_delay_modes, settings::STORAGE_TYPE_U4 },
+    { 1, 1, EnvelopeGenerator::kMaxDelayedTriggers, "Tr delay count", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 999, "Tr delay msecs", NULL, settings::STORAGE_TYPE_U16 },
+    { 0, 0, 64, "Tr delay secs", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31, "Eucl length", euclidean_lengths, settings::STORAGE_TYPE_U8 },
+    { 1, 0, 32, "Fill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32, "Offset", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "Eucl reset", OC::Strings::trigger_input_names_none, settings::STORAGE_TYPE_U8 },
+    { 1, 1, 255, "Eucl reset div", NULL, settings::STORAGE_TYPE_U8 },
+    { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV1 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV2 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV3 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV4 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "Attack reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U4 },
+    { peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_LAST - 1, "Att fall gt", OC::Strings::falling_gate_behaviours, settings::STORAGE_TYPE_U8 },
+    { peaks::RESET_BEHAVIOUR_SEGMENT_PHASE, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "DecRel reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "Gate high", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
+    { peaks::ENV_SHAPE_QUARTIC, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Attack shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
+    { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Decay shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
+    { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Release shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 13, "Attack mult", time_multipliers, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 13, "Decay mult", time_multipliers, settings::STORAGE_TYPE_U4 },
+    {0, 0, 13, "Release mult", time_multipliers, settings::STORAGE_TYPE_U4 },
+    {127, 0, 127, "Amplitude", NULL, settings::STORAGE_TYPE_U8 },
+    {0, 0, 1, "Sampled Ampl", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
+    {0, 0, 127, "Max loops", NULL, settings::STORAGE_TYPE_U8 },
+    {0, 0, 1, "Inverted", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
+  }};
 };
+SETTINGS_ARRAY_DEFINE(EnvelopeGenerator);
 
 void EnvelopeGenerator::Init(OC::DigitalInput default_trigger) {
   InitDefaults();
@@ -697,75 +766,6 @@ void EnvelopeGenerator::Init(OC::DigitalInput default_trigger) {
 
   update_enabled_settings();
 }
-
-
-const char* const envelope_types[ENV_TYPE_LAST] = {
-  "AD", "ADSR", "ADR", "ASR", "ADSAR", "ADAR", "ADL2", "ADRL3", "ADL2R", "ADAL2R", "ADARL4"
-};
-
-const char* const segment_names[] = {
-  "Attack", "Decay", "Sustain/Level", "Release"
-};
-
-const char* const cv_mapping_names[CV_MAPPING_LAST] = {
-  "None", "Att", "Dec", "Sus", "Rel", "ADR", "Eleng", "Efill", "Eoffs", "Delay", "Ampl", "Loops"
-};
-
-const char* const trigger_delay_modes[TRIGGER_DELAY_LAST] = {
-  "Off", "Queue", "Ring"
-};
-
-const char* const euclidean_lengths[] = {
-  "Off", "  2", "  3", "  4", "  5", "  6", "  7", "  8", "  9", " 10",
-  " 11", " 12", " 13", " 14", " 15", " 16", " 17", " 18", " 19", " 20",
-  " 21", " 22", " 23", " 24", " 25", " 26", " 27", " 28", " 29", " 30",
-  " 31", " 32",
-};
-
-const char* const time_multipliers[] = {
-  "1", "  2", "  4", "  8", "  16", "  32", "  64", " 128", " 256", " 512", "1024", "2048", "4096", "8192"
-};
-
-const char* const internal_trigger_types[INT_TRIGGER_LAST] = {
-  "EOC", // Keep length == 3
-};
-
-// TOTAL EEPROM SIZE: 4 * 30 bytes
-SETTINGS_DECLARE(EnvelopeGenerator, ENV_SETTING_LAST) {
-  { ENV_TYPE_AD, ENV_TYPE_FIRST, ENV_TYPE_LAST-1, "TYPE", envelope_types, settings::STORAGE_TYPE_U8 },
-  { 128, 0, 255, "S1", NULL, settings::STORAGE_TYPE_U16 }, // u16 in case resolution proves insufficent
-  { 128, 0, 255, "S2", NULL, settings::STORAGE_TYPE_U16 },
-  { 128, 0, 255, "S3", NULL, settings::STORAGE_TYPE_U16 },
-  { 128, 0, 255, "S4", NULL, settings::STORAGE_TYPE_U16 },
-  { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4 + 3 * INT_TRIGGER_LAST, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U4 },
-  { TRIGGER_DELAY_OFF, TRIGGER_DELAY_OFF, TRIGGER_DELAY_LAST - 1, "Tr delay mode", trigger_delay_modes, settings::STORAGE_TYPE_U4 },
-  { 1, 1, EnvelopeGenerator::kMaxDelayedTriggers, "Tr delay count", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 999, "Tr delay msecs", NULL, settings::STORAGE_TYPE_U16 },
-  { 0, 0, 64, "Tr delay secs", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31, "Eucl length", euclidean_lengths, settings::STORAGE_TYPE_U8 },
-  { 1, 0, 32, "Fill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32, "Offset", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "Eucl reset", OC::Strings::trigger_input_names_none, settings::STORAGE_TYPE_U8 },
-  { 1, 1, 255, "Eucl reset div", NULL, settings::STORAGE_TYPE_U8 },
-  { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV1 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV2 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV3 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { CV_MAPPING_NONE, CV_MAPPING_NONE, CV_MAPPING_LAST - 1, "CV4 -> ", cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "Attack reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U4 },
-  { peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_IGNORE, peaks::FALLING_GATE_BEHAVIOUR_LAST - 1, "Att fall gt", OC::Strings::falling_gate_behaviours, settings::STORAGE_TYPE_U8 },
-  { peaks::RESET_BEHAVIOUR_SEGMENT_PHASE, peaks::RESET_BEHAVIOUR_NULL, peaks::RESET_BEHAVIOUR_LAST - 1, "DecRel reset", OC::Strings::reset_behaviours, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "Gate high", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
-  { peaks::ENV_SHAPE_QUARTIC, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Attack shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
-  { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Decay shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
-  { peaks::ENV_SHAPE_EXPONENTIAL, peaks::ENV_SHAPE_LINEAR, peaks::ENV_SHAPE_LAST - 1, "Release shape", OC::Strings::envelope_shapes, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 13, "Attack mult", time_multipliers, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 13, "Decay mult", time_multipliers, settings::STORAGE_TYPE_U4 },
-  {0, 0, 13, "Release mult", time_multipliers, settings::STORAGE_TYPE_U4 },
-  {127, 0, 127, "Amplitude", NULL, settings::STORAGE_TYPE_U8 },
-  {0, 0, 1, "Sampled Ampl", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
-  {0, 0, 127, "Max loops", NULL, settings::STORAGE_TYPE_U8 },
-  {0, 0, 1, "Inverted", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
-};
 
 namespace OC {
 

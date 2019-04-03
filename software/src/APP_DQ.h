@@ -146,16 +146,25 @@ enum DQ_SLOTS {
   LAST_SLOT
 };
 
-void DQ_topButton();
-void DQ_lowerButton();
-void DQ_leftButton();
-void DQ_rightButton();
-void DQ_leftButtonLong();
-void DQ_rightButton();
-void DQ_leftButton();
-void DQ_lowerButton();
-void DQ_topButton();
-void DQ_downButtonLong();
+const char* const dq_seq_scales[] = {
+  "s#1", "s#2", "s#3", "s#4"
+};
+
+const char* const dq_seq_modes[] = {
+  "-", "TR+1", "TR+2", "TR+3"
+};
+
+const char* const dq_aux_outputs[] = {
+  "gate", "copy", "asr"
+};
+
+const char* const dq_aux_cv_dest[] = {
+  "-", "scl#", "root", "oct", "trns", "mask"
+};
+
+const char* const dq_tm_trig_out[] = {
+  "echo", "lsb", "chng"
+};
 
 class DQ_QuantizerChannel : public settings::SettingsBase<DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST> {
 public:
@@ -1061,62 +1070,43 @@ private:
       return false;
     }
   }
-};
 
-const char* const dq_seq_scales[] = {
-  "s#1", "s#2", "s#3", "s#4"
+  // TOTAL EEPROM SIZE: 2 * 34 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "root #1", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "root #2", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "root #3", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "root #4", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, 0, NUM_SCALE_SLOTS - 1, "scale #", dq_seq_scales, settings::STORAGE_TYPE_U8 },
+    { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
+    { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
+    { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
+    { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
+    { 0, 0, 3, "seq_mode", dq_seq_modes, settings::STORAGE_TYPE_U4 },
+    { DQ_CHANNEL_SOURCE_CV1, DQ_CHANNEL_SOURCE_CV1, 4, "CV source", OC::Strings::cv_input_names, settings::STORAGE_TYPE_U4 }, /// to do ..
+    { DQ_CHANNEL_TRIGGER_CONTINUOUS_DOWN, 0, DQ_CHANNEL_TRIGGER_LAST - 1, "trigger source", OC::Strings::channel_trigger_sources, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::kNumDelayTimes - 1, "--> latency", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 7, "transpose #1", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -5, 7, "transpose #2", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -5, 7, "transpose #3", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -5, 7, "transpose #4", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -4, 4, "octave", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, 0, DQ_AUX_MODE_LAST-1, "aux.output", dq_aux_outputs, settings::STORAGE_TYPE_U8 },
+    { 25, 0, PULSEW_MAX, "--> pw", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 5, "--> aux +/-", NULL, settings::STORAGE_TYPE_I8 }, // aux octave
+    { 0, 0, DQ_DEST_LAST-1, "CV aux.", dq_aux_cv_dest, settings::STORAGE_TYPE_U8 },
+    { 16, 1, 32, " > LFSR length", NULL, settings::STORAGE_TYPE_U8 },
+    { 128, 0, 255, " > LFSR p", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 3, " > LFSR CV", OC::Strings::TM_aux_cv_destinations, settings::STORAGE_TYPE_U8 }, // ??
+    { 15, 1, 120, " > LFSR range", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, DQ_TRIG_AUX_LAST-1, " > LFSR TRIG", dq_tm_trig_out, settings::STORAGE_TYPE_U8 }
+  }};
 };
-
-const char* const dq_seq_modes[] = {
-  "-", "TR+1", "TR+2", "TR+3"
-};
-
-const char* const dq_aux_outputs[] = {
-  "gate", "copy", "asr"
-};
-
-const char* const dq_aux_cv_dest[] = {
-  "-", "scl#", "root", "oct", "trns", "mask"
-};
-
-const char* const dq_tm_trig_out[] = {
-  "echo", "lsb", "chng"
-};
-
-// TOTAL EEPROM SIZE: 2 * 34 bytes
-SETTINGS_DECLARE(DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST) {
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "root #1", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "root #2", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "root #3", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "root #4", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, 0, NUM_SCALE_SLOTS - 1, "scale #", dq_seq_scales, settings::STORAGE_TYPE_U8 },
-  { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
-  { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
-  { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
-  { 65535, 1, 65535, "--> edit", NULL, settings::STORAGE_TYPE_U16 },
-  { 0, 0, 3, "seq_mode", dq_seq_modes, settings::STORAGE_TYPE_U4 },
-  { DQ_CHANNEL_SOURCE_CV1, DQ_CHANNEL_SOURCE_CV1, 4, "CV source", OC::Strings::cv_input_names, settings::STORAGE_TYPE_U4 }, /// to do ..
-  { DQ_CHANNEL_TRIGGER_CONTINUOUS_DOWN, 0, DQ_CHANNEL_TRIGGER_LAST - 1, "trigger source", OC::Strings::channel_trigger_sources, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::kNumDelayTimes - 1, "--> latency", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 7, "transpose #1", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -5, 7, "transpose #2", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -5, 7, "transpose #3", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -5, 7, "transpose #4", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -4, 4, "octave", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, 0, DQ_AUX_MODE_LAST-1, "aux.output", dq_aux_outputs, settings::STORAGE_TYPE_U8 },
-  { 25, 0, 255, "--> pw", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 5, "--> aux +/-", NULL, settings::STORAGE_TYPE_I8 }, // aux octave
-  { 0, 0, DQ_DEST_LAST-1, "CV aux.", dq_aux_cv_dest, settings::STORAGE_TYPE_U8 },
-  { 16, 1, 32, " > LFSR length", NULL, settings::STORAGE_TYPE_U8 },
-  { 128, 0, 255, " > LFSR p", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 3, " > LFSR CV", OC::Strings::TM_aux_cv_destinations, settings::STORAGE_TYPE_U8 }, // ??
-  { 15, 1, 120, " > LFSR range", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, DQ_TRIG_AUX_LAST-1, " > LFSR TRIG", dq_tm_trig_out, settings::STORAGE_TYPE_U8 }
-};
+SETTINGS_ARRAY_DEFINE(DQ_QuantizerChannel);
 
 namespace OC {
 

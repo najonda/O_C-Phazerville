@@ -122,6 +122,14 @@ enum ChannelPpqn {
   CHANNEL_PPQN_LAST
 };
 
+const char* const notes_or_bpm[2] = {
+ "notes",  "bpm", 
+};
+
+const char* const ppqn_labels[10] = {
+ " 1",  " 2", " 4", " 8", "16", "24", "32", "48", "64", "96",  
+};
+
 class ReferenceChannel : public settings::SettingsBase<ReferenceChannel, REF_SETTING_LAST> {
 public:
 
@@ -610,35 +618,26 @@ private:
 
   int num_enabled_settings_;
   ReferenceSetting enabled_settings_[REF_SETTING_LAST];
-};
 
-const char* const notes_or_bpm[2] = {
- "notes",  "bpm", 
+  // EEPROM size: 11 bytes * 4 channels == 44 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    #ifdef BUCHLA_4U
+    { 0, 0, 9, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
+    #else
+    { 0, -3, 6, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
+    #endif
+    { 0, 0, 11, "Semitone", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, -3, 3, "Mod range oct", nullptr, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 30, "Mod rate (s)", nullptr, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 1, "Notes/BPM :", notes_or_bpm, settings::STORAGE_TYPE_U8 },
+    { 440, 400, 480, "A above mid C", nullptr, settings::STORAGE_TYPE_U16 },
+    { 0, 0, 99, " > mantissa", nullptr, settings::STORAGE_TYPE_U8 },
+    { CHANNEL_PPQN_4, CHANNEL_PPQN_1, CHANNEL_PPQN_LAST - 1, "> ppqn", ppqn_labels, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 0, "--> autotune", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 0, "-", NULL, settings::STORAGE_TYPE_U8 } // dummy
+  }};
 };
-
-const char* const ppqn_labels[10] = {
- " 1",  " 2", " 4", " 8", "16", "24", "32", "48", "64", "96",  
-};
-
-// EEPROM size: 11 bytes * 4 channels == 44 bytes
-SETTINGS_DECLARE(ReferenceChannel, REF_SETTING_LAST) {
-  #ifdef BUCHLA_4U
-  { 0, 0, 9, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
-  #elif defined(VOR) 
-  {0, -5, 10, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
-  #else
-  { 0, -3, 6, "Octave", nullptr, settings::STORAGE_TYPE_I8 },
-  #endif
-  { 0, 0, 11, "Semitone", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, -3, 3, "Mod range oct", nullptr, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 30, "Mod rate (s)", nullptr, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "Notes/BPM :", notes_or_bpm, settings::STORAGE_TYPE_U8 },
-  { 440, 400, 480, "A above mid C", nullptr, settings::STORAGE_TYPE_U16 },
-  { 0, 0, 99, " > mantissa", nullptr, settings::STORAGE_TYPE_U8 },
-  { CHANNEL_PPQN_4, CHANNEL_PPQN_1, CHANNEL_PPQN_LAST - 1, "> ppqn", ppqn_labels, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 0, "--> autotune", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 0, "-", NULL, settings::STORAGE_TYPE_U8 } // dummy
-};
+SETTINGS_ARRAY_DEFINE(ReferenceChannel);
 
 namespace OC {
 

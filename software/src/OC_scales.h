@@ -7,7 +7,7 @@
 // Common scales and stuff
 namespace OC {
 
-typedef braids::Scale Scale;
+using Scale = braids::Scale;
 
 static constexpr int kMaxScaleLength = 16;
 static constexpr int kMinScaleLength = 4;
@@ -25,36 +25,12 @@ public:
     SCALE_NONE = SCALE_USER_LAST,
   };
 
+  static constexpr int NUM_SCALES = SCALE_USER_LAST + braids::kNumScales;
+
   static void Init();
   static void Validate();
   static const Scale &GetScale(int index);
   static constexpr int NUM_SCALES = SCALE_USER_LAST + sizeof(braids::scales) / sizeof(braids::scales[0]);
-};
-
-// H1200/A11Z are semitone based, so don't need to go "full quanty" for now.
-// They still need some hysteresis though
-class SemitoneQuantizer {
-public:
-  static constexpr int32_t kHysteresis = 16;
-
-  SemitoneQuantizer() { }
-  ~SemitoneQuantizer() { }
-
-  void Init() {
-    last_pitch_ = 0;
-  }
-
-  int32_t Process(int32_t pitch) {
-    if ((pitch > last_pitch_ + kHysteresis) || (pitch < last_pitch_ - kHysteresis)) {
-      last_pitch_ = pitch;
-    } else {
-      pitch = last_pitch_;
-    }
-    return (pitch + 63) >> 7;
-  }
-
-private:
-  int32_t last_pitch_;
 };
 
 extern const char *const scale_names[];

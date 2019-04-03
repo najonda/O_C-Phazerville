@@ -1,7 +1,6 @@
 // Copyright 2019 Patrick Dowling
 //
 // Author: Patrick Dowling (pld@gurkenkiste.com)
-// Adapted from code by Max Stadler
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,36 +22,39 @@
 // 
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
+#ifndef UTIL_SEMITONE_QUANTIZER_H_
+#define UTIL_SEMITONE_QUANTIZER_H_
 
-#include "OC_core.h"
-#include "OC_autotuner.h"
+#include <stdint.h>
 
-namespace OC {
+namespace util {
 
-SETTINGS_ARRAY_DEFINE(AutotunerSettings);
+// H1200/A11Z are semitone based, so don't need to go "full quanty" for now.
+// They still need some hysteresis though
+class SemitoneQuantizer {
+public:
+  static constexpr int32_t kHysteresis = 16;
 
-#if defined(BUCHLA_4U) && !defined(IO_10V)
-const char* const AT_steps[] = {
-  "0.0V", "1.2V", "2.4V", "3.6V", "4.8V", "6.0V", "7.2V", "8.4V", "9.6V", "10.8V", " " 
+  SemitoneQuantizer() { }
+  ~SemitoneQuantizer() { }
+
+  void Init() {
+    last_pitch_ = 0;
+  }
+
+  int32_t Process(int32_t pitch) {
+    if ((pitch > last_pitch_ + kHysteresis) || (pitch < last_pitch_ - kHysteresis)) {
+      last_pitch_ = pitch;
+    } else {
+      pitch = last_pitch_;
+    }
+    return (pitch + 63) >> 7;
+  }
+
+private:
+  int32_t last_pitch_;
 };
+  
+} // util
 
-#elif defined(IO_10V)
-const char* const AT_steps[] = {
-  "0.0V", "1.0V", "2.0V", "3.0V", "4.0V", "5.0V", "6.0V", "7.0V", "8.0V", "9.0V", " " 
-};
-
-#else
-const char* const AT_steps[] = {
-  "-3V", "-2V", "-1V", " 0V", "+1V", "+2V", "+3V", "+4V", "+5V", "+6V", " " 
-};
-#endif
-
-const char *const reset_action_strings[] = {
-  ">RESET", ">  USE"
-};
-
-const char *const status_action_strings[] = {
-  ">  ARM", ">  RUN", "> STOP", ">   OK"
-};
-
-} // namespace OC
+#endif // UTIL_SEMITONE_QUANTIZER_H_

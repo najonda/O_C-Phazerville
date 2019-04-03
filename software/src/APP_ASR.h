@@ -88,6 +88,22 @@ enum ASR_CV4_DEST {
   ASR_DEST_LAST
 };
 
+const char* const asr_input_sources[] = {
+  "CV1", "TM", "ByteB", "IntSq"
+};
+
+const char* const asr_cv4_destinations[] = {
+  "oct", "root", "trns", "buf.l", "igain"
+};
+
+const char* const bb_CV_destinations[] = {
+  "igain", "eqn", "P0", "P1", "P2"
+};
+
+const char* const int_seq_CV_destinations[] = {
+  "igain", "seq", "strt", "len", "strd", "mod"
+};
+
 typedef int16_t ASR_pitch;
 
 class ASRApp : public settings::SettingsBase<ASRApp, ASR_SETTING_LAST> {
@@ -692,52 +708,37 @@ private:
   OC::vfx::ScrollingHistory<int32_t, kHistoryDepth> scrolling_history_[NUM_ASR_CHANNELS];
   int num_enabled_settings_;
   ASRSettings enabled_settings_[ASR_SETTING_LAST];
-};
 
-const char* const asr_input_sources[] = {
-  "CV1", "TM", "ByteB", "IntSq"
+  // TOTAL EEPROM SIZE: 23 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "Scale", OC::scale_names_short, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 5, "octave", NULL, settings::STORAGE_TYPE_I8 }, // octave
+    { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 65535, 1, 65535, "mask", NULL, settings::STORAGE_TYPE_U16 }, // mask
+    { 0, 0, ASR_HOLD_BUF_SIZE - 1, "buf.index", NULL, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::kNumDelayTimes - 1, "trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    { 4, 4, ASR_HOLD_BUF_SIZE - 1, "hold (buflen)", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, ASR_CHANNEL_SOURCE_LAST -1, "CV source", asr_input_sources, settings::STORAGE_TYPE_U4 },
+    { 0, 0, ASR_DEST_LAST - 1, "CV4 dest. ->", asr_cv4_destinations, settings::STORAGE_TYPE_U4 },
+    { 16, 1, 32, "> LFSR length", NULL, settings::STORAGE_TYPE_U8 },
+    { 128, 0, 255, "> LFSR p", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 3, "> LFSR CV1", OC::Strings::TM_aux_cv_destinations, settings::STORAGE_TYPE_U8 }, // ??
+    { 0, 0, 15, "> BB eqn", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
+    { 8, 1, 255, "> BB P0", NULL, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 255, "> BB P1", NULL, settings::STORAGE_TYPE_U8 },
+    { 14, 1, 255, "> BB P2", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "> BB CV1", bb_CV_destinations, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 9, "> IntSeq", OC::Strings::integer_sequence_names, settings::STORAGE_TYPE_U4 },
+    { 24, 2, 121, "> IntSeq modul", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, kIntSeqLen - 2, "> IntSeq start", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, kIntSeqLen, "> IntSeq len", NULL, settings::STORAGE_TYPE_U8 },
+    { 1, 0, 1, "> IntSeq dir", OC::Strings::integer_sequence_dirs, settings::STORAGE_TYPE_U4 },
+    { 1, 1, kIntSeqLen - 1, "> Fract stride", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 5, "> IntSeq CV1", int_seq_CV_destinations, settings::STORAGE_TYPE_U4 }
+  }};
 };
-
-const char* const asr_cv4_destinations[] = {
-  "oct", "root", "trns", "buf.l", "igain"
-};
-
-const char* const bb_CV_destinations[] = {
-  "igain", "eqn", "P0", "P1", "P2"
-};
-
-const char* const int_seq_CV_destinations[] = {
-  "igain", "seq", "strt", "len", "strd", "mod"
-};
-
-// TOTAL EEPROM SIZE: 23 bytes
-SETTINGS_DECLARE(ASRApp, ASR_SETTING_LAST) {
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "Scale", OC::scale_names_short, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 5, "octave", NULL, settings::STORAGE_TYPE_I8 }, // octave
-  { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 65535, 1, 65535, "mask", NULL, settings::STORAGE_TYPE_U16 }, // mask
-  { 0, 0, ASR_HOLD_BUF_SIZE - 1, "buf.index", NULL, settings::STORAGE_TYPE_U8 },
-  { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "input gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::kNumDelayTimes - 1, "trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  { 4, 4, ASR_HOLD_BUF_SIZE - 1, "hold (buflen)", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, ASR_CHANNEL_SOURCE_LAST -1, "CV source", asr_input_sources, settings::STORAGE_TYPE_U4 },
-  { 0, 0, ASR_DEST_LAST - 1, "CV4 dest. ->", asr_cv4_destinations, settings::STORAGE_TYPE_U4 },
-  { 16, 1, 32, "> LFSR length", NULL, settings::STORAGE_TYPE_U8 },
-  { 128, 0, 255, "> LFSR p", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 3, "> LFSR CV1", OC::Strings::TM_aux_cv_destinations, settings::STORAGE_TYPE_U8 }, // ??
-  { 0, 0, 15, "> BB eqn", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
-  { 8, 1, 255, "> BB P0", NULL, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 255, "> BB P1", NULL, settings::STORAGE_TYPE_U8 },
-  { 14, 1, 255, "> BB P2", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "> BB CV1", bb_CV_destinations, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 9, "> IntSeq", OC::Strings::integer_sequence_names, settings::STORAGE_TYPE_U4 },
-  { 24, 2, 121, "> IntSeq modul", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, kIntSeqLen - 2, "> IntSeq start", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, kIntSeqLen, "> IntSeq len", NULL, settings::STORAGE_TYPE_U8 },
-  { 1, 0, 1, "> IntSeq dir", OC::Strings::integer_sequence_dirs, settings::STORAGE_TYPE_U4 },
-  { 1, 1, kIntSeqLen - 1, "> Fract stride", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 5, "> IntSeq CV1", int_seq_CV_destinations, settings::STORAGE_TYPE_U4 }
-};
+SETTINGS_ARRAY_DEFINE(ASR);
 
 /* -------------------------------------------------------------------*/
 

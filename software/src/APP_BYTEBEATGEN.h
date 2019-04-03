@@ -76,7 +76,10 @@ enum ByteBeatCVMapping {
   BYTEBEAT_CV_MAPPING_PITCH,
   BYTEBEAT_CV_MAPPING_LAST,
   BYTEBEAT_CV_MAPPING_FIRST=BYTEBEAT_CV_MAPPING_EQUATION
+};
 
+const char* const bytebeat_cv_mapping_names[BYTEBEAT_CV_MAPPING_LAST] = {
+  "off", "equ", "spd", "p0", "p1", "p2", "beg++", "beg+", "beg", "end++", "end+", "end","pitch"
 };
 
 class ByteBeat : public settings::SettingsBase<ByteBeat, BYTEBEAT_SETTING_LAST> {
@@ -341,7 +344,31 @@ private:
   ByteBeatSettings enabled_settings_[BYTEBEAT_SETTING_LAST];
 
   util::History<uint8_t, kHistoryDepth> history_;
+
+  // TOTAL EEPROM SIZE: 4 * 16 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    { 0, 0, 15, "Equation", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
+    { 255, 0, 255, "Speed", NULL, settings::STORAGE_TYPE_U8 },
+    { 1, 1, 255, "Pitch", NULL, settings::STORAGE_TYPE_U8 },
+    { 126, 0, 255, "Parameter 0", NULL, settings::STORAGE_TYPE_U8 },
+    { 126, 0, 255, "Parameter 1", NULL, settings::STORAGE_TYPE_U8 },
+    { 127, 0, 255, "Parameter 2", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 1, "Loop mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Loop begin ++", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Loop begin +", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Loop begin", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "Loop end ++", NULL, settings::STORAGE_TYPE_U8 },
+    { 1, 0, 255, "Loop end +", NULL, settings::STORAGE_TYPE_U8 },
+    { 255, 0, 255, "Loop end", NULL, settings::STORAGE_TYPE_U8 },
+    { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "Step mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
+    { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV1 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV2 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV3 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+    { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV4 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
+  }};
 };
+SETTINGS_ARRAY_DEFINE(ByteBeat);
 
 void ByteBeat::Init(OC::DigitalInput default_trigger) {
   InitDefaults();
@@ -351,33 +378,6 @@ void ByteBeat::Init(OC::DigitalInput default_trigger) {
   update_enabled_settings();
   history_.Init(0);
 }
-
-const char* const bytebeat_cv_mapping_names[BYTEBEAT_CV_MAPPING_LAST] = {
-  "off", "equ", "spd", "p0", "p1", "p2", "beg++", "beg+", "beg", "end++", "end+", "end","pitch"
-};
-
-// TOTAL EEPROM SIZE: 4 * 16 bytes
-SETTINGS_DECLARE(ByteBeat, BYTEBEAT_SETTING_LAST) {
-  { 0, 0, 15, "Equation", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
-  { 255, 0, 255, "Speed", NULL, settings::STORAGE_TYPE_U8 },
-  { 1, 1, 255, "Pitch", NULL, settings::STORAGE_TYPE_U8 },
-  { 126, 0, 255, "Parameter 0", NULL, settings::STORAGE_TYPE_U8 },
-  { 126, 0, 255, "Parameter 1", NULL, settings::STORAGE_TYPE_U8 },
-  { 127, 0, 255, "Parameter 2", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 1, "Loop mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Loop begin ++", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Loop begin +", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Loop begin", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "Loop end ++", NULL, settings::STORAGE_TYPE_U8 },
-  { 1, 0, 255, "Loop end +", NULL, settings::STORAGE_TYPE_U8 },
-  { 255, 0, 255, "Loop end", NULL, settings::STORAGE_TYPE_U8 },
-  { OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_1, OC::DIGITAL_INPUT_4, "Trigger input", OC::Strings::trigger_input_names, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 1, "Step mode", OC::Strings::no_yes, settings::STORAGE_TYPE_U4 },
-  { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV1 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV2 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV3 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-  { BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_NONE, BYTEBEAT_CV_MAPPING_LAST - 1, "CV4 -> ", bytebeat_cv_mapping_names, settings::STORAGE_TYPE_U4 },
-};
 
 namespace OC {
 

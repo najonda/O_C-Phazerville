@@ -28,6 +28,9 @@
 #include <stdint.h>
 #include <cstring>
 #include <type_traits>
+#ifdef TESTING
+#include <vector>
+#endif
 
 namespace util {
 
@@ -38,6 +41,14 @@ namespace util {
     , cursor_(begin_)
     , end_(begin_ + buffer_length)
     { }
+
+#ifdef TESTING
+    explicit StreamBufferWriter(std::vector<uint8_t> &v)
+    : begin_(&v.front())
+    , cursor_(begin_)
+    , end_(begin_ + v.size())
+    { }
+#endif
 
     template <typename T/*, class = typename std::enable_if<!std::is_integral<T>::value>::type*/>
     void Write(const T &t) {
@@ -77,6 +88,15 @@ namespace util {
     , cursor_(begin_)
     , end_(begin_ + buffer_length)
     { }
+
+#ifdef TESTING
+    StreamBufferReader(const std::vector<uint8_t> &v)
+    : begin_(&v.front())
+    , cursor_(begin_)
+    , end_(begin_ + v.size())
+    { }
+#endif
+
 
     template <typename T>
     T Read() {
