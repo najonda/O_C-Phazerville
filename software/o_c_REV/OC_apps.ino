@@ -58,16 +58,16 @@ void AppBase::InitDefaults()
 
 size_t AppBase::Save(util::StreamBufferWriter &stream_buffer) const
 {
-  size_t len = io_settings_.Save(stream_buffer);
-  len += SaveAppData(stream_buffer);
-  return len;
+  io_settings_.Save(stream_buffer);
+  SaveAppData(stream_buffer);
+  return stream_buffer.written();
 }
 
 size_t AppBase::Restore(util::StreamBufferReader &stream_buffer)
 {
-  size_t len = io_settings_.Restore(stream_buffer);
-  len += RestoreAppData(stream_buffer);
-  return len;
+  io_settings_.Restore(stream_buffer);
+  RestoreAppData(stream_buffer);
+  return stream_buffer.read();
 }
 
 // App settings are packed into a single blob of binary data; each app's chunk
@@ -102,7 +102,7 @@ AppSwitcher app_switcher;
 static constexpr int DEFAULT_APP_INDEX = 0;
 static const uint16_t DEFAULT_APP_ID = available_apps[DEFAULT_APP_INDEX]->id();
 
-void save_global_settings() {
+static void SaveGlobalSettings() {
   APPS_SERIAL_PRINTLN("Save global settings");
 
   memcpy(global_settings.user_scales, OC::user_scales, sizeof(OC::user_scales));
@@ -113,7 +113,7 @@ void save_global_settings() {
   APPS_SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
 }
 
-void save_app_data() {
+static void SaveAppData() {
   APPS_SERIAL_PRINTLN("Save app data... (%u bytes available)", OC::AppData::kAppDataSize);
 
   app_settings.used = 0;
@@ -137,11 +137,16 @@ void save_app_data() {
 
       util::StreamBufferWriter stream_buffer{chunk + 1, chunk->length};
       auto result = app->Save(stream_buffer);
-      APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)", app->name(), app->id(), result, storage_size);
-      // TODO[PLD] Check result
-
-      app_settings.used += chunk->length;
-      data += chunk->length;
+      if (stream_buffer.overflow()) {
+        APPS_SERIAL_PRINTLN("* %s (%02x) : Save overflowed, result=%u, skipping app...", 
+                            app->name(), app->id(), result);
+      } else {
+        APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)",
+                            app->name(), app->id(), result, storage_size);
+        app_settings.used += chunk->length;
+        data += chunk->length;
+      }
+      (void)result;
     }
   }
   APPS_SERIAL_PRINTLN("App settings used: %u/%u", app_settings.used, EEPROM_APPDATA_BINARY_SIZE);
@@ -149,7 +154,7 @@ void save_app_data() {
   APPS_SERIAL_PRINTLN("Saved app settings in page_index %d", app_data_storage.page_index());
 }
 
-void restore_app_data() {
+static void RestoreAppData() {
   APPS_SERIAL_PRINTLN("Restoring app data from page_index %d, used=%u", app_data_storage.page_index(), app_settings.used);
 
   const char *data = app_settings.data;
@@ -181,10 +186,17 @@ void restore_app_data() {
 
     util::StreamBufferReader stream_buffer{chunk + 1, chunk->length};
     auto result = app->Restore(stream_buffer);
-    APPS_SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...", app->name(), chunk->id, result, chunk->length - sizeof(AppChunkHeader), chunk->length);
-    // TODO[PLD] Check result
+    if (stream_buffer.underflow()) {
+      APPS_SERIAL_PRINTLN("* %s (%02x): Restore underflow, result=%u, re-init",
+                          app->name(), chunk->id, result);
+      app->InitDefaults();
+    } else {
+      APPS_SERIAL_PRINTLN("* %s (%02x): Restored %u from %u (chunk length %u)...",
+                          app->name(), chunk->id, result, chunk->length - sizeof(AppChunkHeader), chunk->length);
+      restored_bytes += chunk->length;
+    }
+    (void)result;
 
-    restored_bytes += chunk->length;
     data += chunk->length;
   }
 
@@ -268,7 +280,7 @@ void AppSwitcher::Init(bool reset_settings) {
     if (!app_data_storage.Load(app_settings)) {
       APPS_SERIAL_PRINTLN("Data not loaded, using defaults!");
     } else {
-      restore_app_data();
+      RestoreAppData();
     }
   }
 
@@ -369,8 +381,8 @@ void Ui::AppSettings() {
     FreqMeasure.end();
     OC::DigitalInputs::reInit();
     if (save) {
-      save_global_settings();
-      save_app_data();
+      SaveGlobalSettings();
+      SaveAppData();
       // draw message:
       int cnt = 0;
       while(idle_time() < SETTINGS_SAVE_TIMEOUT_MS)

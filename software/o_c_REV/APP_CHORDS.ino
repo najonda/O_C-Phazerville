@@ -134,6 +134,18 @@ enum CHORDS_DIRECTIONS {
   CHORDS_DIRECTIONS_LAST
 };
 
+const char* const chords_advance_trigger_sources[] = {
+  "TR1", "TR2"
+};
+
+const char* const chords_slots[] = {
+  "#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8"
+};
+
+const char* const chord_playmodes[] = {
+  "-", "SEQ+1", "SEQ+2", "SEQ+3", "TR3+1", "TR3+2", "TR3+3", "S+H#1", "S+H#2", "S+H#3", "S+H#4", "CV#1", "CV#2", "CV#3", "CV#4"
+};
+
 class ChordQuantizer : public settings::SettingsBase<ChordQuantizer, CHORDS_SETTING_LAST> {
 public:
 
@@ -969,54 +981,43 @@ private:
       return false;
     }
   }
-};
 
-const char* const chords_advance_trigger_sources[] = {
-  "TR1", "TR2"
+  SETTINGS_ARRAY_DECLARE() {{
+    { OC::Scales::SCALE_SEMI, OC::Scales::SCALE_SEMI, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::Chords::NUM_CHORD_PROGRESSIONS - 1, "progression", chords_slots, settings::STORAGE_TYPE_U8 },
+    { 65535, 1, 65535, "scale  -->", NULL, settings::STORAGE_TYPE_U16 }, // mask
+    { 0, 0, CHORDS_CV_SOURCE_LAST - 1, "CV source", OC::Strings::cv_input_names, settings::STORAGE_TYPE_U8 }, /// to do ..
+    { CHORDS_ADVANCE_TRIGGER_SOURCE_TR2, 0, CHORDS_ADVANCE_TRIGGER_SOURCE_LAST - 1, "chords trg src", chords_advance_trigger_sources, settings::STORAGE_TYPE_U8 },
+    { 0, 0, CHORDS_PLAYMODES_LAST - 1, "playmode", chord_playmodes, settings::STORAGE_TYPE_U8 },
+    { 0, 0, CHORDS_DIRECTIONS_LAST - 1, "direction", OC::Strings::seq_directions, settings::STORAGE_TYPE_U8 },
+    { 64, 0, 255, "-->brown prob", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::kNumDelayTimes - 1, "TR1 delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 7, "transpose", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -4, 4, "octave", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "chord:", chords_slots, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 1
+    { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 2
+    { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 3
+    { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 4
+    { 0, 0, 0, "chords -->", NULL, settings::STORAGE_TYPE_U4 }, // = chord editor
+    // CV
+    { 0, 0, 4, "root CV      >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "mask CV      >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "transpose CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "octave CV    >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "quality CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "voicing CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "inversion CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "prg.slot# CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "direction CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "-->br.prb CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "num.chrds CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 0, "-", NULL, settings::STORAGE_TYPE_U4 }, // DUMMY
+    { 0, 0, 0, " ", NULL, settings::STORAGE_TYPE_U4 }  // MORE DUMMY
+  }};
 };
-
-const char* const chords_slots[] = {
-  "#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8"
-};
-
-const char* const chord_playmodes[] = {
-  "-", "SEQ+1", "SEQ+2", "SEQ+3", "TR3+1", "TR3+2", "TR3+3", "S+H#1", "S+H#2", "S+H#3", "S+H#4", "CV#1", "CV#2", "CV#3", "CV#4"
-};
-
-SETTINGS_DECLARE(ChordQuantizer, CHORDS_SETTING_LAST) {
-  { OC::Scales::SCALE_SEMI, OC::Scales::SCALE_SEMI, OC::Scales::NUM_SCALES - 1, "scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::Chords::NUM_CHORD_PROGRESSIONS - 1, "progression", chords_slots, settings::STORAGE_TYPE_U8 },
-  { 65535, 1, 65535, "scale  -->", NULL, settings::STORAGE_TYPE_U16 }, // mask
-  { 0, 0, CHORDS_CV_SOURCE_LAST - 1, "CV source", OC::Strings::cv_input_names, settings::STORAGE_TYPE_U8 }, /// to do ..
-  { CHORDS_ADVANCE_TRIGGER_SOURCE_TR2, 0, CHORDS_ADVANCE_TRIGGER_SOURCE_LAST - 1, "chords trg src", chords_advance_trigger_sources, settings::STORAGE_TYPE_U8 },
-  { 0, 0, CHORDS_PLAYMODES_LAST - 1, "playmode", chord_playmodes, settings::STORAGE_TYPE_U8 },
-  { 0, 0, CHORDS_DIRECTIONS_LAST - 1, "direction", OC::Strings::seq_directions, settings::STORAGE_TYPE_U8 },
-  { 64, 0, 255, "-->brown prob", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::kNumDelayTimes - 1, "TR1 delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 7, "transpose", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -4, 4, "octave", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "chord:", chords_slots, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 1
-  { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 2
-  { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 3
-  { 0, 0, OC::Chords::CHORDS_USER_LAST - 1, "num.chords", NULL, settings::STORAGE_TYPE_U8 }, // progression 4
-  { 0, 0, 0, "chords -->", NULL, settings::STORAGE_TYPE_U4 }, // = chord editor
-  // CV
-  { 0, 0, 4, "root CV      >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "mask CV      >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "transpose CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "octave CV    >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "quality CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "voicing CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "inversion CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "prg.slot# CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "direction CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "-->br.prb CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "num.chrds CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 0, "-", NULL, settings::STORAGE_TYPE_U4 }, // DUMMY
-  { 0, 0, 0, " ", NULL, settings::STORAGE_TYPE_U4 }  // MORE DUMMY
-};
+SETTINGS_ARRAY_DEFINE(ChordQuantizer);
 
 namespace OC {
 

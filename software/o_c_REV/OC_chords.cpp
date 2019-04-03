@@ -6,12 +6,6 @@ namespace OC {
     Chord user_chords[Chords::CHORDS_USER_LAST];
 
     /*static*/
-    const int Chords::NUM_CHORD_PROGRESSIONS = 0x4;
-    const int Chords::NUM_CHORDS_TOTAL = OC::Chords::CHORDS_USER_LAST; // = 8
-    const int Chords::NUM_CHORDS_PROPERTIES = sizeof(Chord);
-    const int Chords::NUM_CHORDS = Chords::NUM_CHORDS_TOTAL / Chords::NUM_CHORD_PROGRESSIONS;
-
-    /*static*/
     // 
     void Chords::Init() {
       for (size_t i = 0; i < OC::Chords::CHORDS_USER_LAST; ++i)

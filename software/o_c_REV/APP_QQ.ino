@@ -131,6 +131,14 @@ enum QQ_CV_DEST {
   QQ_DEST_LAST
 };
 
+const char* const channel_input_sources[CHANNEL_SOURCE_LAST] = {
+  "CV1", "CV2", "CV3", "CV4", "AAA", "BBB", "CCC", "Turing", "Lgstc", "ByteB", "IntSq"
+};
+
+const char* const aux_cv_dest[5] = {
+  "-", "root", "oct", "trns", "mask"
+};
+
 class QuantizerChannel : public settings::SettingsBase<QuantizerChannel, CHANNEL_SETTING_LAST> {
 public:
 
@@ -1106,65 +1114,58 @@ private:
       return false;
     }
   }
-};
 
-const char* const channel_input_sources[CHANNEL_SOURCE_LAST] = {
-  "CV1", "CV2", "CV3", "CV4", "AAA", "BBB", "CCC", "Turing", "Lgstc", "ByteB", "IntSq"
+  SETTINGS_ARRAY_DECLARE() {{
+    { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "Scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 11, "Root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
+    { 65535, 1, 65535, "Active notes", NULL, settings::STORAGE_TYPE_U16 },
+    { CHANNEL_SOURCE_CV1, CHANNEL_SOURCE_CV1, CHANNEL_SOURCE_LAST - 1, "CV Source", channel_input_sources, settings::STORAGE_TYPE_U8 },
+    { QQ_DEST_NONE, QQ_DEST_NONE, QQ_DEST_LAST - 1, "CV aux >", aux_cv_dest, settings::STORAGE_TYPE_U8 },
+    { CHANNEL_TRIGGER_CONTINUOUS_DOWN, 0, CHANNEL_TRIGGER_LAST - 1, "Trigger source", OC::Strings::channel_trigger_sources, settings::STORAGE_TYPE_U8 },
+    { 1, 1, 16, "Clock div", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, OC::kNumDelayTimes - 1, "Trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    { 0, -5, 7, "Transpose", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -4, 4, "Octave", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -999, 999, "Fine", NULL, settings::STORAGE_TYPE_I16 },
+    { 16, 1, 32, "LFSR length", NULL, settings::STORAGE_TYPE_U8 },
+    { 128, 0, 255, "LFSR prb", NULL, settings::STORAGE_TYPE_U8 },
+    { 24, 2, 121, "LFSR modulus", NULL, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 120, "LFSR range", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "LFSR prb CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "LFSR mod CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "LFSR rng CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 128, 1, 255, "Logistic r", NULL, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 120, "Logistic range", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "Log r   CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "Log rng CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 15, "Bytebeat eqn", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 120, "Bytebeat rng", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 1, 255, "Bytebeat P0", NULL, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 255, "Bytebeat P1", NULL, settings::STORAGE_TYPE_U8 },
+    { 14, 1, 255, "Bytebeat P2", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "Bb eqn CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "Bb rng CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "Bb P0  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "Bb P1  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "Bb P2  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 9, "IntSeq", OC::Strings::integer_sequence_names, settings::STORAGE_TYPE_U4 },
+    { 24, 2, 121, "IntSeq modul.", NULL, settings::STORAGE_TYPE_U8 },
+    { 12, 1, 120, "IntSeq range", NULL, settings::STORAGE_TYPE_U8 },
+    { 1, 0, 1, "IntSeq dir", OC::Strings::integer_sequence_dirs, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 255, "> Brownian prob", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, kIntSeqLen - 2, "IntSeq start", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, kIntSeqLen, "IntSeq len", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 255, "IntSeq FS prob", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 5, "IntSeq FS rng", NULL, settings::STORAGE_TYPE_U4 },
+    { 1, 1, kIntSeqLen - 1, "Fractal stride", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 4, "IntSeq CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "IntSeq mod CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "IntSeq rng CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "F. stride CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 4, "IntSeq reset", OC::Strings::trigger_input_names_none, settings::STORAGE_TYPE_U4 }
+  }};
 };
-
-const char* const aux_cv_dest[5] = {
-  "-", "root", "oct", "trns", "mask"
-};
-
-SETTINGS_DECLARE(QuantizerChannel, CHANNEL_SETTING_LAST) {
-  { OC::Scales::SCALE_SEMI, 0, OC::Scales::NUM_SCALES - 1, "Scale", OC::scale_names, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 11, "Root", OC::Strings::note_names_unpadded, settings::STORAGE_TYPE_U8 },
-  { 65535, 1, 65535, "Active notes", NULL, settings::STORAGE_TYPE_U16 },
-  { CHANNEL_SOURCE_CV1, CHANNEL_SOURCE_CV1, CHANNEL_SOURCE_LAST - 1, "CV Source", channel_input_sources, settings::STORAGE_TYPE_U8 },
-  { QQ_DEST_NONE, QQ_DEST_NONE, QQ_DEST_LAST - 1, "CV aux >", aux_cv_dest, settings::STORAGE_TYPE_U8 },
-  { CHANNEL_TRIGGER_CONTINUOUS_DOWN, 0, CHANNEL_TRIGGER_LAST - 1, "Trigger source", OC::Strings::channel_trigger_sources, settings::STORAGE_TYPE_U8 },
-  { 1, 1, 16, "Clock div", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, OC::kNumDelayTimes - 1, "Trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  { 0, -5, 7, "Transpose", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -4, 4, "Octave", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -999, 999, "Fine", NULL, settings::STORAGE_TYPE_I16 },
-  { 16, 1, 32, "LFSR length", NULL, settings::STORAGE_TYPE_U8 },
-  { 128, 0, 255, "LFSR prb", NULL, settings::STORAGE_TYPE_U8 },
-  { 24, 2, 121, "LFSR modulus", NULL, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 120, "LFSR range", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "LFSR prb CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "LFSR mod CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "LFSR rng CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 128, 1, 255, "Logistic r", NULL, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 120, "Logistic range", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "Log r   CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "Log rng CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 15, "Bytebeat eqn", OC::Strings::bytebeat_equation_names, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 120, "Bytebeat rng", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 1, 255, "Bytebeat P0", NULL, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 255, "Bytebeat P1", NULL, settings::STORAGE_TYPE_U8 },
-  { 14, 1, 255, "Bytebeat P2", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "Bb eqn CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "Bb rng CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "Bb P0  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "Bb P1  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "Bb P2  CV src", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 9, "IntSeq", OC::Strings::integer_sequence_names, settings::STORAGE_TYPE_U4 },
-  { 24, 2, 121, "IntSeq modul.", NULL, settings::STORAGE_TYPE_U8 },
-  { 12, 1, 120, "IntSeq range", NULL, settings::STORAGE_TYPE_U8 },
-  { 1, 0, 1, "IntSeq dir", OC::Strings::integer_sequence_dirs, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 255, "> Brownian prob", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, kIntSeqLen - 2, "IntSeq start", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, kIntSeqLen, "IntSeq len", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 255, "IntSeq FS prob", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 5, "IntSeq FS rng", NULL, settings::STORAGE_TYPE_U4 },
-  { 1, 1, kIntSeqLen - 1, "Fractal stride", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 4, "IntSeq CV   >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "IntSeq mod CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "IntSeq rng CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "F. stride CV >", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U4 },
-  { 0, 0, 4, "IntSeq reset", OC::Strings::trigger_input_names_none, settings::STORAGE_TYPE_U4 }
-};
+SETTINGS_ARRAY_DEFINE(QuantizerChannel);
 
 namespace OC {
 

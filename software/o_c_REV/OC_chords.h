@@ -10,11 +10,6 @@ typedef OC::Chord Chord;
 class Chords {
 public:
 
-  static const int NUM_CHORDS_TOTAL;
-  static const int NUM_CHORDS;
-  static const int NUM_CHORDS_PROPERTIES;
-  static const int NUM_CHORD_PROGRESSIONS;
-
   enum CHORD_SLOTS
   {
     CHORDS_USER_0_0,
@@ -51,6 +46,10 @@ public:
     CHORDS_USER_7_3,
     CHORDS_USER_LAST
   };
+
+  static constexpr int NUM_CHORD_PROGRESSIONS = 4;
+  static constexpr int NUM_CHORDS_TOTAL = CHORDS_USER_LAST;
+  static constexpr int NUM_CHORDS = NUM_CHORDS_TOTAL / NUM_CHORD_PROGRESSIONS;
 
   enum QUALITY 
   {

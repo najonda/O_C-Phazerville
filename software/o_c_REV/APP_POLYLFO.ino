@@ -58,6 +58,29 @@ enum POLYLFO_SETTINGS {
   POLYLFO_SETTING_LAST
 };
 
+
+const char* const freq_range_names[12] = {
+  "cosm", "geol", "glacl", "snail", "sloth", "vlazy", "lazy", "vslow", "slow", "med", "fast", "vfast",
+};
+
+const char* const freq_div_names[frames::POLYLFO_FREQ_MULT_LAST] = {
+   "16/1", "15/1", "14/1", "13/1", "12/1", "11/1", "10/1", "9/1", "8/1", "7/1", "6/1", "5/1", "4/1", "3/1", "5/2", "2/1", "5/3", "3/2", "5/4",
+   "unity", 
+   "4/5", "2/3", "3/5", "1/2", "2/5", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10", "1/11", "1/12", "1/13", "1/14", "1/15", "1/16"
+};
+
+const char* const xor_levels[9] = {
+  "off", "  1", "  2", "  3", "  4", "  5", "  6", "  7", "  8"
+};
+
+const char* const cv4_destinations[7] = {
+  "cplg", "sprd", " rng", "offs", "a->b", "b->c", "c->d"
+};
+
+const char* const tr4_multipliers[6] = {
+  "/8", "/4", "/2", "x2", "x4", "x8"
+};
+
 class PolyLfo : public settings::SettingsBase<PolyLfo, POLYLFO_SETTING_LAST> {
 public:
 
@@ -178,7 +201,32 @@ public:
   SmoothedValue<int32_t, kSmoothing> cv_shape;
   SmoothedValue<int32_t, kSmoothing> cv_spread;
   SmoothedValue<int32_t, kSmoothing> cv_mappable;
+
+  SETTINGS_ARRAY_DECLARE() {{
+    { 64, 0, 255, "C", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, -128, 127, "F", NULL, settings::STORAGE_TYPE_I16 },
+    { 0, 0, 1, "Tap tempo", OC::Strings::off_on, settings::STORAGE_TYPE_U8 }, 
+    { 0, 0, 255, "Shape", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, -128, 127, "Shape spread", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -128, 127, "Phase/frq sprd", NULL, settings::STORAGE_TYPE_I8 },
+    { 0, -128, 127, "Coupling", NULL, settings::STORAGE_TYPE_I8 },
+    { 230, 0, 230, "Output range", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, -128, 127, "Offset", NULL, settings::STORAGE_TYPE_I8 },
+    { 9, 0, 11, "Freq range", freq_range_names, settings::STORAGE_TYPE_U8 },
+    { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "B freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
+    { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "C freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
+    { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "D freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 8, "B XOR A", xor_levels, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 8, "C XOR A", xor_levels, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 8, "D XOR A", xor_levels, settings::STORAGE_TYPE_U8 }, 
+    { 0, 0, 127, "B AM by A", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 127, "C AM by B", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 127, "D AM by C", NULL, settings::STORAGE_TYPE_U8 }, 
+    { 0, 0, 6, "CV4: DEST", cv4_destinations, settings::STORAGE_TYPE_U8 },
+    { 3, 0, 5, "TR4: MULT", tr4_multipliers, settings::STORAGE_TYPE_U8 }, 
+  }};
 };
+SETTINGS_ARRAY_DEFINE(PolyLfo);
 
 void PolyLfo::Init() {
   InitDefaults();
@@ -186,52 +234,6 @@ void PolyLfo::Init() {
   frozen_= false;
   freq_mult_ = 0x3; // == x2 / default
 }
-
-const char* const freq_range_names[12] = {
-  "cosm", "geol", "glacl", "snail", "sloth", "vlazy", "lazy", "vslow", "slow", "med", "fast", "vfast",
-};
-
-const char* const freq_div_names[frames::POLYLFO_FREQ_MULT_LAST] = {
-   "16/1", "15/1", "14/1", "13/1", "12/1", "11/1", "10/1", "9/1", "8/1", "7/1", "6/1", "5/1", "4/1", "3/1", "5/2", "2/1", "5/3", "3/2", "5/4",
-   "unity", 
-   "4/5", "2/3", "3/5", "1/2", "2/5", "1/3", "1/4", "1/5", "1/6", "1/7", "1/8", "1/9", "1/10", "1/11", "1/12", "1/13", "1/14", "1/15", "1/16"
-};
-
-const char* const xor_levels[9] = {
-  "off", "  1", "  2", "  3", "  4", "  5", "  6", "  7", "  8"
-};
-
-const char* const cv4_destinations[7] = {
-  "cplg", "sprd", " rng", "offs", "a->b", "b->c", "c->d"
-};
-
-const char* const tr4_multiplier[6] = {
-  "/8", "/4", "/2", "x2", "x4", "x8"
-};
-
-SETTINGS_DECLARE(PolyLfo, POLYLFO_SETTING_LAST) {
-  { 64, 0, 255, "C", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, -128, 127, "F", NULL, settings::STORAGE_TYPE_I16 },
-  { 0, 0, 1, "Tap tempo", OC::Strings::off_on, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 255, "Shape", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, -128, 127, "Shape spread", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -128, 127, "Phase/frq sprd", NULL, settings::STORAGE_TYPE_I8 },
-  { 0, -128, 127, "Coupling", NULL, settings::STORAGE_TYPE_I8 },
-  { 230, 0, 230, "Output range", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, -128, 127, "Offset", NULL, settings::STORAGE_TYPE_I8 },
-  { 9, 0, 11, "Freq range", freq_range_names, settings::STORAGE_TYPE_U8 },
-  { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "B freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
-  { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "C freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
-  { frames::POLYLFO_FREQ_MULT_NONE, frames::POLYLFO_FREQ_MULT_BY16, frames::POLYLFO_FREQ_MULT_LAST - 1, "D freq ratio", freq_div_names, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 8, "B XOR A", xor_levels, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 8, "C XOR A", xor_levels, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 8, "D XOR A", xor_levels, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 127, "B AM by A", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 127, "C AM by B", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 127, "D AM by C", NULL, settings::STORAGE_TYPE_U8 }, 
-  { 0, 0, 6, "CV4: DEST", cv4_destinations, settings::STORAGE_TYPE_U8 },
-  { 3, 0, 5, "TR4: MULT", tr4_multiplier, settings::STORAGE_TYPE_U8 }, 
-};
 
 namespace OC {
 

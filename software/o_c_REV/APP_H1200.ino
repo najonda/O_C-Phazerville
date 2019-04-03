@@ -30,6 +30,7 @@
 #include "tonnetz/tonnetz_state.h"
 #include "util/util_settings.h"
 #include "util/util_ringbuffer.h"
+#include "util/util_semitone_quantizer.h"
 
 // NOTE: H1200 state is updated in the ISR, and we're accessing shared state
 // (e.g. outputs) without any sync mechanism. So there is a chance of the
@@ -150,6 +151,53 @@ enum H1200EuclCvMappings {
   H1200_EUCL_CV_MAPPING_H_EUCLIDEAN_OFFSET,
   H1200_EUCL_CV_MAPPING_LAST
 } ;
+
+const char * const output_mode_names[] = {
+  "Chord",
+  "Tune"
+};
+
+const char * const plr_trigger_mode_names[] = {
+  "P>L>R",
+  "L>R>P",
+  "R>P>L",
+  "P>R>L",
+  "R>L>P",
+  "L>P>R",
+};
+
+const char * const nsh_trigger_mode_names[] = {
+  "N>S>H",
+  "S>H>N",
+  "H>N>S",
+  "N>H>S",
+  "H>S>N",
+  "S>N>H",
+};
+
+const char * const trigger_type_names[] = {
+  "PLR",
+  "NSH",
+  "Eucl",
+};
+
+const char * const mode_names[] = {
+  "Maj", "Min"
+};
+
+const char* const h1200_cv_sampling[2] = {
+  "Cont", "Trig"
+};
+
+const char* const h1200_eucl_cv_mappings[] = {
+  "None",
+  "Plen", "Pfil", "Poff",
+  "Llen", "Lfil", "Loff",
+  "Rlen", "Rfil", "Roff",
+  "Nlen", "Nfil", "Noff",
+  "Slen", "Sfil", "Soff",
+  "Hlen", "Hfil", "Hoff",
+};
 
 class H1200Settings : public settings::SettingsBase<H1200Settings, H1200_SETTING_LAST> {
 public:
@@ -381,98 +429,52 @@ private:
   int num_enabled_settings_;
   bool manual_mode_change_;
   H1200Setting enabled_settings_[H1200_SETTING_LAST];
-};
 
-const char * const output_mode_names[] = {
-  "Chord",
-  "Tune"
+  SETTINGS_ARRAY_DECLARE() {{
+    {0, -11, 11, "Transpose", NULL, settings::STORAGE_TYPE_I8},
+    {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Transpose CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
+    #ifdef BUCHLA_4U
+    {0, 0, 7, "Octave", NULL, settings::STORAGE_TYPE_I8},
+    #else
+    {0, -3, 3, "Octave", NULL, settings::STORAGE_TYPE_I8},
+    #endif
+    {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Octave CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
+    {MODE_MAJOR, 0, MODE_LAST-1, "Root mode", mode_names, settings::STORAGE_TYPE_U8},
+    {0, -3, 3, "Inversion", NULL, settings::STORAGE_TYPE_I8},
+    {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Inversion CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
+    {TRANSFORM_PRIO_XPLR, 0, TRANSFORM_PRIO_PLR_LAST-1, "PLR Priority", plr_trigger_mode_names, settings::STORAGE_TYPE_U8},
+    {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "PLR Prior CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
+    {TRANSFORM_PRIO_XNSH, 0, TRANSFORM_PRIO_NSH_LAST-1, "NSH Priority", nsh_trigger_mode_names, settings::STORAGE_TYPE_U8},
+    {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "NSH Prior CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
+    {H1200_CV_SAMPLING_CONT, H1200_CV_SAMPLING_CONT, H1200_CV_SAMPLING_LAST-1, "CV sampling", h1200_cv_sampling, settings::STORAGE_TYPE_U8},
+    {OUTPUT_CHORD_VOICING, 0, OUTPUT_MODE_LAST-1, "Output mode", output_mode_names, settings::STORAGE_TYPE_U8},
+    { 0, 0, OC::kNumDelayTimes - 1, "Trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
+    {H1200_TRIGGER_TYPE_PLR, 0, H1200_TRIGGER_TYPE_LAST-1, "Trigger type", trigger_type_names, settings::STORAGE_TYPE_U8},
+    {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV1 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
+    {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV2 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
+    {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV3 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
+    {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV4 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
+    { 8, 2, 32,  " P EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " P EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " P EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, 32,  " L EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " L EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " L EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, 32,  " R EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " R EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " R EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, 32,  " N EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " N EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " N EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, 32,  " S EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " S EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " S EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+    { 8, 2, 32,  " H EuLeng", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 32,  " H EuFill", NULL, settings::STORAGE_TYPE_U8 },
+    { 0, 0, 31,  " H EuOffs", NULL, settings::STORAGE_TYPE_U8 },
+  }};
 };
-
-const char * const plr_trigger_mode_names[] = {
-  "P>L>R",
-  "L>R>P",
-  "R>P>L",
-  "P>R>L",
-  "R>L>P",
-  "L>P>R",
-};
-
-const char * const nsh_trigger_mode_names[] = {
-  "N>S>H",
-  "S>H>N",
-  "H>N>S",
-  "N>H>S",
-  "H>S>N",
-  "S>N>H",
-};
-
-const char * const trigger_type_names[] = {
-  "PLR",
-  "NSH",
-  "Eucl",
-};
-
-const char * const mode_names[] = {
-  "Maj", "Min"
-};
-
-const char* const h1200_cv_sampling[2] = {
-  "Cont", "Trig"
-};
-
-const char* const h1200_eucl_cv_mappings[] = {
-  "None",
-  "Plen", "Pfil", "Poff",
-  "Llen", "Lfil", "Loff",
-  "Rlen", "Rfil", "Roff",
-  "Nlen", "Nfil", "Noff",
-  "Slen", "Sfil", "Soff",
-  "Hlen", "Hfil", "Hoff",
-};
-
-SETTINGS_DECLARE(H1200Settings, H1200_SETTING_LAST) {
-  {0, -11, 11, "Transpose", NULL, settings::STORAGE_TYPE_I8},
-  {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Transpose CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
-  #ifdef BUCHLA_4U
-  {0, 0, 7, "Octave", NULL, settings::STORAGE_TYPE_I8},
-  #else
-  {0, -3, 3, "Octave", NULL, settings::STORAGE_TYPE_I8},
-  #endif
-  {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Octave CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
-  {MODE_MAJOR, 0, MODE_LAST-1, "Root mode", mode_names, settings::STORAGE_TYPE_U8},
-  {0, -3, 3, "Inversion", NULL, settings::STORAGE_TYPE_I8},
-  {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "Inversion CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
-  {TRANSFORM_PRIO_XPLR, 0, TRANSFORM_PRIO_PLR_LAST-1, "PLR Priority", plr_trigger_mode_names, settings::STORAGE_TYPE_U8},
-  {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "PLR Prior CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
-  {TRANSFORM_PRIO_XNSH, 0, TRANSFORM_PRIO_NSH_LAST-1, "NSH Priority", nsh_trigger_mode_names, settings::STORAGE_TYPE_U8},
-  {H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_NONE, H1200_CV_SOURCE_LAST-1, "NSH Prior CV", OC::Strings::cv_input_names_none, settings::STORAGE_TYPE_U8},
-  {H1200_CV_SAMPLING_CONT, H1200_CV_SAMPLING_CONT, H1200_CV_SAMPLING_LAST-1, "CV sampling", h1200_cv_sampling, settings::STORAGE_TYPE_U8},
-  {OUTPUT_CHORD_VOICING, 0, OUTPUT_MODE_LAST-1, "Output mode", output_mode_names, settings::STORAGE_TYPE_U8},
-  { 0, 0, OC::kNumDelayTimes - 1, "Trigger delay", OC::Strings::trigger_delay_times, settings::STORAGE_TYPE_U8 },
-  {H1200_TRIGGER_TYPE_PLR, 0, H1200_TRIGGER_TYPE_LAST-1, "Trigger type", trigger_type_names, settings::STORAGE_TYPE_U8},
-  {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV1 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
-  {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV2 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
-  {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV3 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
-  {H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_NONE, H1200_EUCL_CV_MAPPING_LAST-1, "Eucl CV4 map", h1200_eucl_cv_mappings, settings::STORAGE_TYPE_U8},
-  { 8, 2, 32,  " P EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " P EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " P EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, 32,  " L EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " L EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " L EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, 32,  " R EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " R EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " R EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, 32,  " N EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " N EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " N EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, 32,  " S EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " S EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " S EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-  { 8, 2, 32,  " H EuLeng", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 32,  " H EuFill", NULL, settings::STORAGE_TYPE_U8 },
-  { 0, 0, 31,  " H EuOffs", NULL, settings::STORAGE_TYPE_U8 },
-};
+SETTINGS_ARRAY_DEFINE(H1200Settings);
 
 static constexpr uint32_t TRIGGER_MASK_TR1 = OC::DIGITAL_INPUT_1_MASK;
 static constexpr uint32_t TRIGGER_MASK_P = OC::DIGITAL_INPUT_2_MASK;
@@ -649,7 +651,7 @@ public:
     return cursor.cursor_pos();
   }
 
-  OC::SemitoneQuantizer quantizer;
+  util::SemitoneQuantizer quantizer;
   TonnetzState tonnetz_state;
   util::RingBuffer<H1200::UiAction, 4> ui_actions;
   OC::TriggerDelays<OC::kMaxTriggerDelayTicks> trigger_delays_;

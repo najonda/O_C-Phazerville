@@ -28,6 +28,8 @@ enum AUTO_CALIBRATION_STEP {
 };
 
 extern const char* const AT_steps[];
+extern const char *const reset_action_strings[];
+extern const char *const status_action_strings[];
 
 enum AUTOTUNER_SETTINGS {
   AT_SETTING_RESET,
@@ -57,6 +59,13 @@ public:
   AUTOTUNER_RESET_ACTION get_reset_action() const {
     return static_cast<AUTOTUNER_RESET_ACTION>(get_value(AT_SETTING_RESET));
   }
+
+  SETTINGS_ARRAY_DECLARE() {{
+    { OC::AUTOTUNER_RESET, OC::AUTOTUNER_RESET, OC::AUTOTUNER_RESET_ACTION_LAST - 1, "Autotune", OC::reset_action_strings, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 3, "Start voltage", OC::AT_steps, settings::STORAGE_TYPE_U4 },
+    { 0, -3, 0, "End voltage", /*trust me, I know what I'm doing*/OC::AT_steps + OCTAVES - 1, settings::STORAGE_TYPE_U4 },
+    { OC::AUTOTUNER_ARM, OC::AUTOTUNER_ARM, OC::AUTOTUNER_STATUS_ACTION_LAST - 1, "", OC::status_action_strings, settings::STORAGE_TYPE_U4 }
+  }};
 };
 
 // This is a slight refactoring of the original implementation.

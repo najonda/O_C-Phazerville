@@ -303,6 +303,9 @@ const Scale scales[] = {
 //  // 12-4-HD3 (8 step subharmonic series scale on the tritave) - see Xen-Arts VSTi microtuning library at http://www.xen-arts.net/Xen-Arts%20VSTi%20Microtuning%20Library.zip
 //  { 12 << 7, 8, { 0,  122, 255, 402, 567, 754, 969, 1224} }
   } ;
+
+static constexpr int kNumScales = sizeof(scales) / sizeof(scales[0]);
+
 }// namespace braids
 
 #endif  // BRAIDS_QUANTIZER_SCALES_H_

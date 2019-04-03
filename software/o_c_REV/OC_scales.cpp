@@ -7,9 +7,6 @@ Scale user_scales[Scales::SCALE_USER_LAST];
 Scale dummy_scale;
 
 /*static*/
-const int Scales::NUM_SCALES = OC::Scales::SCALE_USER_LAST + sizeof(braids::scales) / sizeof(braids::scales[0]);
-
-/*static*/
 void Scales::Init() {
   for (size_t i = 0; i < SCALE_USER_LAST; ++i)
     memcpy(&user_scales[i], &braids::scales[1], sizeof(Scale));
@@ -23,7 +20,7 @@ const Scale &Scales::GetScale(int index) {
     return braids::scales[index - SCALE_USER_LAST];
 }
 
-const char* const scale_names_short[] = {
+const char* const scale_names_short[Scales::NUM_SCALES] = {
     "USER1",
     "USER2",
     "USER3",
@@ -162,7 +159,7 @@ const char* const scale_names_short[] = {
 //    "8S3"  
     };
 
-const char* const scale_names[] = {
+const char* const scale_names[Scales::NUM_SCALES] = {
     "User-defined 1",
     "User-defined 2",
     "User-defined 3",
