@@ -699,9 +699,6 @@ private:
   void HandleDownButtonLong();
 };
 
-AppH1200 APP_H1200;
-
-
 void /*FASTRUN*/ AppH1200::Process(OC::IOFrame *ioframe) {
   uint32_t triggers = ioframe->digital_inputs.triggered();
 

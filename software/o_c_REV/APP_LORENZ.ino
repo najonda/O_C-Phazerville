@@ -185,8 +185,6 @@ private:
   void HandleLeftButton();
 };
 
-AppLorenzGenerator APP_LORENZ;
-
 void AppLorenzGenerator::Init() {
   lorenz_generator_.Init();
 

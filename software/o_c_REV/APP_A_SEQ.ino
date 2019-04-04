@@ -2054,8 +2054,6 @@ private:
   void HandleRightButton();
 };
 
-AppDualSequencer APP_A_SEQ;
-
 void AppDualSequencer::Init() {
 
   selected_channel_ = 0;

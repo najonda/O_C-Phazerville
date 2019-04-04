@@ -1047,8 +1047,6 @@ private:
   void HandleRightButton();
 };
 
-AppChordQuantizer APP_CHORDS;
-
 void AppChordQuantizer::Init() {
 
   chord_quantizer_.InitDefaults();

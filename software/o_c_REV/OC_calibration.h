@@ -1,11 +1,10 @@
 #ifndef OC_CALIBRATION_H_
 #define OC_CALIBRATION_H_
 
-#include "OC_ADC.h"
 #include "OC_config.h"
+#include "OC_ADC.h"
 #include "OC_DAC.h"
 #include "util/util_pagestorage.h"
-#include "util/EEPROMStorage.h"
 
 //#define VERBOSE_LUT
 #ifdef VERBOSE_LUT
@@ -60,8 +59,6 @@ struct CalibrationData {
 static_assert(sizeof(DAC::CalibrationData) == 88, "DAC::CalibrationData size changed!");
 static_assert(sizeof(ADC::CalibrationData) == 12, "ADC::CalibrationData size changed!");
 static_assert(sizeof(CalibrationData) == 116, "Calibration data size changed!");
-
-typedef PageStorage<EEPROMStorage, EEPROM_CALIBRATIONDATA_START, EEPROM_CALIBRATIONDATA_END, CalibrationData> CalibrationStorage;
 
 extern CalibrationData calibration_data;
 

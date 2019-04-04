@@ -811,8 +811,6 @@ private:
   void DrawMenuSettings() const;
 };
 
-AppQuadEnvelopeGenerator APP_ENVGEN;
-
 void AppQuadEnvelopeGenerator::Init() {
   int input = OC::DIGITAL_INPUT_1;
   for (auto &env : envelopes_) {

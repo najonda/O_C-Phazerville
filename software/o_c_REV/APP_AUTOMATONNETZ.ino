@@ -506,8 +506,6 @@ private:
   void DrawGridMenu() const;
 };
 
-AppAutomatonnetz APP_AUTOMATONNETZ;
-
 void AppAutomatonnetz::Init() {
   automatonnetz_state.Init();
   automatonnetz_state.ClearGrid(CLEAR_MODE_RAND_TRANSFORM);

@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "OC_ADC.h"
-#include "OC_apps.h"
+#include "OC_app_switcher.h"
 #include "OC_config.h"
 #include "OC_core.h"
 #include "OC_debug.h"
