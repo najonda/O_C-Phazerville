@@ -722,8 +722,6 @@ private:
   elapsedMillis milliseconds_since_last_freq_;
 };
 
-AppReferences APP_REFS;
-
 // App stubs
 
 void AppReferences::Init() {

@@ -100,11 +100,11 @@ protected:
 };
 
 template <typename T, typename Traits> class AppBaseImpl : public AppBase {
-protected:
+public:
   static constexpr uint16_t kAppId = Traits::id;
   static constexpr const char *const kAppName = Traits::app_name;
   static constexpr const char *const kBoringAppName = Traits::boring_app_name;
-
+protected:
   AppBaseImpl() : AppBase(kAppId, kAppName, kBoringAppName) { }
 };
 
@@ -134,41 +134,6 @@ public: \
   virtual void Process(IOFrame *ioframe) final; \
   virtual void GetIOConfig(IOConfig &) const final; \
   virtual void DrawDebugInfo() const final
-
-// Minimal app-switching helper/manager.
-// Use with care.
-class AppSwitcher {
-public:
-  AppSwitcher() { }
-  ~AppSwitcher() { }
-
-  void Init(bool reset_settings);
-
-  inline AppBase *current_app() const { return current_app_; }
-
-  inline void Process(IOFrame *ioframe) __attribute__((always_inline)) {
-    if (current_app_) {
-      IO::ReadDigitalInputs(ioframe);
-      IO::ReadADC(ioframe, current_app_->io_settings());
-      current_app_->Process(ioframe);
-      IO::WriteDAC(ioframe, current_app_->io_settings());
-    }
-  }
-
-  AppBase *FindAppByID(uint16_t id) const;
-  int IndexOfAppByID(uint16_t id) const;
-  void set_current_app(int index);
-
-private:
-  AppBase *current_app_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(AppSwitcher);
-};
-
-extern AppSwitcher app_switcher;
-
-void draw_save_message(uint8_t c);
-void save_app_data();
 
 }; // namespace OC
 

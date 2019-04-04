@@ -277,8 +277,6 @@ private:
 
 };
 
-AppPolyLfo APP_POLYLFO;
-
 void FASTRUN AppPolyLfo::Process(OC::IOFrame *ioframe) {
 
   bool reset_phase = ioframe->digital_inputs.triggered<OC::DIGITAL_INPUT_1>();

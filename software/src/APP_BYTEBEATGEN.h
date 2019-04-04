@@ -423,8 +423,6 @@ private:
   void HandleLowerButton();
 };
 
-AppQuadByteBeats APP_BYTEBEATGEN;
-
 void AppQuadByteBeats::Init() {
   int input = OC::DIGITAL_INPUT_1;
   for (auto &bytebeat : bytebeats_) {

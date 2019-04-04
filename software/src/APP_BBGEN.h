@@ -260,8 +260,6 @@ private:
   SmoothedValue<int32_t, kCvSmoothing> cv4;
 };
 
-AppQuadBouncingBalls APP_BBGEN;
-
 void AppQuadBouncingBalls::Init() {
   int input = OC::DIGITAL_INPUT_1;
   for (auto &bb : balls_) {

@@ -1213,8 +1213,6 @@ private:
   void HandleDownButtonLong();
 };
 
-AppQuadQuantizer APP_QQ;
-
 void AppQuadQuantizer::Init() {
 
   selected_channel_ = 0;

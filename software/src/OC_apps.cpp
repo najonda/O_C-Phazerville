@@ -26,6 +26,8 @@
 #include "OC_menus.h"
 #include "OC_config.h"
 #include "OC_digital_inputs.h"
+#include "OC_storage.h"
+#include "OC_app_switcher.h"
 #include "OC_global_settings.h"
 #include "util/util_misc.h"
 
@@ -98,7 +100,7 @@ namespace menu = OC::menu;
 
 /*
 #ifdef BORING_APP_NAMES
-OC::App available_apps[] = {
+OC::App app_container[] = {
   DECLARE_APP("AS", "ASR", ASR),
   DECLARE_APP("HA", "Triads", H1200),
   DECLARE_APP("AT", "Vectors", Automatonnetz),
@@ -114,7 +116,7 @@ OC::App available_apps[] = {
   DECLARE_APP("RF", "Voltages", REFS)
 };
 #else 
-OC::App available_apps[] = {
+OC::App app_container[] = {
   DECLARE_APP("AS", "CopierMaschine", ASR),
   DECLARE_APP("HA", "Harrington 1200", H1200),
   DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
@@ -132,7 +134,7 @@ OC::App available_apps[] = {
 #endif
 */
 
-static constexpr OC::App available_apps[] = {
+static constexpr OC::App app_container[] = {
 
   #ifdef ENABLE_APP_CALIBR8OR
   DECLARE_APP("C8", "Calibr8or", Calibr8or),
@@ -218,23 +220,31 @@ static constexpr OC::App available_apps[] = {
 
 namespace OC {
 
-static AppBase * const available_apps[] = {
-  &APP_ASR,
-  &APP_H1200,
-  &APP_AUTOMATONNETZ,
-  &APP_QQ,
-  &APP_DQ,
-  &APP_POLYLFO,
-  &APP_LORENZ,
-  &APP_ENVGEN,
-  &APP_A_SEQ,
-  &APP_BBGEN,
-  &APP_BYTEBEATGEN,
-  &APP_CHORDS,
-  &APP_REFS
-};
+GlobalSettings global_settings;
+AppSwitcher app_switcher;
 
-static constexpr int NUM_AVAILABLE_APPS = ARRAY_SIZE(available_apps);
+static AppData app_data;
+static GlobalSettingsStorage global_settings_storage;
+static AppDataStorage app_data_storage;
+
+static AppContainer<void // this space intentionally left blank
+  , AppASR
+  , AppH1200
+  , AppAutomatonnetz
+  , AppQuadQuantizer
+  , AppDualQuantizer
+  , AppPolyLfo
+  , AppLorenzGenerator
+  , AppQuadEnvelopeGenerator
+  , AppDualSequencer
+  , AppQuadBouncingBalls
+  , AppQuadByteBeats
+  , AppChordQuantizer
+  , AppReferences
+> app_container;
+
+static constexpr int DEFAULT_APP_INDEX = 0;
+static constexpr uint16_t DEFAULT_APP_ID = decltype(app_container)::GetAppIDAtIndex<DEFAULT_APP_INDEX>();
 
 void AppBase::InitDefaults()
 {
@@ -256,37 +266,6 @@ size_t AppBase::Restore(util::StreamBufferReader &stream_buffer)
   return stream_buffer.read();
 }
 
-// App settings are packed into a single blob of binary data; each app's chunk
-// gets its own header with id and the length of the entire chunk. This makes
-// this a bit more flexible during development.
-// Chunks are aligned on 2-byte boundaries for arbitrary reasons (thankfully M4
-// allows unaligned access...)
-struct AppChunkHeader {
-  uint16_t id;
-  uint16_t length;
-} __attribute__((packed));
-
-struct AppData {
-  static constexpr uint32_t FOURCC = FOURCC<'O','C','A',4>::value;
-  static constexpr size_t kAppDataSize = EEPROM_APPDATA_BINARY_SIZE;
-
-  char data[kAppDataSize];
-  size_t used;
-};
-
-typedef PageStorage<EEPROMStorage, EEPROM_GLOBALSETTINGS_START, EEPROM_GLOBALSETTINGS_END, GlobalSettings> GlobalSettingsStorage;
-typedef PageStorage<EEPROMStorage, EEPROM_APPDATA_START, EEPROM_APPDATA_END, AppData> AppDataStorage;
-
-GlobalSettings global_settings;
-GlobalSettingsStorage global_settings_storage;
-
-AppData app_settings;
-AppDataStorage app_data_storage;
-
-AppSwitcher app_switcher;
-
-static constexpr int DEFAULT_APP_INDEX = 0;
-static const uint16_t DEFAULT_APP_ID = available_apps[DEFAULT_APP_INDEX]->id();
 
 static void SaveGlobalSettings() {
   APPS_SERIAL_PRINTLN("Save global settings");
@@ -302,8 +281,8 @@ static void SaveGlobalSettings() {
 
 static constexpr size_t total_storage_size() {
     size_t used = 0;
-    for (size_t i = 0; i < NUM_AVAILABLE_APPS; ++i) {
-        used += available_apps[i]->storage_size() + sizeof(AppChunkHeader);
+    for (size_t i = 0; i < app_container.num_apps(); ++i) {
+        used += app_container[i]->storage_size() + sizeof(AppChunkHeader);
         if (used & 1) ++used; // align on 2-byte boundaries
     }
     return used;
@@ -315,13 +294,13 @@ static_assert(totalsize < OC::AppData::kAppDataSize, "EEPROM Allocation Exceeded
 static void SaveAppData() {
   APPS_SERIAL_PRINTLN("Save app data... (%u bytes available)", OC::AppData::kAppDataSize);
 
-  app_settings.used = 0;
-  char *data = app_settings.data;
-  char *data_end = data + OC::AppData::kAppDataSize;
+  app_data.used = 0;
+  uint8_t *data = app_data.data;
+  uint8_t *data_end = data + OC::AppData::kAppDataSize;
 
-  size_t start_app = random(NUM_AVAILABLE_APPS);
-  for (size_t i = 0; i < NUM_AVAILABLE_APPS; ++i) {
-    const auto &app = available_apps[(start_app + i) % NUM_AVAILABLE_APPS];
+  size_t start_app = random(app_container.num_apps());
+  for (size_t i = 0; i < app_container.num_apps(); ++i) {
+    const auto app = app_container[(start_app + i) % app_container.num_apps()];
     size_t storage_size = app->storage_size() + sizeof(AppChunkHeader);
     if (storage_size & 1) ++storage_size; // Align chunks on 2-byte boundaries
     if (storage_size > sizeof(AppChunkHeader)) {
@@ -342,22 +321,22 @@ static void SaveAppData() {
       } else {
         APPS_SERIAL_PRINTLN("* %s (%02x) : Saved %u bytes... (%u)",
                             app->name(), app->id(), result, storage_size);
-        app_settings.used += chunk->length;
+        app_data.used += chunk->length;
         data += chunk->length;
       }
       (void)result;
     }
   }
-  APPS_SERIAL_PRINTLN("App settings used: %u/%u", app_settings.used, EEPROM_APPDATA_BINARY_SIZE);
-  app_data_storage.Save(app_settings);
+  APPS_SERIAL_PRINTLN("App settings used: %u/%u", app_data.used, EEPROM_APPDATA_BINARY_SIZE);
+  app_data_storage.Save(app_data);
   APPS_SERIAL_PRINTLN("Saved app settings in page_index %d", app_data_storage.page_index());
 }
 
 static void RestoreAppData() {
-  APPS_SERIAL_PRINTLN("Restoring app data from page_index %d, used=%u", app_data_storage.page_index(), app_settings.used);
+  APPS_SERIAL_PRINTLN("Restoring app data from page_index %d, used=%u", app_data_storage.page_index(), app_data.used);
 
-  const char *data = app_settings.data;
-  const char *data_end = data + app_settings.used;
+  const uint8_t *data = app_data.data;
+  const uint8_t *data_end = data + app_data.used;
   size_t restored_bytes = 0;
 
   while (data < data_end) {
@@ -366,10 +345,14 @@ static void RestoreAppData() {
       APPS_SERIAL_PRINTLN("App chunk length %u exceeds available space (%u)", chunk->length, data_end - data);
       break;
     }
+    if (!chunk->id || !chunk->length) {
+      APPS_SERIAL_PRINTLN("Invalid app chunk id=%02x, length=%d, stopping restore", chunk->id, chunk->length);
+      break;
+    }
 
-    auto app = app_switcher.FindAppByID(chunk->id);
+    auto app = app_container.FindAppByID(chunk->id);
     if (!app) {
-      APPS_SERIAL_PRINTLN("App %02x not found, ignoring chunk... skipping %u", app->id(), chunk->length);
+      APPS_SERIAL_PRINTLN("App %02x not found, ignoring chunk... skipping %u", chunk->id, chunk->length);
       if (!chunk->length)
         break;
       data += chunk->length;
@@ -378,7 +361,7 @@ static void RestoreAppData() {
     size_t expected_length = app->storage_size() + sizeof(AppChunkHeader);
     if (expected_length & 0x1) ++expected_length;
     if (chunk->length != expected_length) {
-      APPS_SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storageSize=%u), skipping...", app->name(), chunk->id, chunk->length, expected_length, app->storage_size());
+      APPS_SERIAL_PRINTLN("* %s (%02x): chunk length %u != %u (storage_size=%u), skipping...", app->name(), chunk->id, chunk->length, expected_length, app->storage_size());
       data += chunk->length;
       continue;
     }
@@ -399,12 +382,12 @@ static void RestoreAppData() {
     data += chunk->length;
   }
 
-  APPS_SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);
+  APPS_SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_data.used);
 }
 
-void AppSwitcher::set_current_app(int index)
+void AppSwitcher::set_current_app(size_t index)
 {
-  current_app_ = available_apps[index];
+  current_app_ = app_container[index];
   global_settings.current_app_id = current_app_->id();
   #ifdef VOR
   VBiasManager *vbias_m = vbias_m->get();
@@ -412,27 +395,15 @@ void AppSwitcher::set_current_app(int index)
   #endif
 }
 
-AppBase *AppSwitcher::FindAppByID(uint16_t id) const {
-  for (auto app : available_apps)
-    if (app->id() == id) return app;
-  return nullptr;
-}
-
-int AppSwitcher::IndexOfAppByID(uint16_t id) const {
-  int i = 0;
-  for (const auto app : available_apps) {
-    if (app->id() == id) return i;
-    ++i;
-  }
-  return i;
-}
-
 void AppSwitcher::Init(bool reset_settings) {
 
-  current_app_ = available_apps[DEFAULT_APP_INDEX];
-
-  for (auto &app : available_apps)
+  APPS_SERIAL_PRINTLN("Init");
+  for (auto app : app_container.pointers) {
+    APPS_SERIAL_PRINTLN("> %s", app->name());
     app->InitDefaults();
+  }
+
+  current_app_ = app_container[DEFAULT_APP_INDEX];
 
   global_settings.Init();
   global_settings.encoders_enable_acceleration = OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT;
@@ -482,15 +453,15 @@ void AppSwitcher::Init(bool reset_settings) {
                   AppDataStorage::PAGES,
                   AppDataStorage::LENGTH);
 
-    if (!app_data_storage.Load(app_settings)) {
+    if (!app_data_storage.Load(app_data)) {
       APPS_SERIAL_PRINTLN("Data not loaded, using defaults!");
     } else {
       RestoreAppData();
     }
   }
 
-  int current_app_index = app_switcher.IndexOfAppByID(global_settings.current_app_id);
-  if (current_app_index < 0 || current_app_index >= NUM_AVAILABLE_APPS) {
+  auto current_app_index = app_container.IndexOfAppByID(global_settings.current_app_id);
+  if (current_app_index >= app_container.num_apps()) {
     APPS_SERIAL_PRINTLN("App id %02x not found, using default!", global_settings.current_app_id);
     global_settings.current_app_id = DEFAULT_APP_ID;
     current_app_index = DEFAULT_APP_INDEX;
@@ -515,18 +486,19 @@ void draw_app_menu(const menu::ScreenCursor<5> &cursor) {
   for (int current = cursor.first_visible();
        current <= cursor.last_visible();
        ++current, item.y += menu::kMenuLineH) {
+
     item.selected = current == cursor.cursor_pos();
     item.SetPrintPos();
     graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);
 #ifdef BORING_APP_NAMES
-    graphics.print(available_apps[current]->boring_name());
+    graphics.print(app_container[current]->boring_name());
 #else
-    graphics.print(available_apps[current]->name());
+    graphics.print(app_container[current]->name());
 #endif
-    //if (global_settings.current_app_id == available_apps[current]->id())
+    //if (global_settings.current_app_id == app_container[current]->id())
        //graphics.drawBitmap8(item.x + 2, item.y + 1, 4, bitmap_indicator_4x8);
     graphics.drawBitmap8(0, item.y + 1, 8,
-        global_settings.current_app_id == available_apps[current]->id() ? CHECK_ON_ICON : CHECK_OFF_ICON);
+        global_settings.current_app_id == app_container[current]->id() ? CHECK_ON_ICON : CHECK_OFF_ICON);
     item.DrawCustom();
   }
 
@@ -554,8 +526,8 @@ void Ui::AppSettings() {
   app_switcher.current_app()->HandleAppEvent(APP_EVENT_SUSPEND);
 
   menu::ScreenCursor<5> cursor;
-  cursor.Init(0, NUM_AVAILABLE_APPS - 1);
-  cursor.Scroll(app_switcher.IndexOfAppByID(global_settings.current_app_id));
+  cursor.Init(0, app_container.num_apps() - 1);
+  cursor.Scroll(app_container.IndexOfAppByID(global_settings.current_app_id));
 
   bool change_app = false;
   bool save = false;

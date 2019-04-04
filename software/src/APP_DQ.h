@@ -1137,8 +1137,6 @@ private:
   void HandleDownButtonLong();
 };
 
-AppDualQuantizer APP_DQ;
-
 void AppDualQuantizer::Init() {
   selected_channel_ = 0;
   cursor_.Init(DQ_CHANNEL_SETTING_SCALE1, DQ_CHANNEL_SETTING_LAST - 1);

@@ -772,8 +772,6 @@ private:
   void HandleDownButtonLong();
 };
 
-AppASR APP_ASR;
-
 void AppASR::Init() {
   asr.InitDefaults();
   asr.init();
