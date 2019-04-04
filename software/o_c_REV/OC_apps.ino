@@ -193,10 +193,10 @@ void AppSwitcher::set_current_app(size_t index)
 void AppSwitcher::Init(bool reset_settings) {
 
   APPS_SERIAL_PRINTLN("Init");
-  for (auto app : app_container.pointers) {
+  app_container.for_each([](AppBase *app) {
     APPS_SERIAL_PRINTLN("> %s", app->name());
     app->InitDefaults();
-  }
+  });
 
   current_app_ = app_container[DEFAULT_APP_INDEX];
 

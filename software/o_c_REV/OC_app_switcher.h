@@ -63,9 +63,9 @@ extern AppSwitcher app_switcher;
 
 // Helpers
 
-template <typename Tuple, size_t... I>
-std::array<AppBase *, std::tuple_size<Tuple>::value> tuple_to_array(Tuple &tuple, util::index_sequence<I...>) {
-    return std::array<AppBase *, std::tuple_size<Tuple>::value>{ &std::get<I>(tuple)... };
+template <typename Tuple, size_t... Is>
+std::array<AppBase *, std::tuple_size<Tuple>::value> tuple_to_array(Tuple &tuple, util::index_sequence<Is...>) {
+    return std::array<AppBase *, std::tuple_size<Tuple>::value>{ &std::get<Is>(tuple)... };
 }
 
 template <typename Tuple>
@@ -73,17 +73,20 @@ std::array<AppBase *, std::tuple_size<Tuple>::value> tuple_to_array(Tuple &tuple
     return tuple_to_array(tuple, typename util::make_index_sequence<std::tuple_size<Tuple>::value>::type());
 }
 
-template <typename T, typename... Ts>
+template <typename Empty, typename... Ts>
 class AppContainer {
 private:
-  using tuple_type = std::tuple<Ts...>;
-  tuple_type instances;
+  using TupleType = std::tuple<Ts...>;
+  using ArrayType = std::array<AppBase *, sizeof...(Ts)>;
+
+  TupleType instances_;
+  const ArrayType pointers_ = tuple_to_array(instances_);
 
 public:
 
   template <size_t N>
   static constexpr uint16_t GetAppIDAtIndex() {
-    return std::tuple_element<N, tuple_type>::type::kAppId;
+    return std::tuple_element<N, TupleType>::type::kAppId;
   }
 
   static constexpr size_t kNumApps = sizeof...(Ts);
@@ -92,23 +95,26 @@ public:
     return kNumApps;
   }
 
-  inline AppBase * operator [](size_t i) { return pointers[i]; }
+  inline AppBase * operator [](size_t i) { return pointers_[i]; }
+
+  template <typename T>
+  void for_each(T op) {
+    std::for_each(std::begin(pointers_), std::end(pointers_), op);
+  }
 
   AppBase *FindAppByID(uint16_t id) const {
     auto result =
-      std::find_if(std::begin(pointers), std::end(pointers),
+      std::find_if(std::begin(pointers_), std::end(pointers_),
                    [&id](AppBase *app) { return app->id() == id; });
-    return result != std::end(pointers) ? *result : nullptr;
+    return result != std::end(pointers_) ? *result : nullptr;
   }
 
   size_t IndexOfAppByID(uint16_t id) const {
     auto result =
-      std::find_if(std::begin(pointers), std::end(pointers),
+      std::find_if(std::begin(pointers_), std::end(pointers_),
                    [&id](AppBase *app) { return app->id() == id; });
-    return result != std::end(pointers) ? std::distance(std::begin(pointers), result) : num_apps();
+    return result != std::end(pointers_) ? std::distance(std::begin(pointers_), result) : num_apps();
   }
-
-  const std::array<AppBase *, kNumApps> pointers = tuple_to_array(instances);
 };
 
 } // OC
