@@ -57,8 +57,12 @@ static AppContainer<void // this space intentionally left blank
   , AppReferences
 > app_container;
 
+static_assert(decltype(app_container)::TotalAppDataStorageSize() < AppData::kAppDataSize,
+              "Apps use too much EEPROM space!");
+
 static constexpr int DEFAULT_APP_INDEX = 0;
 static constexpr uint16_t DEFAULT_APP_ID = decltype(app_container)::GetAppIDAtIndex<DEFAULT_APP_INDEX>();
+
 
 void AppBase::InitDefaults()
 {

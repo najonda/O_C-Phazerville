@@ -1093,6 +1093,7 @@ OC_APP_TRAITS(AppDualQuantizer, TWOCCS("DQ"), "Meta-Q", "2x Quantizer");
 class OC_APP_CLASS(AppDualQuantizer) {
 public:
   OC_APP_INTERFACE_DECLARE(AppDualQuantizer);
+  OC_APP_STORAGE_SIZE(NUMCHANNELS * DQ_QuantizerChannel::storageSize());
 
 private:
   int selected_channel_;
@@ -1126,10 +1127,6 @@ void AppDualQuantizer::Init() {
   }
 
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
-}
-
-size_t AppDualQuantizer::appdata_storage_size() const {
-  return NUMCHANNELS * DQ_QuantizerChannel::storageSize();
 }
 
 size_t AppDualQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

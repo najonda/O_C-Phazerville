@@ -1025,6 +1025,7 @@ OC_APP_TRAITS(AppChordQuantizer, TWOCCS("CQ"), "Acid Curds", "Chords");
 class OC_APP_CLASS(AppChordQuantizer) {
 public:
   OC_APP_INTERFACE_DECLARE(AppChordQuantizer);
+  OC_APP_STORAGE_SIZE(ChordQuantizer::storageSize());
 
 private:
   ChordQuantizer chord_quantizer_;
@@ -1059,10 +1060,6 @@ void AppChordQuantizer::Init() {
 
   chord_quantizer_.update_enabled_settings();
   cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
-}
-
-size_t AppChordQuantizer::appdata_storage_size() const {
-  return ChordQuantizer::storageSize();
 }
 
 size_t AppChordQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

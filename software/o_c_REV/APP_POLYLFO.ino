@@ -241,6 +241,7 @@ OC_APP_TRAITS(AppPolyLfo, TWOCCS("PL"), "Quadraturia", "Quadrature LFO");
 class OC_APP_CLASS(AppPolyLfo) {
 public:
   OC_APP_INTERFACE_DECLARE(AppPolyLfo);
+  OC_APP_STORAGE_SIZE(PolyLfo::storageSize());
 
 private:
 
@@ -370,10 +371,6 @@ void AppPolyLfo::Init() {
   left_edit_mode_ = POLYLFO_SETTING_COARSE;
   cursor_.Init(POLYLFO_SETTING_TAP_TEMPO, POLYLFO_SETTING_LAST - 1);
   poly_lfo_.Init();
-}
-
-size_t AppPolyLfo::appdata_storage_size() const {
-  return PolyLfo::storageSize();
 }
 
 size_t AppPolyLfo::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

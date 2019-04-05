@@ -25,8 +25,11 @@
 #ifndef UTIL_TEMPLATES_H_
 #define UTIL_TEMPLATES_H_
 
+#include <type_traits>
+
 namespace util {
 
+// C++11, >= 14 have their own
 template <size_t... Is>
 struct index_sequence {
   template <size_t N> using append = index_sequence<Is..., N>;
@@ -41,6 +44,13 @@ template <>
 struct make_index_sequence<0U> {
   using type = index_sequence<>;
 };
+
+template<typename T, T ...>
+struct sum : std::integral_constant<T, 0> { };
+
+template<typename T, T S, T ... Ss>
+struct sum<T, S, Ss...> : std::integral_constant<T, S + sum<T, Ss...>::value > { };
+
 
 } // util
 

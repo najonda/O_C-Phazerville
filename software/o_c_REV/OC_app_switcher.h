@@ -28,6 +28,7 @@
 #include <array>
 #include <tuple>
 #include "OC_apps.h"
+#include "OC_storage.h"
 #include "util/util_templates.h"
 
 namespace OC { 
@@ -84,9 +85,15 @@ private:
 
 public:
 
+  static_assert(sizeof...(Ts) >= 1, "At least one app type required");
+
   template <size_t N>
   static constexpr uint16_t GetAppIDAtIndex() {
     return std::tuple_element<N, TupleType>::type::kAppId;
+  }
+
+  static constexpr size_t TotalAppDataStorageSize() {
+    return util::sum<size_t, AppStorageChunkSize<Ts>::value...>::value;
   }
 
   static constexpr size_t kNumApps = sizeof...(Ts);

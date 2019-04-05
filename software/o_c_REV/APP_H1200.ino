@@ -689,6 +689,7 @@ OC_APP_TRAITS(AppH1200, TWOCCS("HA"), "Harrington 1200", "Triads");
 class OC_APP_CLASS(AppH1200) {
 public:
   OC_APP_INTERFACE_DECLARE(AppH1200);
+  OC_APP_STORAGE_SIZE(H1200Settings::storageSize());
 
 private:
   void HandleTopButton();
@@ -987,10 +988,6 @@ void AppH1200::Init() {
   h1200_state.Init();
   h1200_settings.update_enabled_settings();
   h1200_state.cursor.AdjustEnd(h1200_settings.num_enabled_settings() - 1);
-}
-
-size_t AppH1200::appdata_storage_size() const {
-  return H1200Settings::storageSize();
 }
 
 size_t AppH1200::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

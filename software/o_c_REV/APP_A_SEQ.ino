@@ -2028,6 +2028,7 @@ OC_APP_TRAITS(AppDualSequencer, TWOCCS("SQ"), "Sequins", "2x Sequencer");
 class OC_APP_CLASS(AppDualSequencer) {
 public:
   OC_APP_INTERFACE_DECLARE(AppDualSequencer);
+  OC_APP_STORAGE_SIZE(NUM_CHANNELS * SEQ_Channel::storageSize());
 
 private:
   int selected_channel_;
@@ -2068,10 +2069,6 @@ void AppDualSequencer::Init() {
   for (size_t i = 0; i < NUM_CHANNELS; ++i)
     seq_channel_[i].Init(static_cast<SEQ_ChannelTriggerSource>(SEQ_CHANNEL_TRIGGER_TR1), i);
   cursor_.AdjustEnd(seq_channel_[0].num_enabled_settings() - 1);
-}
-
-size_t AppDualSequencer::appdata_storage_size() const {
-  return NUM_CHANNELS * SEQ_Channel::storageSize();
 }
 
 size_t AppDualSequencer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

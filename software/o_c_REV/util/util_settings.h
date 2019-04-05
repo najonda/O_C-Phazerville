@@ -201,7 +201,7 @@ public:
                             num_settings, stream_reader);
   }
 
-  static size_t storageSize() {
+  static constexpr size_t storageSize() {
     return StorageSize<clazz>();
   }
 

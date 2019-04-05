@@ -27,6 +27,9 @@
 
 #include <stdint.h>
 #include "OC_config.h"
+#include "OC_calibration.h"
+#include "OC_global_settings.h"
+#include "OC_io_settings.h"
 #include "util/util_misc.h"
 #include "util/util_pagestorage.h"
 #include "util/EEPROMStorage.h"
@@ -54,6 +57,16 @@ struct AppData {
 using CalibrationStorage = PageStorage<EEPROMStorage, EEPROM_CALIBRATIONDATA_START, EEPROM_CALIBRATIONDATA_END, CalibrationData>;
 using GlobalSettingsStorage = PageStorage<EEPROMStorage, EEPROM_GLOBALSETTINGS_START, EEPROM_GLOBALSETTINGS_END, GlobalSettings>;
 using AppDataStorage = PageStorage<EEPROMStorage, EEPROM_APPDATA_START, EEPROM_APPDATA_END, AppData>;
+
+// Helpers for getting total app storage sizes
+
+template <typename T>
+struct AppStorageChunkSize {
+  static constexpr size_t value =
+    (sizeof(AppChunkHeader) +
+      IOSettings::storageSize() +
+      T::kAppDataStorageSize + 1) & ~0x1;
+};
 
 } // OC
 

@@ -747,6 +747,7 @@ OC_APP_TRAITS(AppASR, TWOCCS("AS"), "CopierMaschine", "ASR");
 class OC_APP_CLASS(AppASR) {
 public:
   OC_APP_INTERFACE_DECLARE(AppASR);
+  OC_APP_STORAGE_SIZE(ASR::storageSize());
 
 private:
   int left_encoder_value_;
@@ -779,10 +780,6 @@ void AppASR::Init() {
 
   asr.update_enabled_settings();
   cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
-}
-
-size_t AppASR::appdata_storage_size() const {
-  return ASR::storageSize();
 }
 
 size_t AppASR::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

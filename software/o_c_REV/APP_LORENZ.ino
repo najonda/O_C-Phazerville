@@ -164,6 +164,7 @@ OC_APP_TRAITS(AppLorenzGenerator, TWOCCS("LR"), "Low-rents", "Lorenz");
 class OC_APP_CLASS(AppLorenzGenerator) {
 public:
   OC_APP_INTERFACE_DECLARE(AppLorenzGenerator);
+  OC_APP_STORAGE_SIZE(LorenzGenerator::storageSize());
 
 private:
   LorenzGenerator lorenz_generator_;
@@ -250,10 +251,6 @@ void FASTRUN AppLorenzGenerator::Process(OC::IOFrame *ioframe) {
   ioframe->outputs.set_raw_value(DAC_CHANNEL_B, lorenz_generator_.lorenz.dac_code(1));
   ioframe->outputs.set_raw_value(DAC_CHANNEL_C, lorenz_generator_.lorenz.dac_code(2));
   ioframe->outputs.set_raw_value(DAC_CHANNEL_D, lorenz_generator_.lorenz.dac_code(3));
-}
-
-size_t AppLorenzGenerator::appdata_storage_size() const {
-  return LorenzGenerator::storageSize();
 }
 
 size_t AppLorenzGenerator::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
