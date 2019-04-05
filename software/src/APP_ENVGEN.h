@@ -773,6 +773,7 @@ OC_APP_TRAITS(AppQuadEnvelopeGenerator, TWOCCS("EG"), "Piqued", "4x EG");
 class OC_APP_CLASS(AppQuadEnvelopeGenerator) {
 public:
   OC_APP_INTERFACE_DECLARE(AppQuadEnvelopeGenerator);
+  OC_APP_STORAGE_SIZE(4 * EnvelopeGenerator::storageSize());
 
 private:
   static constexpr int32_t kCvSmoothing = 16;
@@ -859,10 +860,6 @@ void AppQuadEnvelopeGenerator::Process(OC::IOFrame *ioframe) {
   envelopes_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, internal_trigger_mask, cvs);
   envelopes_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, internal_trigger_mask, cvs);
   envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
-}
-
-size_t AppQuadEnvelopeGenerator::appdata_storage_size() const {
-  return 4 * EnvelopeGenerator::storageSize();
 }
 
 size_t AppQuadEnvelopeGenerator::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

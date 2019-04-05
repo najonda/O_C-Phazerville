@@ -385,6 +385,7 @@ OC_APP_TRAITS(AppQuadByteBeats, TWOCCS("BY"), "Viznutcracker sweet", "Bytebeats"
 class OC_APP_CLASS(AppQuadByteBeats) {
 public:
   OC_APP_INTERFACE_DECLARE(AppQuadByteBeats);
+  OC_APP_STORAGE_SIZE(4 * ByteBeat::storageSize());
 
 private:
   static constexpr int32_t kCvSmoothing = 16;
@@ -453,10 +454,6 @@ void FASTRUN AppQuadByteBeats::Process(OC::IOFrame *ioframe) {
   bytebeats_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
   bytebeats_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
   bytebeats_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
-}
-
-size_t AppQuadByteBeats::appdata_storage_size() const {
-  return 4 * ByteBeat::storageSize();
 }
 
 size_t AppQuadByteBeats::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

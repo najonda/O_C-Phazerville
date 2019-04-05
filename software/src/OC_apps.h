@@ -122,7 +122,7 @@ clazz : public AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>
 public: \
   clazz() : AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>() { } \
   virtual void Init() final; \
-  virtual size_t appdata_storage_size() const final; \
+  virtual size_t appdata_storage_size() const final { return kAppDataStorageSize; } \
   virtual size_t SaveAppData(util::StreamBufferWriter &) const final; \
   virtual size_t RestoreAppData(util::StreamBufferReader &) final; \
   virtual void HandleAppEvent(AppEvent) final; \
@@ -134,6 +134,9 @@ public: \
   virtual void Process(IOFrame *ioframe) final; \
   virtual void GetIOConfig(IOConfig &) const final; \
   virtual void DrawDebugInfo() const final
+
+#define OC_APP_STORAGE_SIZE(s) \
+  static constexpr size_t kAppDataStorageSize = s;
 
 }; // namespace OC
 

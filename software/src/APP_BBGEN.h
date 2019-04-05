@@ -228,6 +228,7 @@ OC_APP_TRAITS(AppQuadBouncingBalls, TWOCCS("BB"), "Dialectic Ping Pong", "Balls"
 class OC_APP_CLASS(AppQuadBouncingBalls) {
 public:
   OC_APP_INTERFACE_DECLARE(AppQuadBouncingBalls);
+  OC_APP_STORAGE_SIZE(4 * BouncingBall::storageSize());
 
 private:
   static constexpr int32_t kCvSmoothing = 16;
@@ -288,10 +289,6 @@ void FASTRUN AppQuadBouncingBalls::Process(OC::IOFrame *ioframe) {
   balls_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
   balls_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
   balls_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
-}
-
-size_t AppQuadBouncingBalls::appdata_storage_size() const {
-  return 4 * BouncingBall::storageSize();
 }
 
 size_t AppQuadBouncingBalls::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

@@ -645,6 +645,7 @@ OC_APP_TRAITS(AppReferences, TWOCCS("RF"), "References", "Voltages");
 class OC_APP_CLASS(AppReferences) {
 public:
   OC_APP_INTERFACE_DECLARE(AppReferences);
+  OC_APP_STORAGE_SIZE(DAC_CHANNEL_LAST * ReferenceChannel::storageSize());
 
 private:
   OC::Autotuner<ReferenceChannel> autotuner;
@@ -764,10 +765,6 @@ void AppReferences::Process(OC::IOFrame *ioframe) {
    } else if (milliseconds_since_last_freq_ > 100000) {
     frequency_ = 0.0f;
    }
-}
-
-size_t AppReferences::appdata_storage_size() const {
-  return DAC_CHANNEL_LAST * ReferenceChannel::storageSize();
 }
 
 size_t AppReferences::SaveAppData(util::StreamBufferWriter &stream_buffer) const {

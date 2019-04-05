@@ -505,6 +505,7 @@ OC_APP_TRAITS(AppAutomatonnetz, TWOCCS("AT"), "Automatonnetz", "Vectors");
 class OC_APP_CLASS(AppAutomatonnetz) {
 public:
   OC_APP_INTERFACE_DECLARE(AppAutomatonnetz);
+  OC_APP_STORAGE_SIZE(AutomatonnetzState::storageSize() + GRID_CELLS * TransformCell::storageSize());
 
 private:
   AutomatonnetzState automatonnetz_state;
@@ -529,11 +530,6 @@ void AppAutomatonnetz::Init() {
   memset(&ui, 0, sizeof(ui));
   ui.cell_cursor.Init(CELL_SETTING_TRANSFORM, CELL_SETTING_LAST - 1);
   ui.grid_cursor.Init(GRID_SETTING_DX, GRID_SETTING_LAST - 1);
-}
-
-size_t AppAutomatonnetz::appdata_storage_size() const {
-  return AutomatonnetzState::storageSize() +
-    GRID_CELLS * TransformCell::storageSize();
 }
 
 void AppAutomatonnetz::Loop() {

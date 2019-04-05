@@ -1189,6 +1189,7 @@ OC_APP_TRAITS(AppQuadQuantizer, TWOCCS("QQ"), "Quantermain", "4x Quantizer");
 class OC_APP_CLASS(AppQuadQuantizer) {
 public:
   OC_APP_INTERFACE_DECLARE(AppQuadQuantizer);
+  OC_APP_STORAGE_SIZE(4 * QuantizerChannel::storageSize());
 
 private:
   int selected_channel_;
@@ -1225,10 +1226,6 @@ void AppQuadQuantizer::Init() {
   }
 
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
-}
-
-size_t AppQuadQuantizer::appdata_storage_size() const {
-  return 4 * QuantizerChannel::storageSize();
 }
 
 size_t AppQuadQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
