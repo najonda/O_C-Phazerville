@@ -56,7 +56,7 @@ enum DQ_ChannelSetting {
   DQ_CHANNEL_SETTING_ROOT2,
   DQ_CHANNEL_SETTING_ROOT3,
   DQ_CHANNEL_SETTING_ROOT4,
-  DQ_CHANNEL_SETTING_SCALE_SEQ,
+  DQ_CHANNEL_SETTING_SLOT_INDEX,
   DQ_CHANNEL_SETTING_MASK1,
   DQ_CHANNEL_SETTING_MASK2,
   DQ_CHANNEL_SETTING_MASK3,
@@ -156,48 +156,87 @@ const char* const dq_tm_trig_out[] = {
   "echo", "lsb", "chng"
 };
 
-class DQ_QuantizerChannel : public settings::SettingsBase<DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST> {
+class DQ_QuantizerChannel
+: public settings::SettingsBase<DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST>
+, public OC::ScaleEditorEventHandler {
 public:
 
-  int get_scale(uint8_t selected_scale_slot_) const {
-
-    switch(selected_scale_slot_) {
-
-       case SLOT2:
-        return values_[DQ_CHANNEL_SETTING_SCALE2];
-       break;
-       case SLOT3:
-        return values_[DQ_CHANNEL_SETTING_SCALE3];
-       break;
-       case SLOT4:
-        return values_[DQ_CHANNEL_SETTING_SCALE4];
-       break;
-       case SLOT1:
-       default:
-        return values_[DQ_CHANNEL_SETTING_SCALE1];
-       break;
+  // ScaleEditorEventHandler
+  int get_scale(int slot_index) const final {
+    switch(slot_index) {
+      case SLOT2: return values_[DQ_CHANNEL_SETTING_SCALE2];
+      case SLOT3: return values_[DQ_CHANNEL_SETTING_SCALE3];
+      case SLOT4: return values_[DQ_CHANNEL_SETTING_SCALE4];
+      case SLOT1:
+      default:    return values_[DQ_CHANNEL_SETTING_SCALE1];
+      break;
     }
   }
 
-  int get_scale_select() const {
-    return values_[DQ_CHANNEL_SETTING_SCALE_SEQ];
+  uint16_t get_scale_mask(int slot_index) const final {
+    switch(slot_index) {
+      case SLOT2: return values_[DQ_CHANNEL_SETTING_MASK2];
+      case SLOT3: return values_[DQ_CHANNEL_SETTING_MASK3];
+      case SLOT4: return values_[DQ_CHANNEL_SETTING_MASK4];
+      case SLOT1:
+      default:    return values_[DQ_CHANNEL_SETTING_MASK1];
+    }
   }
 
-  int get_scale_seq_mode() const {
-    return values_[DQ_CHANNEL_SETTING_SEQ_MODE];
+  void update_scale_mask(uint16_t mask, int slot_index) final {
+    switch (slot_index) {
+      case SLOT1:
+      apply_value(DQ_CHANNEL_SETTING_MASK1, mask);
+      last_mask_[0] = mask;
+      break;
+      case SLOT2:
+      apply_value(DQ_CHANNEL_SETTING_MASK2, mask);
+      last_mask_[1] = mask;
+      break;
+      case SLOT3:
+      apply_value(DQ_CHANNEL_SETTING_MASK3, mask);
+      last_mask_[2] = mask;
+      break;
+      case SLOT4:
+      apply_value(DQ_CHANNEL_SETTING_MASK4, mask);
+      last_mask_[3] = mask;
+      break;
+      default:
+      break;
+    }
+    force_update_ = true;
   }
 
-  int get_display_scale() const {
-    return display_scale_slot_;
+  void scale_changed() final {
+    force_update_ = true;
   }
 
-  int get_display_root() const {
-    return display_root_;
+  int get_root(int slot_index) const final {
+    switch(slot_index) {
+      case SLOT2: return values_[DQ_CHANNEL_SETTING_ROOT2];
+      case SLOT3: return values_[DQ_CHANNEL_SETTING_ROOT3];
+      case SLOT4: return values_[DQ_CHANNEL_SETTING_ROOT4];
+      case SLOT1:
+      default:    return values_[DQ_CHANNEL_SETTING_ROOT1];
+    }
   }
 
-  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, uint8_t scale_slot) {
+  int get_transpose(int slot_index) const final {
+    switch(slot_index) {
+      case SLOT2: return values_[DQ_CHANNEL_SETTING_TRANSPOSE2];
+      case SLOT3: return values_[DQ_CHANNEL_SETTING_TRANSPOSE3];
+      case SLOT4: return values_[DQ_CHANNEL_SETTING_TRANSPOSE4];
+      case SLOT1:
+      default:    return values_[DQ_CHANNEL_SETTING_TRANSPOSE1];
+    }
+  }
 
-    if (scale != get_scale(scale_slot) || mask != get_mask(scale_slot) || root != root_last_ || transpose != transpose_last_) {
+  int get_slot_index() const final {
+    return values_[DQ_CHANNEL_SETTING_SLOT_INDEX];
+  }
+
+  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, int slot_index) final {
+    if (scale != get_scale(slot_index) || mask != get_scale_mask(slot_index) || root != root_last_ || transpose != transpose_last_) {
 
       const OC::Scale &scale_def = OC::Scales::GetScale(scale);
       root_last_ = root;
@@ -205,7 +244,7 @@ public:
 
       if (0 == (mask & ~(0xffff << scale_def.num_notes)))
         mask |= 0x1;
-      switch (scale_slot) {
+      switch (slot_index) {
         case SLOT2:
         apply_value(DQ_CHANNEL_SETTING_MASK2, mask);
         apply_value(DQ_CHANNEL_SETTING_SCALE2, scale);
@@ -234,45 +273,19 @@ public:
       }
     }
   }
+  // End ScaleEditorEventHandler
 
-  int get_root(uint8_t selected_scale_slot_) const {
 
-    switch(selected_scale_slot_) {
-
-       case SLOT2:
-        return values_[DQ_CHANNEL_SETTING_ROOT2];
-       break;
-       case SLOT3:
-        return values_[DQ_CHANNEL_SETTING_ROOT3];
-       break;
-       case SLOT4:
-        return values_[DQ_CHANNEL_SETTING_ROOT4];
-       break;
-       case SLOT1:
-       default:
-        return values_[DQ_CHANNEL_SETTING_ROOT1];
-       break;
-    }
+  int get_scale_seq_mode() const {
+    return values_[DQ_CHANNEL_SETTING_SEQ_MODE];
   }
 
-  uint16_t get_mask(uint8_t selected_scale_slot_) const {
+  int get_display_scale() const {
+    return display_scale_slot_;
+  }
 
-    switch(selected_scale_slot_) {
-
-      case SLOT2:
-        return values_[DQ_CHANNEL_SETTING_MASK2];
-      break;
-      case SLOT3:
-        return values_[DQ_CHANNEL_SETTING_MASK3];
-      break;
-      case SLOT4:
-        return values_[DQ_CHANNEL_SETTING_MASK4];
-      break;
-      case SLOT1:
-      default:
-        return values_[DQ_CHANNEL_SETTING_MASK1];
-      break;
-    }
+  int get_display_root() const {
+    return display_root_;
   }
 
   uint16_t get_rotated_mask(uint8_t selected_scale_slot_) const {
@@ -297,26 +310,6 @@ public:
 
   uint16_t get_trigger_delay() const {
     return values_[DQ_CHANNEL_SETTING_DELAY];
-  }
-
-  int get_transpose(uint8_t selected_scale_slot_) const {
-
-    switch(selected_scale_slot_) {
-
-      case SLOT2:
-        return values_[DQ_CHANNEL_SETTING_TRANSPOSE2];
-      break;
-      case SLOT3:
-        return values_[DQ_CHANNEL_SETTING_TRANSPOSE3];
-      break;
-      case SLOT4:
-        return values_[DQ_CHANNEL_SETTING_TRANSPOSE4];
-      break;
-      case SLOT1:
-      default:
-        return values_[DQ_CHANNEL_SETTING_TRANSPOSE1];
-      break;
-    }
   }
 
   int get_octave() const {
@@ -468,18 +461,18 @@ public:
       if (scale_reset_) {
        // manual change?
        scale_reset_ = false;
-       active_scale_slot_ = get_scale_select();
+       active_scale_slot_ = get_slot_index();
        prev_scale_slot_ = display_scale_slot_ = active_scale_slot_;
       }
     }
-    else if (prev_scale_slot_ != get_scale_select()) {
-      active_scale_slot_ = get_scale_select();
+    else if (prev_scale_slot_ != get_slot_index()) {
+      active_scale_slot_ = get_slot_index();
       prev_scale_slot_ = display_scale_slot_ = active_scale_slot_;
     }
 
     if (scale_advance_) {
       scale_sequence_cnt_++;
-      active_scale_slot_ = get_scale_select() + (scale_sequence_cnt_ % (get_scale_seq_mode() + 1));
+      active_scale_slot_ = get_slot_index() + (scale_sequence_cnt_ % (get_scale_seq_mode() + 1));
 
       if (active_scale_slot_ >= NUM_SCALE_SLOTS)
         active_scale_slot_ -= NUM_SCALE_SLOTS;
@@ -819,42 +812,6 @@ public:
     scrolling_history_.Update();
   }
 
-  // Wrappers for ScaleEdit
-  void scale_changed() {
-    force_update_ = true;
-  }
-
-  uint16_t get_scale_mask(uint8_t scale_select) const {
-    return get_mask(scale_select);
-  }
-
-  void update_scale_mask(uint16_t mask, uint8_t scale_select) {
-
-    switch (scale_select) {
-
-      case SLOT1:
-        apply_value(DQ_CHANNEL_SETTING_MASK1, mask);
-        last_mask_[0] = mask;
-      break;
-      case SLOT2:
-        apply_value(DQ_CHANNEL_SETTING_MASK2, mask);
-        last_mask_[1] = mask;
-      break;
-      case SLOT3:
-        apply_value(DQ_CHANNEL_SETTING_MASK3, mask);
-        last_mask_[2] = mask;
-      break;
-      case SLOT4:
-        apply_value(DQ_CHANNEL_SETTING_MASK4, mask);
-        last_mask_[3] = mask;
-      break;
-      default:
-      break;
-    }
-    force_update_ = true;
-  }
-  //
-
   uint8_t getTriggerState() const {
     return trigger_display_.getState();
   }
@@ -874,7 +831,7 @@ public:
   void update_enabled_settings() {
     DQ_ChannelSetting *settings = enabled_settings_;
 
-    switch(get_scale_select()) {
+    switch(get_slot_index()) {
 
       case SLOT1:
       *settings++ = DQ_CHANNEL_SETTING_SCALE1;
@@ -893,9 +850,9 @@ public:
     }
 
     // to do -- might as well disable no scale
-    if (OC::Scales::SCALE_NONE != get_scale(get_scale_select())) {
+    if (OC::Scales::SCALE_NONE != get_scale(get_slot_index())) {
 
-      switch(get_scale_select()) {
+      switch(get_slot_index()) {
 
         case SLOT1:
          *settings++ = DQ_CHANNEL_SETTING_MASK1;
@@ -914,9 +871,9 @@ public:
       }
 
       *settings++ = DQ_CHANNEL_SETTING_SEQ_MODE;
-      *settings++ = DQ_CHANNEL_SETTING_SCALE_SEQ;
+      *settings++ = DQ_CHANNEL_SETTING_SLOT_INDEX;
 
-      switch(get_scale_select()) {
+      switch(get_slot_index()) {
 
         case SLOT1:
         *settings++ = DQ_CHANNEL_SETTING_ROOT1;
@@ -1036,10 +993,10 @@ private:
 
     force_update_ = false;
     const int scale = get_scale(scale_select);
-    uint16_t mask = get_mask(scale_select);
+    uint16_t mask = get_scale_mask(scale_select);
 
     if (mask_rotate)
-      mask = OC::ScaleEditor<DQ_QuantizerChannel>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      mask = OC::ScaleEditor::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (force || (last_scale_[scale_select] != scale || last_mask_[scale_select] != mask)) {
       last_scale_[scale_select] = scale;
@@ -1098,7 +1055,7 @@ public:
 private:
   int selected_channel_;
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  OC::ScaleEditor<DQ_QuantizerChannel> scale_editor_;
+  ScaleEditor scale_editor_;
   DQ_QuantizerChannel quantizer_channels_[NUMCHANNELS];
 
   inline bool editing() const {
@@ -1139,9 +1096,9 @@ size_t AppDualQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) co
 size_t AppDualQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (size_t i = 0; i < NUMCHANNELS; ++i) {
     quantizer_channels_[i].Restore(stream_buffer);
-    //int scale = quantizer_channels_[i].get_scale_select();
+    //int scale = quantizer_channels_[i].get_slot_index();
     for (size_t j = SLOT1; j < LAST_SLOT; j++) {
-      quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(j), j);
+      quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_scale_mask(j), j);
     }
     quantizer_channels_[i].update_enabled_settings();
   }
@@ -1378,7 +1335,7 @@ void AppDualQuantizer::HandleEncoderEvent(const UI::Event &event) {
             selected.update_enabled_settings();
             cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
           break;
-          case DQ_CHANNEL_SETTING_SCALE_SEQ:
+          case DQ_CHANNEL_SETTING_SLOT_INDEX:
             selected.update_enabled_settings();
             cursor_.AdjustEnd(selected.num_enabled_settings() - 1);
             selected.reset_scale();
@@ -1414,7 +1371,7 @@ void AppDualQuantizer::HandleRightButton() {
     case DQ_CHANNEL_SETTING_MASK2:
     case DQ_CHANNEL_SETTING_MASK3:
     case DQ_CHANNEL_SETTING_MASK4: {
-      int scale = selected.get_scale(selected.get_scale_select());
+      int scale = selected.get_scale(selected.get_slot_index());
       if (OC::Scales::SCALE_NONE != scale) {
         scale_editor_.Edit(&selected, scale);
       }
@@ -1436,9 +1393,9 @@ void AppDualQuantizer::HandleLeftButtonLong() {
 
   // copy scale settings to all slots:
   DQ_QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
-  int _slot = selected_channel.get_scale_select();
+  int _slot = selected_channel.get_slot_index();
   int scale = selected_channel.get_scale(_slot);
-  int mask = selected_channel.get_mask(_slot);
+  int mask = selected_channel.get_scale_mask(_slot);
   int root = selected_channel.get_root(_slot);
   int transpose = selected_channel.get_transpose(_slot);
 
@@ -1451,7 +1408,7 @@ void AppDualQuantizer::HandleLeftButtonLong() {
 void AppDualQuantizer::HandleDownButtonLong() {
   // reset mask
   DQ_QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
-  int scale_slot = selected_channel.get_scale_select();
+  int scale_slot = selected_channel.get_slot_index();
   selected_channel.set_scale_at_slot(selected_channel.get_scale(scale_slot), 0xFFFF, selected_channel.get_root(scale_slot), selected_channel.get_transpose(scale_slot), scale_slot);
 }
 

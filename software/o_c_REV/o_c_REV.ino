@@ -45,7 +45,6 @@
 unsigned long LAST_REDRAW_TIME = 0;
 uint_fast8_t MENU_REDRAW = true;
 OC::UiMode ui_mode = OC::UI_MODE_MENU;
-const bool DUMMY = false;
 OC::IOFrame io_frame;
 
 /*  ------------------------ UI timer ISR ---------------------------   */

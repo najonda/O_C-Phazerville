@@ -146,18 +146,36 @@ const char* const chord_playmodes[] = {
   "-", "SEQ+1", "SEQ+2", "SEQ+3", "TR3+1", "TR3+2", "TR3+3", "S+H#1", "S+H#2", "S+H#3", "S+H#4", "CV#1", "CV#2", "CV#3", "CV#4"
 };
 
-class ChordQuantizer : public settings::SettingsBase<ChordQuantizer, CHORDS_SETTING_LAST> {
+class ChordQuantizer
+: public settings::SettingsBase<ChordQuantizer, CHORDS_SETTING_LAST>
+, public OC::ScaleEditorEventHandler {
 public:
 
-  int get_scale(uint8_t selected_scale_slot_) const {
-    return values_[CHORDS_SETTING_SCALE];
+  // ScaleEditorEventHandler
+  int get_scale(int /*slot_index*/) const final {
+    return get_scale();
   }
+
+  uint16_t get_scale_mask(int /*slot_index*/) const final {
+    return get_scale_mask();
+  }
+
+  void update_scale_mask(uint16_t mask, int /*slot_index*/) final {
+    apply_value(CHORDS_SETTING_MASK, mask);
+    last_mask_ = mask;
+    force_update_ = true;
+  }
+
+  void scale_changed() final {
+    force_update_ = true;
+  }
+  // End ScaleEditorEventHandler
 
   void set_scale(int scale) {
 
-    if (scale != get_scale(DUMMY)) {
+    if (scale != get_scale()) {
       const OC::Scale &scale_def = OC::Scales::GetScale(scale);
-      uint16_t mask = get_mask();
+      uint16_t mask = get_scale_mask();
       if (0 == (mask & ~(0xffff << scale_def.num_notes)))
         mask |= 0x1;
       apply_value(CHORDS_SETTING_MASK, mask);
@@ -165,19 +183,8 @@ public:
     }
   }
 
-  // dummy
-  int get_scale_select() const {
-    return 0;
-  }
-
-  // dummy
-  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, uint8_t scale_slot) {
-
-  }
-
-  // dummy
-  int get_transpose(uint8_t DUMMY) const {
-    return 0;
+  int get_scale() const {
+    return values_[CHORDS_SETTING_SCALE];
   }
 
   bool octave_toggle() {
@@ -285,10 +292,6 @@ public:
     return values_[CHORDS_SETTING_ROOT];
   }
 
-  int get_root(uint8_t DUMMY) const {
-    return 0x0;
-  }
-
   uint8_t get_root_cv() const {
     return values_[CHORDS_SETTING_ROOT_CV];
   }
@@ -297,7 +300,7 @@ public:
     return display_num_chords_;
   }
 
-  uint16_t get_mask() const {
+  uint16_t get_scale_mask() const {
     return values_[CHORDS_SETTING_MASK];
   }
 
@@ -759,7 +762,7 @@ public:
         /*
         *  we don't use the incoming CV pitch value — limit to valid base notes.
         */
-        int8_t _limit = OC::Scales::GetScale(get_scale(DUMMY)).num_notes;
+        int8_t _limit = OC::Scales::GetScale(get_scale()).num_notes;
         _base_note = _base_note > _limit ? _limit : _base_note;
         pitch = 0x0;
         transpose += (_base_note - 0x1);
@@ -845,21 +848,6 @@ public:
     }
   }
 
-  // Wrappers for ScaleEdit
-  void scale_changed() {
-    force_update_ = true;
-  }
-
-  uint16_t get_scale_mask(uint8_t scale_select) const {
-    return get_mask();
-  }
-
-  void update_scale_mask(uint16_t mask, uint8_t scale_select) {
-    apply_value(CHORDS_SETTING_MASK, mask);
-    last_mask_ = mask;
-    force_update_ = true;
-  }
-
   // Maintain an internal list of currently available settings, since some are
   // dependent on others. It's kind of brute force, but eh, works :) If other
   // apps have a similar need, it can be moved to a common wrapper
@@ -882,7 +870,7 @@ public:
 
         *settings++ = CHORDS_SETTING_MASK;
         // hide root ?
-        if (get_scale(DUMMY) != OC::Scales::SCALE_NONE)
+        if (get_scale() != OC::Scales::SCALE_NONE)
           *settings++ = CHORDS_SETTING_ROOT;
         else
            *settings++ = CHORDS_SETTING_MORE_DUMMY;
@@ -906,7 +894,7 @@ public:
         *settings++ = CHORDS_SETTING_MASK_CV;
         // destinations:
         // hide root CV?
-        if (get_scale(DUMMY) != OC::Scales::SCALE_NONE)
+        if (get_scale() != OC::Scales::SCALE_NONE)
           *settings++ = CHORDS_SETTING_ROOT_CV;
         else
            *settings++ = CHORDS_SETTING_MORE_DUMMY;
@@ -966,11 +954,11 @@ private:
   bool update_scale(bool force, int32_t mask_rotate) {
 
     force_update_ = false;
-    const int scale = get_scale(DUMMY);
-    uint16_t mask = get_mask();
+    const int scale = get_scale();
+    uint16_t mask = get_scale_mask();
 
     if (mask_rotate)
-      mask = OC::ScaleEditor<ChordQuantizer>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      mask = OC::ScaleEditor::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (force || (last_scale_ != scale || last_mask_ != mask)) {
       last_scale_ = scale;
@@ -1031,8 +1019,8 @@ private:
   ChordQuantizer chord_quantizer_;
 
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  OC::ScaleEditor<ChordQuantizer> scale_editor_;
-  OC::ChordEditor<ChordQuantizer> chord_editor_;
+  ScaleEditor scale_editor_;
+  ChordEditor<ChordQuantizer> chord_editor_;
   int left_encoder_value_;
 
   inline bool editing() const {
@@ -1070,7 +1058,7 @@ size_t AppChordQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) c
 size_t AppChordQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   chord_quantizer_.Restore(stream_buffer);
   chord_quantizer_.update_enabled_settings();
-  left_encoder_value_ = chord_quantizer_.get_scale(DUMMY);
+  left_encoder_value_ = chord_quantizer_.get_scale();
   chord_quantizer_.set_scale(left_encoder_value_);
   cursor_.AdjustEnd(chord_quantizer_.num_enabled_settings() - 1);
 
@@ -1114,7 +1102,7 @@ void AppChordQuantizer::DrawMenu() const {
   int scale = left_encoder_value_;
   graphics.movePrintPos(5, 0);
   graphics.print(scale_names[scale]);
-  if (chord_quantizer_.get_scale(DUMMY) == scale)
+  if (chord_quantizer_.get_scale() == scale)
     graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, bitmap_indicator_4x8);
 
   // active progression #
@@ -1141,7 +1129,7 @@ void AppChordQuantizer::DrawMenu() const {
     switch(setting) {
 
       case CHORDS_SETTING_MASK:
-        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, chord_quantizer_.get_rotated_mask(), Scales::GetScale(chord_quantizer_.get_scale(DUMMY)).num_notes);
+        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, chord_quantizer_.get_rotated_mask(), Scales::GetScale(chord_quantizer_.get_scale()).num_notes);
         list_item.DrawNoValue<false>(value, attr);
         break;
       case CHORDS_SETTING_DUMMY:
@@ -1309,7 +1297,7 @@ void AppChordQuantizer::HandleRightButton() {
   switch (chord_quantizer_.enabled_setting_at(cursor_.cursor_pos())) {
 
     case CHORDS_SETTING_MASK: {
-      int scale = chord_quantizer_.get_scale(DUMMY);
+      int scale = chord_quantizer_.get_scale();
       if (Scales::SCALE_NONE != scale)
         scale_editor_.Edit(&chord_quantizer_, scale);
       }
@@ -1330,7 +1318,7 @@ void AppChordQuantizer::HandleRightButton() {
 
 void AppChordQuantizer::HandleLeftButton() {
 
-  if (left_encoder_value_ != chord_quantizer_.get_scale(DUMMY) || left_encoder_value_ == Scales::SCALE_SEMI) {
+  if (left_encoder_value_ != chord_quantizer_.get_scale() || left_encoder_value_ == Scales::SCALE_SEMI) {
     chord_quantizer_.set_scale(left_encoder_value_);
     // hide/show root
     chord_quantizer_.update_enabled_settings();

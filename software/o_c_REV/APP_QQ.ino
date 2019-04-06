@@ -139,17 +139,35 @@ const char* const aux_cv_dest[5] = {
   "-", "root", "oct", "trns", "mask"
 };
 
-class QuantizerChannel : public settings::SettingsBase<QuantizerChannel, CHANNEL_SETTING_LAST> {
+class QuantizerChannel
+: public settings::SettingsBase<QuantizerChannel, CHANNEL_SETTING_LAST>
+, public OC::ScaleEditorEventHandler {
 public:
 
-  int get_scale(uint8_t dummy) const {
-    return values_[CHANNEL_SETTING_SCALE];
+  // ScaleEditorEventHandler
+  int get_scale(int /*slot_index*/) const final {
+    return get_scale();
   }
 
+  uint16_t get_scale_mask(int /*slot_index*/) const final {
+    return get_scale_mask();
+  }
+
+  void update_scale_mask(uint16_t mask, int /*slot_index*/) final {
+    apply_value(CHANNEL_SETTING_MASK, mask); // Should automatically be updated
+    last_mask_ = mask;
+    force_update_ = true;
+  }
+
+  void scale_changed() final {
+    force_update_ = true;
+  }
+  // End ScaleEditorEventHandler
+
   void set_scale(int scale) {
-    if (scale != get_scale(DUMMY)) {
+    if (scale != get_scale()) {
       const OC::Scale &scale_def = OC::Scales::GetScale(scale);
-      uint16_t mask = get_mask();
+      uint16_t mask = get_scale_mask();
       if (0 == (mask & ~(0xffff << scale_def.num_notes)))
         mask |= 0x1;
       apply_value(CHANNEL_SETTING_MASK, mask);
@@ -157,30 +175,15 @@ public:
     }
   }
 
-  // dummy
-  int get_scale_select() const {
-    return 0;
-  }
-
-  // dummy
-  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, uint8_t scale_slot) {
-
-  }
-
-  // dummy
-  int get_transpose(uint8_t DUMMY) const {
-    return 0;
+  int get_scale() const {
+    return values_[CHANNEL_SETTING_SCALE];
   }
 
   int get_root() const {
     return values_[CHANNEL_SETTING_ROOT];
   }
 
-  int get_root(uint8_t DUMMY) const {
-    return 0x0;
-  }
-
-  uint16_t get_mask() const {
+  uint16_t get_scale_mask() const {
     return values_[CHANNEL_SETTING_MASK];
   }
 
@@ -862,22 +865,6 @@ public:
     scrolling_history_.Update();
   }
 
-  // Wrappers for ScaleEdit
-  void scale_changed() {
-    force_update_ = true;
-  }
-
-  uint16_t get_scale_mask(uint8_t scale_select) const {
-    return get_mask();
-  }
-
-  void update_scale_mask(uint16_t mask, uint16_t dummy) {
-    apply_value(CHANNEL_SETTING_MASK, mask); // Should automatically be updated
-    last_mask_ = mask;
-    force_update_ = true;
-  }
-  //
-
   uint8_t getTriggerState() const {
     return trigger_display_.getState();
   }
@@ -941,7 +928,7 @@ public:
   void update_enabled_settings() {
     ChannelSetting *settings = enabled_settings_;
     *settings++ = CHANNEL_SETTING_SCALE;
-    if (OC::Scales::SCALE_NONE != get_scale(DUMMY)) {
+    if (OC::Scales::SCALE_NONE != get_scale()) {
       *settings++ = CHANNEL_SETTING_ROOT;
       *settings++ = CHANNEL_SETTING_MASK;
     }
@@ -961,11 +948,11 @@ public:
       break;
       case CHANNEL_SOURCE_TURING:
         *settings++ = CHANNEL_SETTING_TURING_LENGTH;
-        if (OC::Scales::SCALE_NONE != get_scale(DUMMY))
+        if (OC::Scales::SCALE_NONE != get_scale())
             *settings++ = CHANNEL_SETTING_TURING_MODULUS;
         *settings++ = CHANNEL_SETTING_TURING_RANGE;
         *settings++ = CHANNEL_SETTING_TURING_PROB;
-        if (OC::Scales::SCALE_NONE != get_scale(DUMMY))
+        if (OC::Scales::SCALE_NONE != get_scale())
             *settings++ = CHANNEL_SETTING_TURING_RANGE_CV_SOURCE;
         *settings++ = CHANNEL_SETTING_TURING_PROB_CV_SOURCE;
       break;
@@ -1099,11 +1086,11 @@ private:
   bool update_scale(bool force, int32_t mask_rotate) {
 
     force_update_ = false;
-    const int scale = get_scale(DUMMY);
-    uint16_t mask = get_mask();
+    const int scale = get_scale();
+    uint16_t mask = get_scale_mask();
 
     if (mask_rotate)
-      mask = OC::ScaleEditor<QuantizerChannel>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      mask = OC::ScaleEditor::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (force || (last_scale_ != scale || last_mask_ != mask)) {
       last_scale_ = scale;
@@ -1178,7 +1165,7 @@ public:
 private:
   int selected_channel_;
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  OC::ScaleEditor<QuantizerChannel> scale_editor_;
+  ScaleEditor scale_editor_;
 
   QuantizerChannel quantizer_channels_[4];
 
@@ -1222,7 +1209,7 @@ size_t AppQuadQuantizer::SaveAppData(util::StreamBufferWriter &stream_buffer) co
 size_t AppQuadQuantizer::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   for (size_t i = 0; i < 4; ++i) {
     quantizer_channels_[i].Restore(stream_buffer);
-    quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_mask(), 0x0);
+    quantizer_channels_[i].update_scale_mask(quantizer_channels_[i].get_scale_mask(), 0x0);
     quantizer_channels_[i].update_enabled_settings();
   }
   cursor_.AdjustEnd(quantizer_channels_[0].num_enabled_settings() - 1);
@@ -1302,7 +1289,7 @@ void AppQuadQuantizer::DrawMenu() const {
         list_item.DrawCustom();
         break;
       case CHANNEL_SETTING_MASK:
-        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
+        menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale()).num_notes);
         list_item.DrawNoValue<false>(value, attr);
         break;
       case CHANNEL_SETTING_TRIGGER:
@@ -1456,7 +1443,7 @@ void AppQuadQuantizer::HandleRightButton() {
   QuantizerChannel &selected = quantizer_channels_[selected_channel_];
   switch (selected.enabled_setting_at(cursor_pos())) {
     case CHANNEL_SETTING_MASK: {
-      int scale = selected.get_scale(DUMMY);
+      int scale = selected.get_scale();
       if (Scales::SCALE_NONE != scale) {
         scale_editor_.Edit(&selected, scale);
       }
@@ -1476,7 +1463,7 @@ void AppQuadQuantizer::HandleLeftButton() {
 
 void AppQuadQuantizer::HandleLeftButtonLong() {
   QuantizerChannel &selected_channel = quantizer_channels_[selected_channel_];
-  int scale = selected_channel.get_scale(DUMMY);
+  int scale = selected_channel.get_scale();
   int root = selected_channel.get_root();
   for (int i = 0; i < 4; ++i) {
     if (i != selected_channel_) {

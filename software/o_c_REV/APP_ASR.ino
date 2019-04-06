@@ -103,54 +103,55 @@ const char* const int_seq_CV_destinations[] = {
 
 typedef int16_t ASR_pitch;
 
-class ASR : public settings::SettingsBase<ASR, ASR_SETTING_LAST> {
+class ASR
+: public settings::SettingsBase<ASR, ASR_SETTING_LAST>
+, public OC::ScaleEditorEventHandler {
 public:
   static constexpr size_t kHistoryDepth = 5;
 
-  int get_scale(uint8_t dummy) const {
-    return values_[ASR_SETTING_SCALE];
+  // ScaleEditorEventHandler
+  int get_scale(int /*slot_index*/) const final {
+    return get_scale();
   }
 
-  uint8_t get_buffer_length() const {
-    return values_[ASR_SETTING_BUFFER_LENGTH];
+  uint16_t get_scale_mask(int /*slot_index*/) const final {
+    return get_scale_mask();
   }
-  
+
+  void update_scale_mask(uint16_t mask, int /*slot_index*/) final {
+    apply_value(ASR_SETTING_MASK, mask); // Should automatically be updated
+  }
+
+  void scale_changed() final {
+    force_update_ = true;
+  }
+
   void set_scale(int scale) {
-    if (scale != get_scale(DUMMY)) {
+    if (scale != get_scale()) {
       const OC::Scale &scale_def = OC::Scales::GetScale(scale);
-      uint16_t mask = get_mask();
+      uint16_t mask = get_scale_mask();
       if (0 == (mask & ~(0xffff << scale_def.num_notes)))
         mask |= 0x1;
       apply_value(ASR_SETTING_MASK, mask);
       apply_value(ASR_SETTING_SCALE, scale);
     }
   }
+  // End ScaleEditorEventHandler
 
-  // dummy
-  int get_scale_select() const {
-    return 0;
+  int get_scale() const {
+    return values_[ASR_SETTING_SCALE];
   }
 
-  // dummy
-  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, uint8_t scale_slot) {
-    
-  }
-
-  // dummy
-  int get_transpose(uint8_t DUMMY) const {
-    return 0;
-  }
-   
-  uint16_t get_mask() const {
+  uint16_t get_scale_mask() const {
     return values_[ASR_SETTING_MASK];
+  }
+
+  uint8_t get_buffer_length() const {
+    return values_[ASR_SETTING_BUFFER_LENGTH];
   }
 
   int get_root() const {
     return values_[ASR_SETTING_ROOT];
-  }
-
-  int get_root(uint8_t DUMMY) const {
-    return 0x0; // dummy
   }
 
   int get_index() const {
@@ -330,10 +331,10 @@ public:
 
   bool update_scale(bool force, int32_t mask_rotate) {
     
-    const int scale = get_scale(DUMMY);
-    uint16_t mask = get_mask();
+    const int scale = get_scale();
+    uint16_t mask = get_scale_mask();
     if (mask_rotate)
-      mask = OC::ScaleEditor<ASR>::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      mask = OC::ScaleEditor::RotateMask(mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (force || (last_scale_ != scale || last_mask_ != mask)) {
 
@@ -349,20 +350,6 @@ public:
   void force_update() {
     force_update_ = true;
   }
-
-  // Wrappers for ScaleEdit
-  void scale_changed() {
-    force_update_ = true;
-  }
-
-  uint16_t get_scale_mask(uint8_t scale_select) const {
-    return get_mask();
-  }
-
-  void update_scale_mask(uint16_t mask, uint16_t dummy) {
-    apply_value(ASR_SETTING_MASK, mask); // Should automatically be updated
-  }
-  //
 
   uint16_t get_rotated_mask() const {
     return last_mask_;
@@ -752,7 +739,7 @@ public:
 private:
   int left_encoder_value_;
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  ScaleEditor<ASR> scale_editor_;
+  ScaleEditor scale_editor_;
 
   inline bool editing() const {
     return cursor_.editing();
@@ -792,10 +779,10 @@ size_t AppASR::RestoreAppData(util::StreamBufferReader &stream_buffer) {
   asr.Restore(stream_buffer);
 
   // init nicely
-  left_encoder_value_ = asr.get_scale(DUMMY); 
+  left_encoder_value_ = asr.get_scale(); 
   asr.set_scale(left_encoder_value_);
   asr.clear_freeze();
-  asr.set_display_mask(asr.get_mask());
+  asr.set_display_mask(asr.get_scale_mask());
   asr.update_enabled_settings();
   cursor_.AdjustEnd(asr.num_enabled_settings() - 1);
 
@@ -921,7 +908,7 @@ void AppASR::HandleTightButton() {
   switch (asr.enabled_setting_at(cursor_pos())) {
 
       case ASR_SETTING_MASK: {
-        int scale = asr.get_scale(DUMMY);
+        int scale = asr.get_scale();
         if (Scales::SCALE_NONE != scale)
           scale_editor_.Edit(&asr, scale);
         }
@@ -934,7 +921,7 @@ void AppASR::HandleTightButton() {
 
 void AppASR::HandleTeftButton() {
 
-  if (left_encoder_value_ != asr.get_scale(DUMMY))
+  if (left_encoder_value_ != asr.get_scale())
     asr.set_scale(left_encoder_value_);
 }
 
@@ -958,7 +945,7 @@ void AppASR::DrawMenu() const {
   graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);
   graphics.print(scale_names[scale]);
 
-  if (asr.get_scale(DUMMY) == scale)
+  if (asr.get_scale() == scale)
     graphics.drawBitmap8(1, menu::QuadTitleBar::kTextY, 4, bitmap_indicator_4x8);
 
   if (asr.freeze_state())
@@ -990,7 +977,7 @@ void AppASR::DrawMenu() const {
     switch (setting) {
 
       case ASR_SETTING_MASK:
-      menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, asr.get_rotated_mask(), Scales::GetScale(asr.get_scale(DUMMY)).num_notes);
+      menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, asr.get_rotated_mask(), Scales::GetScale(asr.get_scale()).num_notes);
       list_item.DrawNoValue<false>(value, attr);
       break;
       case ASR_SETTING_CV_SOURCE:

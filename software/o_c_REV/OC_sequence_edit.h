@@ -65,7 +65,6 @@ private:
   void BeginEditing();
 
   void move_cursor(int offset);
-  void toggle_mask();
   void invert_mask();
   void clear_mask(); 
   void copy_sequence(); 
