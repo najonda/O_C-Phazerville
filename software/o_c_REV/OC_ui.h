@@ -149,6 +149,7 @@ private:
     return ignore;
   }
 
+  DISALLOW_COPY_AND_ASSIGN(Ui);
 };
 
 extern Ui ui;
