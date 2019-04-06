@@ -512,6 +512,7 @@ const CalibrationStep calibration_steps[CALIBRATION_STEP_LAST] = {
 };
 
 void calibration_draw(const CalibrationState &state) {
+  namespace menu = OC::menu;
   GRAPHICS_BEGIN_FRAME(true);
   const CalibrationStep *step = state.current_step;
 

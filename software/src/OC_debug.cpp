@@ -8,7 +8,7 @@
 #include "OC_ui.h"
 #include "OC_strings.h"
 #include "util/util_misc.h"
-#include "extern/dspinst.h"
+#include "src/extern/dspinst.h"
 
 #ifdef ARDUINO_TEENSY41
 #include <Audio.h>

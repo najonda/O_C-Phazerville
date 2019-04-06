@@ -32,8 +32,8 @@
 #include "OC_strings.h"
 #include "util/util_math.h"
 #include "util/util_settings.h"
-#include "peaks_multistage_envelope.h"
-#include "bjorklund.h"
+#include "src/extern/peaks_multistage_envelope.h"
+#include "src/extern/bjorklund.h"
 #include "OC_euclidean_mask_draw.h"
 
 // peaks::MultistageEnvelope allow setting of more parameters per stage, but

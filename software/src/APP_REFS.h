@@ -951,7 +951,7 @@ static void print_voltage(int octave, int fraction) {
 }
 
 void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) const {
-
+  namespace menu = OC::menu;
   // Mostly borrowed from QQ
 
   weegfx::coord_t x = start_x + 26;

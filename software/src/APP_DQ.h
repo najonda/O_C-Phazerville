@@ -31,8 +31,7 @@
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
+#include "src/extern/braids_quantizer.h"
 #include "OC_menus.h"
 #include "OC_visualfx.h"
 #include "OC_scales.h"
@@ -1469,6 +1468,7 @@ inline int32_t dq_render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t
 }
 
 void DQ_QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
+  namespace menu = OC::menu;
   // History
   int32_t dq_history[5];
   scrolling_history_.Read(dq_history);

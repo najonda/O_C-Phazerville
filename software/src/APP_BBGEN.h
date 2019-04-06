@@ -33,7 +33,7 @@
 #include "util/util_math.h"
 #include "util/util_settings.h"
 #include "OC_menus.h"
-#include "peaks_bouncing_balls.h"
+#include "src/extern/peaks_bouncing_balls.h"
 
 enum BouncingBallSettings {
   BB_SETTING_GRAVITY,

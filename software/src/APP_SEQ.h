@@ -34,13 +34,9 @@
 #include "OC_scale_edit.h"
 #include "OC_input_map.h"
 #include "OC_input_maps.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
-#include "extern/dspinst.h"
+#include "src/extern/braids_quantizer.h"
 #include "util/util_arp.h"
-#include "peaks_multistage_envelope.h"
-
-using OC::DUMMY;
+#include "src/extern/peaks_multistage_envelope.h"
 
 const uint8_t NUM_CHANNELS = 2;
 const uint8_t MULT_MAX = 26;    // max multiplier

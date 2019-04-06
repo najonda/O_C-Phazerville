@@ -27,7 +27,7 @@
 
 #include <array>
 #include "OC_io.h"
-#include "UI/ui_event_queue.h"
+#include "src/UI/ui_event_queue.h"
 
 namespace OC {
 

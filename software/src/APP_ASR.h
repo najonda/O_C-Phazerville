@@ -33,10 +33,9 @@
 #include "OC_scale_edit.h"
 #include "OC_strings.h"
 #include "OC_visualfx.h"
-#include "peaks_bytebeat.h"
+#include "src/extern/peaks_bytebeat.h"
 
 extern uint_fast8_t MENU_REDRAW;
-using OC::DUMMY;
 
 #define NUM_ASR_CHANNELS 0x4
 #define ASR_MAX_ITEMS 256 // = ASR ring buffer size.

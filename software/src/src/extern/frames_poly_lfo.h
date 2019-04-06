@@ -31,7 +31,7 @@
 #ifndef FRAMES_POLY_LFO_H_
 #define FRAMES_POLY_LFO_H_
 
-#include "util/util_macros.h"
+#include "../../util/util_macros.h"
 //#include "stmlib/stmlib.h"
 //#include "frames/keyframer.h"
 #include "peaks_pattern_predictor.h"

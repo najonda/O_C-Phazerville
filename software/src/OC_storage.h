@@ -32,7 +32,7 @@
 #include "OC_io_settings.h"
 #include "util/util_misc.h"
 #include "util/util_pagestorage.h"
-#include "util/EEPROMStorage.h"
+#include "src/drivers/EEPROMStorage.h"
 
 namespace OC {
 

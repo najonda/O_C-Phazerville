@@ -29,7 +29,7 @@
 #include "OC_pitch_utils.h"
 #include "OC_strings.h"
 #include "OC_trigger_delays.h"
-#include "tonnetz/tonnetz_state.h"
+#include "src/tonnetz/tonnetz_state.h"
 #include "util/util_settings.h"
 #include "util/util_ringbuffer.h"
 #include "util/util_semitone_quantizer.h"
@@ -649,8 +649,8 @@ public:
     }
   }
 
-  menu::ScreenCursor<menu::kScreenLines> cursor;
-  menu::ScreenCursor<menu::kScreenLines> cursor_state;
+  OC::menu::ScreenCursor<OC::menu::kScreenLines> cursor;
+  OC::menu::ScreenCursor<OC::menu::kScreenLines> cursor_state;
   bool display_notes;
 
   inline int cursor_pos() const {

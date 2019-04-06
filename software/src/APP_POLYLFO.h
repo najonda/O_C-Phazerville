@@ -32,7 +32,7 @@
 
 #include "util/util_math.h"
 #include "util/util_settings.h"
-#include "frames_poly_lfo.h"
+#include "src/extern/frames_poly_lfo.h"
 
 #include "VBiasManager.h"
 

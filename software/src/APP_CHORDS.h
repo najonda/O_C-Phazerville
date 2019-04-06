@@ -31,8 +31,7 @@
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
+#include "src/extern/braids_quantizer.h"
 #include "OC_menus.h"
 #include "OC_scales.h"
 #include "OC_scale_edit.h"
@@ -1393,9 +1392,9 @@ void ChordQuantizer::RenderScreensaver(weegfx::coord_t start_x) const {
   for (int j = 0; j <= _num_chords; j++) {
 
     if (j == _active_chord)
-      menu::DrawChord(x + (j << 4) + 1, y, 6, j, _num_progression);
-    else  
-      menu::DrawChord(x + (j << 4) + 2, y, 4, j, _num_progression);
+      OC::menu::DrawChord(x + (j << 4) + 1, y, 6, j, _num_progression);
+    else
+      OC::menu::DrawChord(x + (j << 4) + 2, y, 4, j, _num_progression);
   }
 }
 

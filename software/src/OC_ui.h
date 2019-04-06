@@ -5,10 +5,9 @@
 #include "OC_config.h"
 #include "OC_options.h"
 #include "OC_debug.h"
-#include "UI/ui_button.h"
-#include "UI/ui_encoder.h"
-#include "UI/ui_event_queue.h"
-#include "UI/ui_events.h"
+#include "src/UI/ui_button.h"
+#include "src/UI/ui_encoder.h"
+#include "src/UI/ui_event_queue.h"
 #include "OC_io_settings_menu.h"
 
 namespace OC {

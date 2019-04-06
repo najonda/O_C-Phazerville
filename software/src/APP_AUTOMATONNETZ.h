@@ -62,7 +62,7 @@
 #include "util/util_settings.h"
 #include "util/util_semitone_quantizer.h"
 #include "util/util_sync.h"
-#include "tonnetz/tonnetz_state.h"
+#include "src/tonnetz/tonnetz_state.h"
 #include "OC_bitmaps.h"
 #include "OC_menus.h"
 #include "OC_pitch_utils.h"
