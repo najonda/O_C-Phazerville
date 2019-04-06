@@ -52,9 +52,9 @@ public:
     return events_.readable();
   }
 
-  template <class... Args>
+  template <typename... Args>
   inline void PushEvent(Args&&... args) {
-    events_.EmplaceWrite(args...);
+    events_.EmplaceWrite(std::forward<Args>(args)...);
     Poke();
   }
 

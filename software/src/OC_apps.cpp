@@ -220,13 +220,19 @@ static constexpr OC::App app_container[] = {
 
 namespace OC {
 
-GlobalSettings global_settings;
-AppSwitcher app_switcher;
-
+// NOTE These are slightly wasteful, in that the PageStorage implementation and
+// the local data both retain a copy of the data. Removing this would in theory
+// reclaim some memory, although RAM isn't currently an issue.
+/*extern*/ GlobalSettings global_settings;
+/*extern*/ AppSwitcher app_switcher;
 static AppData app_data;
 static GlobalSettingsStorage global_settings_storage;
 static AppDataStorage app_data_storage;
 
+// Instantiate the available apps.
+// Any type not listed here should not exist, i.e. the linker should be able to
+// triage all code (minus any dangling static parts). (Yeah, this still relies
+// on the fugly .ino compilation method, don't @ me).
 static AppContainer<void // this space intentionally left blank
   , AppASR
   , AppH1200
@@ -242,7 +248,6 @@ static AppContainer<void // this space intentionally left blank
   , AppChordQuantizer
   , AppReferences
 > app_container;
-
 static_assert(decltype(app_container)::TotalAppDataStorageSize() < AppData::kAppDataSize,
               "Apps use too much EEPROM space!");
 
