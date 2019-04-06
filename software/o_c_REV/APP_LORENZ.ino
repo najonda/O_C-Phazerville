@@ -24,7 +24,7 @@
 
 // Lorenz and Rössler generator app
 
-#include "streams_lorenz_generator.h"
+#include "src/extern/streams_lorenz_generator.h"
 #include "util/util_math.h"
 #include "OC_digital_inputs.h"
 

@@ -1,8 +1,8 @@
 #ifndef OS_SCALES_H_
 #define OS_SCALES_H_
 
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
+#include "src/extern/braids_quantizer.h"
+#include "src/extern/braids_quantizer_scales.h"
 
 // Common scales and stuff
 namespace OC {

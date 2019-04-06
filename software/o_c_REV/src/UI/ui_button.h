@@ -20,67 +20,55 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef UI_EVENTS_QUEUE_H_
-#define UI_EVENTS_QUEUE_H_
+#ifndef UTIL_BUTTON_H_
+#define UTIL_BUTTON_H_
 
 #include <Arduino.h>
-#include "ui_events.h"
-#include "../util/util_ringbuffer.h"
+#include "../../util/util_macros.h"
 
 namespace UI {
 
-// Event queue for UI events
-// Meant for single producer/single consumer setting
-//
-// Yes, looks similar to stmlib::EventQueue, but hey, it's a queue for UI events.
-template <size_t size = 16>
-class EventQueue {
+// Basic button/switch wrapper that has 7 bits of debouncing on press/release.
+class Button {
 public:
+  Button() { }
 
-  EventQueue() { }
-
-  void Init() {
-    events_.Init();
-    last_event_time_ = 0;
+  void Init(uint8_t pin, uint8_t pin_mode) {
+    pin_ = pin;
+    pinMode(pin, pin_mode);
+    state_ = 0xff;
   }
 
-  inline void Flush() {
-    events_.Flush();
+  // @return True if pressed
+  uint8_t Poll() {
+    uint8_t state = (state_ << 1) | digitalReadFast(pin_);
+    state_ = state;
+    return !(state & 0x01);
   }
 
-  inline bool available() const {
-    return events_.readable();
+  inline bool pressed() const {
+    return state_ == 0x00;
   }
 
-  template <class... Args>
-  inline void PushEvent(Args&&... args) {
-    events_.EmplaceWrite(args...);
-    Poke();
+  inline bool just_pressed() const {
+    return state_ == 0x80;
   }
 
-  inline Event PullEvent() {
-    return events_.Read();
+  inline bool released() const {
+    return state_ == 0x7f;
   }
 
-  inline void Poke() {
-    last_event_time_ = millis();
-  }
-
-  inline uint32_t idle_time() const {
-    return millis() - last_event_time_;
-  }
-
-  // More for debugging purposes
-  inline bool writable() const {
-    return events_.writable();
+  bool read_immediate() const {
+    return !digitalReadFast(pin_);
   }
 
 private:
+  int pin_;
+  uint8_t state_;
 
-  util::RingBuffer<Event, size> events_;
-  uint32_t last_event_time_;
+  DISALLOW_COPY_AND_ASSIGN(Button);
 };
 
 }; // namespace UI
 
-#endif // UI_EVENTS_QUEUE_H_
+#endif // UTIL_BUTTON_H_

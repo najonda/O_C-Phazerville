@@ -31,9 +31,8 @@
 #include "util/util_trigger_delay.h"
 #include "util/util_turing.h"
 #include "util/util_integer_sequences.h"
-#include "peaks_bytebeat.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
+#include "src/extern/peaks_bytebeat.h"
+#include "src/extern/braids_quantizer.h"
 #include "OC_menus.h"
 #include "OC_scales.h"
 #include "OC_scale_edit.h"
@@ -1529,6 +1528,7 @@ inline int32_t render_pitch(int32_t pitch, weegfx::coord_t x, weegfx::coord_t wi
 }
 
 void QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
+  namespace menu = OC::menu;
   int32_t history[5];
   // History
   scrolling_history_.Read(history);

@@ -7,7 +7,7 @@
 #include "OC_menus.h"
 #include "OC_ui.h"
 #include "util/util_misc.h"
-#include "extern/dspinst.h"
+#include "src/extern/dspinst.h"
 
 namespace OC {
 

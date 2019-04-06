@@ -27,7 +27,7 @@
 // Note quantizer
 
 #include "braids_quantizer.h"
-#include "OC_options.h"
+#include "../../OC_options.h"
 
 #include <algorithm>
 #include <cstdlib>

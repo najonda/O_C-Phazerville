@@ -30,8 +30,8 @@
 #define PEAKS_MODULATIONS_MULTISTAGE_ENVELOPE_H_
 
 #include <stdint.h>
-#include "util/util_macros.h"
-#include "OC_options.h"
+#include "../../util/util_macros.h"
+#include "../../OC_options.h"
 #include "peaks_gate_processor.h"
 
 namespace peaks {

@@ -31,7 +31,7 @@
 #include "util/util_math.h"
 #include "util/util_settings.h"
 #include "OC_menus.h"
-#include "peaks_bytebeat.h"
+#include "src/extern/peaks_bytebeat.h"
 
 enum ByteBeatSettings {
   BYTEBEAT_SETTING_EQUATION,

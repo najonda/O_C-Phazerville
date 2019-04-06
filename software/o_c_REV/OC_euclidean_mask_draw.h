@@ -23,7 +23,7 @@
 #ifndef OC_EUCLIDEAN_MASK_DRAW_H_
 #define OC_EUCLIDEAN_MASK_DRAW_H_
 
-#include "bjorklund.h"
+#include "src/extern/bjorklund.h"
 #include "OC_menus.h"
 
 namespace OC {

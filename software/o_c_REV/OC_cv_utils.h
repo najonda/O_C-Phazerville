@@ -27,7 +27,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include "extern/dspinst.h"
+#include "src/extern/dspinst.h"
 #include "util/util_macros.h"
 
 namespace OC {

@@ -33,8 +33,8 @@
 #include <cstdio>
 #include <algorithm>
 
-#include "extern/stmlib_utils_dsp.h"
-#include "util/util_math.h"
+#include "stmlib_utils_dsp.h"
+#include "../../util/util_math.h"
 #include "frames_resources.h"
 
 namespace frames {
