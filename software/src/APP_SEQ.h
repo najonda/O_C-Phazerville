@@ -301,8 +301,34 @@ const char* const arp_range[] = {
 
 uint64_t ext_frequency[SEQ_CHANNEL_TRIGGER_NONE + 1];
 
-class SEQ_Channel : public settings::SettingsBase<SEQ_Channel, SEQ_CHANNEL_SETTING_LAST> {
+class SEQ_Channel
+: public settings::SettingsBase<SEQ_Channel, SEQ_CHANNEL_SETTING_LAST>
+, public OC::ScaleEditorEventHandler {
 public:
+
+  // ScaleEditorEventHandler
+  int get_scale(int /*slot_index*/) const final {
+    return get_scale();
+  }
+
+  uint16_t get_scale_mask(int /*slot_index*/) const final {
+    return get_scale_mask();
+  }
+
+  void update_scale_mask(uint16_t mask, int /*slot_index*/) final {
+    apply_value(SEQ_CHANNEL_SETTING_SCALE_MASK, mask); // Should automatically be updated
+    force_scale_update_ = true;
+  }
+
+  void scale_changed() final {
+    force_scale_update_ = true;
+  }
+
+  void set_scale(int scale) {
+     apply_value(SEQ_CHANNEL_SETTING_SCALE, scale);
+  }
+  // End ScaleEditorEventHandler
+
 
   uint8_t get_menu_page() const {
     return menu_page_;
@@ -752,40 +778,12 @@ public:
     apply_value(SEQ_CHANNEL_SETTING_ENV_LOOPS_CV_SOURCE, 0);
   }
 
-  int get_scale(uint8_t dummy) const {
+  int get_scale() const {
     return values_[SEQ_CHANNEL_SETTING_SCALE];
   }
 
-  void set_scale(int scale) {
-     apply_value(SEQ_CHANNEL_SETTING_SCALE, scale);
-  }
-
-  // dummy
-  int get_scale_select() const {
-    return 0;
-  }
-
-  // dummy
-  void set_scale_at_slot(int scale, uint16_t mask, int root, int transpose, uint8_t scale_slot) {
-
-  }
-
-  // dummy
-  int get_transpose(uint8_t DUMMY) const {
-    return 0;
-  }
-
-  int get_scale_mask(uint8_t scale_select) const {
+  int get_scale_mask() const {
     return values_[SEQ_CHANNEL_SETTING_SCALE_MASK];
-  }
-
-  void scale_changed() {
-    force_scale_update_ = true;
-  }
-
-  void update_scale_mask(uint16_t mask, uint16_t dummy) {
-    force_scale_update_ = true;
-    apply_value(SEQ_CHANNEL_SETTING_SCALE_MASK, mask); // Should automatically be updated
   }
 
   void update_inputmap(int num_slots, uint8_t range) {
@@ -848,11 +846,11 @@ public:
 
   bool rotate_scale(int32_t mask_rotate) {
 
-    uint16_t  scale_mask = get_scale_mask(DUMMY);
-    const int scale = get_scale(DUMMY);
+    uint16_t  scale_mask = get_scale_mask();
+    const int scale = get_scale();
 
     if (mask_rotate)
-      scale_mask = OC::ScaleEditor<SEQ_Channel>::RotateMask(scale_mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
+      scale_mask = OC::ScaleEditor::RotateMask(scale_mask, OC::Scales::GetScale(scale).num_notes, mask_rotate);
 
     if (last_scale_mask_ != scale_mask) {
 
@@ -868,11 +866,11 @@ public:
 
   bool update_scale(bool force) {
 
-    const int scale = get_scale(DUMMY);
+    const int scale = get_scale();
 
     if (force || last_scale_ != scale) {
 
-      uint16_t  scale_mask = get_scale_mask(DUMMY);
+      uint16_t  scale_mask = get_scale_mask();
       force_scale_update_ = false;
       last_scale_ = scale;
       last_scale_mask_ = scale_mask;
@@ -2044,8 +2042,8 @@ public:
 private:
   int selected_channel_;
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  OC::PatternEditor<SEQ_Channel> pattern_editor_;
-  OC::ScaleEditor<SEQ_Channel> scale_editor_;
+  PatternEditor<SEQ_Channel> pattern_editor_;
+  ScaleEditor scale_editor_;
 
   SEQ_Channel seq_channel_[NUM_CHANNELS];
 
@@ -2353,7 +2351,7 @@ void AppDualSequencer::HandleRightButton() {
     break;
     case SEQ_CHANNEL_SETTING_SCALE_MASK:
     {
-     int scale = selected.get_scale(DUMMY);
+     int scale = selected.get_scale();
      if (Scales::SCALE_NONE != scale) {
           scale_editor_.Edit(&selected, scale);
         }
@@ -2394,12 +2392,12 @@ void AppDualSequencer::HandleLeftButtonLong() {
       uint16_t mask;
 
       this_channel = selected_channel_;
-      scale = seq_channel_[this_channel].get_scale(DUMMY);
+      scale = seq_channel_[this_channel].get_scale();
       mask = seq_channel_[this_channel].get_rotated_scale_mask();
 
       the_other_channel = (~this_channel) & 1u;
       seq_channel_[the_other_channel].set_scale(scale);
-      seq_channel_[the_other_channel].update_scale_mask(mask, DUMMY);
+      seq_channel_[the_other_channel].update_scale_mask(mask, 0);
       seq_channel_[the_other_channel].update_scale(true);
   }
 }
@@ -2478,7 +2476,7 @@ void AppDualSequencer::DrawMenu() const {
         list_item.DrawCustom();
         break;
       case SEQ_CHANNEL_SETTING_SCALE_MASK:
-       menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale(DUMMY)).num_notes);
+       menu::DrawMask<false, 16, 8, 1>(menu::kDisplayWidth, list_item.y, channel.get_rotated_scale_mask(), Scales::GetScale(channel.get_scale()).num_notes);
        list_item.DrawNoValue<false>(value, attr);
       break;
       case SEQ_CHANNEL_SETTING_MASK1:
