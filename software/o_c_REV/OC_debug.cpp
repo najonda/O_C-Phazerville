@@ -6,6 +6,7 @@
 #include "OC_debug.h"
 #include "OC_menus.h"
 #include "OC_ui.h"
+#include "OC_version.h"
 #include "util/util_misc.h"
 #include "src/extern/dspinst.h"
 
@@ -48,6 +49,23 @@ static void debug_menu_core() {
   graphics.setPrintPos(2, 42);
   graphics.printf("UI   !%u #%u", DEBUG::UI_queue_overflow, DEBUG::UI_event_count);
   graphics.setPrintPos(2, 52);
+#endif
+}
+
+static void debug_menu_version() {
+  weegfx::coord_t y = 12;
+  graphics.drawStr(2, y, OC_VERSION); y += 10;
+#ifdef IO_10V
+  graphics.drawStr(2, y, "IO_1OV"); y += 10;
+#endif
+#ifdef BUCHLA_SUPPORT
+  graphics.drawStr(2, y, "BUCHLA_SUPPORT"); y += 10;
+#endif
+#ifdef BUCHLA_cOC
+  graphics.drawStr(2, y, "BUCHLA_cOC"); y += 10;
+#endif
+#ifdef BUCHLA_4U
+  graphics.drawStr(2, y, "BUCHLA_4U"); y += 10;
 #endif
 }
 
@@ -110,6 +128,7 @@ struct DebugMenu {
 
 static const DebugMenu debug_menus[] = {
   { " CORE", debug_menu_core },
+  { " VERSION", debug_menu_version },
   { " GFX", debug_menu_gfx },
   { " ADC", debug_menu_adc },
   { " ADC min/max", debug_menu_adc2 },
