@@ -98,6 +98,20 @@ static void debug_menu_version()
 #else
   graphics.print("PROD");
 #endif
+
+#ifdef IO_10V
+  graphics.drawStr(2, y, "IO_1OV"); y += 10;
+#endif
+#ifdef BUCHLA_SUPPORT
+  graphics.drawStr(2, y, "BUCHLA_SUPPORT"); y += 10;
+#endif
+#ifdef BUCHLA_cOC
+  graphics.drawStr(2, y, "BUCHLA_cOC"); y += 10;
+#endif
+#ifdef BUCHLA_4U
+  graphics.drawStr(2, y, "BUCHLA_4U"); y += 10;
+#endif
+
 #ifdef USB_SERIAL
   graphics.setPrintPos(2, y); y += 10;
   graphics.print("USB_SERIAL");
