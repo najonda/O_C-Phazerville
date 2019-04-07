@@ -584,7 +584,7 @@ public:
      num_enabled_settings_ = settings - enabled_settings_;
   }
 
-  void RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) const;
+  void RenderScreensaver(weegfx::coord_t start_x, uint8_t chan, const OC::IOSettings &io_settings) const;
 
 private:
   DAC_CHANNEL dac_channel_;
@@ -850,17 +850,17 @@ void AppReferences::DrawMenu() const {
 }
 
 void AppReferences::DrawScreensaver() const {
-  channels_[0].RenderScreensaver( 0, 0);
-  channels_[1].RenderScreensaver(32, 1);
-  channels_[2].RenderScreensaver(64, 2);
-  channels_[3].RenderScreensaver(96, 3);
+  channels_[0].RenderScreensaver( 0, 0, io_settings_);
+  channels_[1].RenderScreensaver(32, 1, io_settings_);
+  channels_[2].RenderScreensaver(64, 2, io_settings_);
+  channels_[3].RenderScreensaver(96, 3, io_settings_);
   graphics.setPrintPos(2, 44);
 
   float frequency_ = get_frequency() ;
   float c0_freq_ = get_C0_freq() ;
   float bpm_ = (60.0 * frequency_)/get_ppqn() ;
 
-  int32_t freq_decicents_deviation_ = round(12000.0 * log2f(frequency_ / c0_freq_)) + 500;
+  int32_t freq_decicents_deviation_ = round(12000.0f * log2f(frequency_ / c0_freq_)) + 500;
   int8_t freq_octave_ = -2 + ((freq_decicents_deviation_)/ 12000) ;
   int8_t freq_note_ = (freq_decicents_deviation_ - ((freq_octave_ + 2) * 12000)) / 1000;
   int32_t freq_decicents_residual_ = ((freq_decicents_deviation_ - ((freq_octave_ - 1) * 12000)) % 1000) - 500;
@@ -952,8 +952,8 @@ static void print_voltage(int octave, int fraction) {
   graphics.movePrintPos(-2, 0); graphics.printf("%03d", fraction);
 }
 
-void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) const {
-  namespace menu = OC::menu;
+void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan, const OC::IOSettings &io_settings) const {
+  using namespace OC;
   // Mostly borrowed from QQ
 
   weegfx::coord_t x = start_x + 26;
@@ -961,80 +961,44 @@ void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan) 
   // for (int i = 0; i < 5 ; ++i, y -= 4) // was i < 12
     graphics.setPixel(x, y);
 
-  int32_t pitch = last_pitch_ ;
-  int32_t unscaled_pitch = last_pitch_ ;
+  int32_t pitch = last_pitch_;
+  int32_t scaled_pitch = IO::pitch_scale(pitch, io_settings.get_output_scaling(chan));
 
-  // TODO[PLD] Adapt to new DAC/scaling
-
-  #ifdef BUCHLA_SUPPORT
-    switch (OC::DAC::get_voltage_scaling(chan)) {
-      
-        case VOLTAGE_SCALING_1_2V_PER_OCT: // 1.2V/oct
-            pitch = (pitch * 19661) >> 14 ;
-            break;
-        case VOLTAGE_SCALING_2V_PER_OCT: // 2V/oct
-            pitch = pitch << 1 ;
-            break;
-        default: // 1V/oct
-            break;
-     }
-   #endif 
-
-  pitch += (OC::DAC::kOctaveZero * 12) << 7;
-  unscaled_pitch += (OC::DAC::kOctaveZero * 12) << 7;
-
-  // TODO[PLD] scaled vs. unscaled
-  
-  CONSTRAIN(pitch, 0, 120 << 7);
-
+  // pitch gets displayed as closest note value + octave indicator
+  pitch = IO::pitch_rel_to_abs(pitch);
   int32_t octave = pitch / (12 << 7);
-  int32_t unscaled_octave = unscaled_pitch / (12 << 7);
   pitch -= (octave * 12 << 7);
-  unscaled_pitch -= (unscaled_octave * 12 << 7);
   int semitone = pitch >> 7;
-  int unscaled_semitone = unscaled_pitch >> 7;
 
-  y = 34 - unscaled_semitone * 2; // was 60, multiplier was 4
-  if (unscaled_semitone < 6)
+  y = 34 - semitone * 2; // was 60, multiplier was 4
+  if (semitone < 6)
     graphics.setPrintPos(start_x + menu::kIndentDx, y - 7);
   else
     graphics.setPrintPos(start_x + menu::kIndentDx, y);
-  graphics.print(OC::Strings::note_names_unpadded[unscaled_semitone]);
+  graphics.print(OC::Strings::note_names_unpadded[semitone]);
 
   graphics.drawHLine(start_x + 16, y, 8);
-  graphics.drawBitmap8(start_x + 28, 34 - unscaled_octave * 2 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW); // was 60
+  graphics.drawBitmap8(start_x + 28, 34 - octave * 2 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW); // was 60
 
-  #ifdef BUCHLA_SUPPORT
-    // Try and round to 3 digits
-    switch (OC::DAC::get_voltage_scaling(chan)) {
-      
-        case VOLTAGE_SCALING_1_2V_PER_OCT: // 1.2V/oct
-            semitone = (semitone * 10000 + 40) / 100;
-            break;
-        case VOLTAGE_SCALING_2V_PER_OCT: // 2V/oct
-        default: // 1V/oct
-            semitone = (semitone * 10000 + 50) / 120;
-            break;
-     }
-   #else
-    semitone = (semitone * 10000 + 50) / 120;
-   #endif
-   
-  semitone %= 1000;
-  octave -= OC::DAC::kOctaveZero;
-
+  // scaled pitch to voltage
+  scaled_pitch = IO::pitch_rel_to_abs(scaled_pitch);
+  CONSTRAIN(scaled_pitch, 0, 120 << 7);
+  int32_t millivolts = IO::pitch_to_millivolts(scaled_pitch);
+  int32_t volts = millivolts / 1000;
+  millivolts -= volts * 1000;
+  volts -= DAC::kOctaveZero; // Back to relative
 
   // We want [sign]d.ddd = 6 chars in 32px space; with the current font width
   // of 6px that's too tight, so squeeze in the mini minus...
   y = menu::kTextDy;
   graphics.setPrintPos(start_x + menu::kIndentDx, y);
-  if (octave >= 0) {
-    print_voltage(octave, semitone);
+  if (volts >= 0) {
+    print_voltage(volts, millivolts);
   } else {
     graphics.drawHLine(start_x, y + 3, 2);
-    if (semitone)
-      print_voltage(-octave - 1, 1000 - semitone);
+    if (millivolts)
+      print_voltage(-volts - 1, 1000 - millivolts);
     else
-      print_voltage(-octave, 0);
+      print_voltage(-volts, 0);
   }
 }

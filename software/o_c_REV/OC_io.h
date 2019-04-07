@@ -70,6 +70,8 @@ public:
   static void WriteDAC(IOFrame *, const IOSettings &);
 
   static int32_t pitch_rel_to_abs(int32_t pitch);
+  static int32_t pitch_scale(int32_t pitch, OutputVoltageScaling scaling);
+  static int32_t pitch_to_millivolts(int32_t pitch);
 };
 
 // Processing for apps works on a per-sample basis. An IOFrame encapuslates the

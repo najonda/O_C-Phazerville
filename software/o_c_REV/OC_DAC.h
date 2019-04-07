@@ -42,9 +42,15 @@ public:
   static constexpr uint16_t MAX_VALUE = 65535U; // DAC fullscale 
 
 #ifdef BUCHLA_4U
+# if !defined(IO_10V)
+  static constexpr int32_t kMillvoltsPerOctave = 1200;
+#else
+  static constexpr int32_t kMillvoltsPerOctave = 1000;
+#endif
   static constexpr int kOctaveZero = 0;
   static constexpr int32_t kOctaveGateHigh = kOctaveZero + 8;
 #else
+  static constexpr int32_t kMillvoltsPerOctave = 1000;
   static constexpr int kOctaveZero = 3;
   static constexpr int32_t kOctaveGateHigh = kOctaveZero + 5;
 #endif
