@@ -48,12 +48,10 @@ enum IO_SETTING {
   IO_SETTING_LAST
 };
 
-
 extern const char *const autotune_enable_strings[];
 extern const char *const voltage_scalings[];
 
-// TODO[PLD] Offset mult factors so 0 = no gain
-
+// TODO[PLD] Offset mult factors so 0 = no gain, or attenuvert?
 
 class IOSettings: public settings::SettingsBase<IOSettings, IO_SETTING_LAST> {
 public:
@@ -64,6 +62,10 @@ public:
 
   inline int input_gain(int channel) const {
     return get_value(channel_setting(IO_SETTING_CV1_GAIN, channel));
+  }
+
+  inline bool input_gain_enabled(int channel) const {
+    return CVUtils::kMultOne != input_gain(channel);
   }
 
   inline bool adc_filter_enabled(int channel) const {
@@ -78,12 +80,20 @@ public:
     return get_value(channel_setting(IO_SETTING_A_TUNING, channel));
   }
 
-  unsigned status_mask(int channel) const {
+  uint32_t status_mask(int channel) const {
     return
-      (input_gain(channel) ? 0x1 : 0x0) |
+      (input_gain_enabled(channel) ? 0x1 : 0x0) |
       (adc_filter_enabled(channel) ? 0x2 : 0x0) |
       (get_output_scaling(channel) ? 0x4 : 0x0) |
       (autotune_data_enabled(channel) ? 0x8 : 0x0);
+  }
+
+  uint32_t status_mask() const {
+    return
+      status_mask(0) |
+      status_mask(1) << 8 |
+      status_mask(2) << 16 |
+      status_mask(3) << 24;
   }
 
   SETTINGS_ARRAY_DECLARE() {{

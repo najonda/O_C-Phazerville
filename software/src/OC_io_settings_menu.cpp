@@ -55,30 +55,16 @@ void IOSettingsMenu::Close()
 void IOSettingsMenu::Draw() const
 {
   using TitleBar = menu::QuadTitleBar;
+  auto channel = selected_channel_;
 
-  TitleBar::Draw();
+  TitleBar::Draw(io_settings_->status_mask());
   for (int i = 0; i < 4; ++i) {
     TitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
-
-    auto mode = io_config_.outputs[i].mode;
-    graphics.movePrintPos(2, 0);
-    graphics.printBitmap8(8, bitmap_output_mode_8 + mode * 8);
-
-    // TODO[PLD] Other status in titlebar?
-/*
-    graphics.print(
-        CVUtils::kMultOne != io_settings_->get_value(IOSettings::channel_setting(IO_SETTING_CV1_GAIN, i))
-          ? 'x' : ' ');
-    graphics.print(
-        io_settings_->get_value(IOSettings::channel_setting(IO_SETTING_CV1_FILTER, i))
-          ? 'f' : ' ');
-
-    graphics.print('<');
-    graphics.print('*');
-*/
+    graphics.movePrintPos(8, 0);
+    graphics.printBitmap8(8, bitmap_output_mode_8 + io_config_.outputs[i].mode * 8);
   }
-  TitleBar::Selected(selected_channel_);
+  TitleBar::Selected(channel);
 
   menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
@@ -86,28 +72,31 @@ void IOSettingsMenu::Draw() const
 
   while (settings_list.available()) {
     const IO_SETTING setting = static_cast<IO_SETTING>(settings_list.Next(list_item));
-    const int value = io_settings_->get_value(IOSettings::channel_setting(setting, selected_channel_));
-    const auto &attr = IOSettings::value_attributes(IOSettings::channel_setting(setting, selected_channel_));
+    const int value = io_settings_->get_value(IOSettings::channel_setting(setting, channel));
+    const auto &attr = IOSettings::value_attributes(IOSettings::channel_setting(setting, channel));
 
-    const auto &output_desc = io_config_.outputs[selected_channel_];
+    const auto &output_desc = io_config_.outputs[channel];
 
     switch (setting) {
     case IO_SETTING_A_SCALING: {
-//      graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
+      snprintf(label, sizeof(label), "%s  %.10s",
+               Strings::channel_id[channel],
+               output_desc.label);
+      //graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
       if (output_desc.mode == OUTPUT_MODE_PITCH) {
-        list_item.DrawCustomName(output_desc.label, value, attr);
+        list_item.DrawCustomName(label, value, attr);
       } else {
-        list_item.DrawCharName(output_desc.label);
+        list_item.DrawCharName(label);
         list_item.DrawCustom();
       }
     }
     break;
 
     case IO_SETTING_CV1_GAIN: {
-      const auto &input_desc = io_config_.inputs[selected_channel_];
+      const auto &input_desc = io_config_.inputs[channel];
       snprintf(label, sizeof(label),
-          "%s %.8s",
-          Strings::cv_input_names[selected_channel_],
+          "%s %.10s",
+          Strings::cv_input_names[channel],
           input_desc.label[0] ? input_desc.label : "????");
       list_item.DrawCustomName(label, value, attr);
     }
@@ -115,9 +104,14 @@ void IOSettingsMenu::Draw() const
 
     case IO_SETTING_A_TUNING:
       if (OUTPUT_MODE_PITCH == output_desc.mode) {
-        list_item.DrawDefault(value, attr);
+        if (autotune_available()) {
+          list_item.DrawDefault(value, attr);
+        } else {
+          // Perhaps also show if enabled, but not actually available?
+          list_item.DrawCustomValue(attr, "----");
+        }
       } else {
-        list_item.DrawCharName("DAC calibr.       N/A");
+        list_item.DrawCustomValue(attr, "N/A");
         list_item.DrawCustom();
       }
     break;

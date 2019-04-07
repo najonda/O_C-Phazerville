@@ -258,6 +258,8 @@ inline static void DrawGateIndicator(weegfx::coord_t x, weegfx::coord_t y, uint8
     graphics.drawBitmap8(x, y, 4, OC::bitmap_gate_indicators_8 + (state << 2));
 }
 
+void DrawIOStatusBar(uint32_t status_mask);
+
 // Templated title bar that can have multiple columns
 template <weegfx::coord_t start_x, int columns, weegfx::coord_t text_dx>
 class TitleBar {
@@ -273,6 +275,11 @@ public:
   inline static void Draw() {
     graphics.drawHLine(start_x, kMenuLineH, kDisplayWidth - start_x);
     SetColumn(0);
+  }
+
+  inline static void Draw(uint32_t status_mask) {
+    Draw();
+    DrawIOStatusBar(status_mask);
   }
 
   inline static void Selected(int column) {
@@ -431,6 +438,13 @@ struct SettingsListItem {
       menu::DrawEditIcon(valuex, y, value, attr);
     if (selected)
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
+  }
+
+  inline void DrawCustomValue(const settings::ValueAttributes &attr, const char *value) {
+    DrawName(attr);
+    graphics.setPrintPos(endx, y + kTextDy);
+    graphics.print_right(value);
+    DrawCustom();
   }
 
   inline void DrawCustom() const {
