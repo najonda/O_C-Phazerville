@@ -32,6 +32,16 @@ void Init() {
   init_circle_lut();
 };
 
+void DrawIOStatusBar(uint32_t status_mask) {
+  weegfx::coord_t x = 32 - 14;
+  for (int i = 0; i < 4; ++i, x += 32, status_mask >>= 8) {
+    if (status_mask & 0x1) graphics.drawBitmap8(x, 9, 2, bitmap_io_settings_8);
+    if (status_mask & 0x2) graphics.drawBitmap8(x + 4, 9, 2, bitmap_io_settings_8);
+    if (status_mask & 0x4) graphics.drawBitmap8(x + 8, 9, 2, bitmap_io_settings_8);
+    if (status_mask & 0x8) graphics.drawBitmap8(x + 12, 9, 2, bitmap_io_settings_8);
+  }
+}
+
 }; // namespace menu
 
 

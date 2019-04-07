@@ -39,7 +39,7 @@ namespace OC {
 // Structs to hold information about IO ports;
 // Apps get queried and can fill this at runtime
 struct OutputDesc {
-  char label[9] = "";
+  char label[11] = "";
   OutputMode mode = OUTPUT_MODE_RAW;
 
   void set(const char *l, OutputMode m) {
@@ -49,7 +49,7 @@ struct OutputDesc {
 };
 
 struct InputDesc {
-  char label[9] = "";
+  char label[11] = "";
 
   void set(const char *l) {
     strncpy(label, l, sizeof(label));
