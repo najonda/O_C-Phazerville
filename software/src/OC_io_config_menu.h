@@ -27,7 +27,8 @@
 
 #include <array>
 #include "OC_io.h"
-#include "src/UI/ui_event_queue.h"
+#include "OC_menus.h"
+#include "OC_ui.h"
 
 namespace OC {
 
@@ -36,28 +37,21 @@ class AppBase;
 class IOSettingsMenu {
 public:
 
-  void Init();
-
   void Edit(AppBase *app);
+  void Close();
 
-  void enable(bool enabled) {
-    enabled_ = true;
-  }
-
-  inline bool enabled() const {
-    return enabled_;
+  inline bool active() const {
+    return io_settings_ != nullptr;
   }
 
   void Draw() const;
-  void DispatchEvent(const UI::Event &event);
+  UiMode DispatchEvent(const UI::Event &event);
 
 private:
-  bool enabled_ = false;
-
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  int selected_channel_;
+  int selected_channel_ = 0;
 
-  IOSettings *io_settings_;
+  IOSettings *io_settings_ = nullptr;
   IOConfig io_config_;
 
   bool autotune_available() const;

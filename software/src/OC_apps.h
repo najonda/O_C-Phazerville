@@ -25,9 +25,16 @@
 
 #include "OC_options.h"
 #include "OC_io.h"
+#include "OC_ui.h"
 #include "src/UI/ui_events.h"
 #include "util/util_turing.h"
 #include "util/util_misc.h"
+
+#ifdef APPS_DEBUG
+# define APPS_SERIAL_PRINTLN(msg, ...) serial_printf(msg "\n", ##__VA_ARGS__)
+#else
+# define APPS_SERIAL_PRINTLN(...)
+#endif
 
 namespace OC {
 
@@ -69,6 +76,10 @@ public:
   size_t storage_size() const { return IOSettings::storageSize() + appdata_storage_size(); }
   size_t Save(util::StreamBufferWriter &) const;
   size_t Restore(util::StreamBufferReader &);
+  void Draw(UiMode ui_mode) const;
+  UiMode DispatchEvent(const UI::Event &);
+  void DispatchAppEvent(AppEvent);
+  void EditIOSettings();
 
   // Main implementation interface for derived classes
   virtual void Init() = 0;
@@ -95,6 +106,10 @@ protected:
 
   AppBase(uint16_t appid, const char *const appname, const char *const boring_name)
   : id_(appid), name_(appname), boring_name_(boring_name) { }
+
+  virtual bool io_settings_allowed() const {
+    return true;
+  }
 
   DISALLOW_COPY_AND_ASSIGN(AppBase);
 };
