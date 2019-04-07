@@ -38,8 +38,6 @@ void Ui::Init() {
   encoder_left_.Init(OC_GPIO_ENC_PINMODE);
 
   event_queue_.Init();
-
-  io_settings_menu_.Init();
 }
 
 void Ui::configure_encoders(EncoderConfig encoder_config) {
@@ -106,39 +104,37 @@ void FASTRUN Ui::Poll() {
 
 UiMode Ui::DispatchEvents(AppBase *app) {
 
+  bool screensaver = false;
   while (event_queue_.available()) {
     const UI::Event event = event_queue_.PullEvent();
     if (IgnoreEvent(event))
       continue;
 
-    switch (event.type) {
-      case UI::EVENT_BUTTON_PRESS:
-        app->HandleButtonEvent(event);
-        break;
-      case UI::EVENT_BUTTON_LONG_PRESS:
-        if (OC::CONTROL_BUTTON_UP == event.control)
-          return UI_MODE_APP_IO_CONFIG;
-        else if (OC::CONTROL_BUTTON_R == event.control)
-          return UI_MODE_APP_SETTINGS;
-        else
-          app->HandleButtonEvent(event);
-        break;
-      case UI::EVENT_ENCODER:
-        app->HandleEncoderEvent(event);
-        break;
-      default:
-        break;
-    }
     MENU_REDRAW = 1;
+
+    // Handle global hotkeys
+    if (UI::EVENT_BUTTON_LONG_PRESS == event.type) {
+      if (CONTROL_BUTTON_R == event.control) {
+        return UI_MODE_APP_SETTINGS;
+      } else if (CONTROL_BUTTON_UP == event.control) {
+        app->EditIOSettings();
+        continue;
+      }
+    }
+
+    if (UI_MODE_SCREENSAVER == app->DispatchEvent(event)) {
+      screensaver = true;
+      // Break to handle screensaver; queued events will be handled next call
+      break;
+    }
   }
 
-  if (idle_time() > screensaver_timeout())
+  if ((screensaver || idle_time() > screensaver_timeout()) && !preempt_screensaver_) {
     screensaver_ = true;
-
-  if (screensaver_)
     return UI_MODE_SCREENSAVER;
-  else
-    return UI_MODE_MENU;
+  } else {
+    return UI_MODE_MENU;   
+  }
 }
 
 UiMode Ui::Splashscreen(bool &reset_settings) {

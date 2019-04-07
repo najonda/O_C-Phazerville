@@ -42,7 +42,6 @@
 #include "src/drivers/ADC/OC_util_ADC.h"
 #include "util/util_debugpins.h"
 
-unsigned long LAST_REDRAW_TIME = 0;
 uint_fast8_t MENU_REDRAW = true;
 OC::UiMode ui_mode = OC::UI_MODE_MENU;
 OC::IOFrame io_frame;
@@ -150,53 +149,47 @@ void setup() {
 /*  ---------    main loop  --------  */
 
 void FASTRUN loop() {
+  using namespace OC;
+  CORE::app_isr_enabled = true;
+  uint32_t menu_draw_count = 0;
+  uint32_t last_redraw_time = 0;
 
-  OC::CORE::app_isr_enabled = true;
-  uint32_t menu_redraws = 0;
   while (true) {
 
     // don't change current_app while it's running
-    if (OC::UI_MODE_APP_SETTINGS == ui_mode) {
-      OC::ui.AppSettings();
-      ui_mode = OC::UI_MODE_MENU;
-    }
-
-    if (OC::UI_MODE_APP_IO_CONFIG == ui_mode) {
-      ui_mode = OC::ui.AppIOSettings(OC::app_switcher.current_app());
+    if (UI_MODE_APP_SETTINGS == ui_mode) {
+      ui.AppSettings();
+      ui_mode = UI_MODE_MENU;
     }
 
     // Refresh display
     if (MENU_REDRAW) {
       GRAPHICS_BEGIN_FRAME(false); // Don't busy wait
-        if (OC::UI_MODE_MENU == ui_mode) {
-          OC_DEBUG_RESET_CYCLES(menu_redraws, 512, OC::DEBUG::MENU_draw_cycles);
-          OC_DEBUG_PROFILE_SCOPE(OC::DEBUG::MENU_draw_cycles);
-          OC::app_switcher.current_app()->DrawMenu();
-          ++menu_redraws;
-        } else {
-          OC::app_switcher.current_app()->DrawScreensaver();
-        }
-        MENU_REDRAW = 0;
-        LAST_REDRAW_TIME = millis();
+      OC_DEBUG_RESET_CYCLES(menu_draw_count, 512, DEBUG::MENU_draw_cycles);
+      OC_DEBUG_PROFILE_SCOPE(DEBUG::MENU_draw_cycles);
+      app_switcher.current_app()->Draw(ui_mode);
+      ++menu_draw_count;
+      MENU_REDRAW = 0;
+      last_redraw_time = ui.ticks();
       GRAPHICS_END_FRAME();
     }
 
     // Run current app
-    OC::app_switcher.current_app()->Loop();
+    app_switcher.current_app()->Loop();
 
     // UI events
-    OC::UiMode mode = OC::ui.DispatchEvents(OC::app_switcher.current_app());
+    UiMode mode = ui.DispatchEvents(app_switcher.current_app());
 
     // State transition for app
     if (mode != ui_mode) {
-      if (OC::UI_MODE_SCREENSAVER == mode)
-        OC::app_switcher.current_app()->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_ON);
-      else if (OC::UI_MODE_SCREENSAVER == ui_mode)
-        OC::app_switcher.current_app()->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_OFF);
+      if (UI_MODE_SCREENSAVER == mode)
+        app_switcher.current_app()->DispatchAppEvent(APP_EVENT_SCREENSAVER_ON);
+      else if (UI_MODE_SCREENSAVER == ui_mode)
+        app_switcher.current_app()->DispatchAppEvent(APP_EVENT_SCREENSAVER_OFF);
       ui_mode = mode;
     }
 
-    if (millis() - LAST_REDRAW_TIME > REDRAW_TIMEOUT_MS)
+    if (ui.ticks() - last_redraw_time > REDRAW_TIMEOUT_MS)
       MENU_REDRAW = 1;
   }
 }

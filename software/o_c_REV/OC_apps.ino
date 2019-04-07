@@ -26,11 +26,6 @@
 #include "OC_global_settings.h"
 #include "util/util_misc.h"
 
-#ifdef APPS_DEBUG
-# define APPS_SERIAL_PRINTLN(msg, ...) serial_printf(msg "\n", ##__VA_ARGS__)
-#else
-# define APPS_SERIAL_PRINTLN(...)
-#endif
 
 namespace OC {
 
@@ -67,27 +62,6 @@ static_assert(decltype(app_container)::TotalAppDataStorageSize() < AppData::kApp
 
 static constexpr int DEFAULT_APP_INDEX = 0;
 static constexpr uint16_t DEFAULT_APP_ID = decltype(app_container)::GetAppIDAtIndex<DEFAULT_APP_INDEX>();
-
-
-void AppBase::InitDefaults()
-{
-  io_settings_.InitDefaults();
-  Init();
-}
-
-size_t AppBase::Save(util::StreamBufferWriter &stream_buffer) const
-{
-  io_settings_.Save(stream_buffer);
-  SaveAppData(stream_buffer);
-  return stream_buffer.written();
-}
-
-size_t AppBase::Restore(util::StreamBufferReader &stream_buffer)
-{
-  io_settings_.Restore(stream_buffer);
-  RestoreAppData(stream_buffer);
-  return stream_buffer.read();
-}
 
 
 static void SaveGlobalSettings() {
@@ -273,7 +247,7 @@ void AppSwitcher::Init(bool reset_settings) {
   ui.encoders_enable_acceleration(global_settings.encoders_enable_acceleration);
 
   set_current_app(current_app_index);
-  current_app_->HandleAppEvent(APP_EVENT_RESUME);
+  current_app_->DispatchAppEvent(APP_EVENT_RESUME);
 
   delay(100);
 }
@@ -316,7 +290,7 @@ void Ui::AppSettings() {
 
   SetButtonIgnoreMask();
 
-  app_switcher.current_app()->HandleAppEvent(APP_EVENT_SUSPEND);
+  app_switcher.current_app()->DispatchAppEvent(APP_EVENT_SUSPEND);
 
   menu::ScreenCursor<5> cursor;
   cursor.Init(0, app_container.num_apps() - 1);
@@ -372,7 +346,7 @@ void Ui::AppSettings() {
   OC::ui.encoders_enable_acceleration(global_settings.encoders_enable_acceleration);
 
   // Restore state
-  app_switcher.current_app()->HandleAppEvent(APP_EVENT_RESUME);
+  app_switcher.current_app()->DispatchAppEvent(APP_EVENT_RESUME);
   CORE::app_isr_enabled = true;
 }
 

@@ -6,12 +6,11 @@
 #include "src/UI/ui_button.h"
 #include "src/UI/ui_encoder.h"
 #include "src/UI/ui_event_queue.h"
-#include "OC_io_settings_menu.h"
 
 namespace OC {
 
 enum EncoderConfig : uint32_t;
-struct App;
+class AppBase;
 
 // UI::Event::control is uint16_t, but we only have 6 controls anyway.
 // So we can helpfully make things into bitmasks, which seems useful.
@@ -37,7 +36,6 @@ enum UiMode {
   UI_MODE_SCREENSAVER,
   UI_MODE_MENU,
   UI_MODE_APP_SETTINGS,
-  UI_MODE_APP_IO_CONFIG,
   UI_MODE_CALIBRATE
 };
 
@@ -55,8 +53,7 @@ public:
   void DebugStats();
   void Calibrate();
   void AppSettings();
-  UiMode AppIOSettings(OC::AppBase *app);
-  UiMode DispatchEvents(OC::AppBase *app);
+  UiMode DispatchEvents(AppBase *app);
 
   void Poll();
   void Poke();
@@ -123,8 +120,6 @@ private:
   UI::Encoder<encL1, encL2> encoder_left_;
 
   UI::EventQueue<kEventQueueDepth> event_queue_;
-
-  IOSettingsMenu io_settings_menu_;
 
   inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
 #ifdef OC_UI_DEBUG

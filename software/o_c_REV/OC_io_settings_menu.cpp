@@ -38,12 +38,6 @@
 
 namespace OC {
 
-void IOSettingsMenu::Init()
-{
-  io_settings_ = nullptr;
-  selected_channel_ = 0;
-}
-
 void IOSettingsMenu::Edit(AppBase *app)
 {
   io_settings_ = &app->mutable_io_settings();
@@ -53,14 +47,24 @@ void IOSettingsMenu::Edit(AppBase *app)
   cursor_.set_editing(false);
 }
 
+void IOSettingsMenu::Close()
+{
+  io_settings_ = nullptr;
+}
+
 void IOSettingsMenu::Draw() const
 {
-  using TitleBar = menu::TitleBar<menu::kDefaultMenuStartX, 4, 2>;
+  using TitleBar = menu::QuadTitleBar;
 
   TitleBar::Draw();
   for (int i = 0; i < 4; ++i) {
     TitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
+
+    auto mode = io_config_.outputs[i].mode;
+    graphics.movePrintPos(2, 0);
+    graphics.printBitmap8(8, bitmap_output_mode_8 + mode * 8);
+
     // TODO[PLD] Other status in titlebar?
 /*
     graphics.print(
@@ -89,11 +93,11 @@ void IOSettingsMenu::Draw() const
 
     switch (setting) {
     case IO_SETTING_A_SCALING: {
-      graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
+//      graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
       if (output_desc.mode == OUTPUT_MODE_PITCH) {
-        list_item.DrawCustomName(output_desc.label, value, attr, 10);
+        list_item.DrawCustomName(output_desc.label, value, attr);
       } else {
-        list_item.DrawCharName(output_desc.label, 10);
+        list_item.DrawCharName(output_desc.label);
         list_item.DrawCustom();
       }
     }
@@ -131,10 +135,19 @@ bool IOSettingsMenu::autotune_available() const
   return global_settings.autotune_calibration_data.channels[selected_channel_].is_valid();
 }
 
-void IOSettingsMenu::DispatchEvent(const UI::Event &event)
+UiMode IOSettingsMenu::DispatchEvent(const UI::Event &event)
 {
+  UiMode ui_mode = UI_MODE_MENU;
   if (UI::EVENT_BUTTON_PRESS == event.type) {
     switch (event.control) {
+      case CONTROL_BUTTON_UP:
+        Close(); // this is debatable
+        ui_mode = UI_MODE_SCREENSAVER;
+      break;
+      case CONTROL_BUTTON_DOWN:
+        Close();
+      break;
+
       case CONTROL_BUTTON_R:
         switch(cursor_.cursor_pos()) {
         case IO_SETTING_A_SCALING:
@@ -174,39 +187,7 @@ void IOSettingsMenu::DispatchEvent(const UI::Event &event)
     break;
     }
   }
+  return ui_mode;
 }
 
-UiMode Ui::AppIOSettings(OC::AppBase *app)
-{
-  io_settings_menu_.Edit(app);
-
-  bool exit_loop = false;
-  while (!exit_loop) {
-    GRAPHICS_BEGIN_FRAME(false);
-    io_settings_menu_.Draw();
-    GRAPHICS_END_FRAME();
-
-    while (event_queue_.available()) {
-      auto event = event_queue_.PullEvent();
-
-      if (CONTROL_BUTTON_UP == event.control) {
-        screensaver_ = true;
-        return UI_MODE_SCREENSAVER;
-      }
-      if (CONTROL_BUTTON_DOWN == event.control) {
-        exit_loop = true;
-      }
-
-      io_settings_menu_.DispatchEvent(event);
-    }
-
-    if (idle_time() > screensaver_timeout()) {
-      screensaver_ = true;
-      return UI_MODE_SCREENSAVER;
-    }
-  }
-
-  return UI_MODE_MENU;
-}
-
-}
+} // namespace OC
