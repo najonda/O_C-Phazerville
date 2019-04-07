@@ -88,6 +88,14 @@ static void IOFrameToChannel(const IOFrame *ioframe, const IOSettings &io_settin
   return pitch + PitchUtils::PitchFromOctave(DAC::kOctaveZero);
 }
 
+/*static*/ int32_t IO::pitch_scale(int32_t pitch, OutputVoltageScaling scaling) {
+  return DAC::Scale(pitch, scaling);
+}
+
+/*static*/ int32_t IO::pitch_to_millivolts(int32_t pitch) {
+  return (((pitch * DAC::kMillvoltsPerOctave * 10) / (12 << 7)) + 5) / 10;
+}
+
 void IOFrame::Reset()
 {
   digital_inputs.rising_edges = digital_inputs.raised_mask = 0U;

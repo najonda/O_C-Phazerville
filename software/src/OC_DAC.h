@@ -55,20 +55,28 @@ public:
   static constexpr size_t kHistoryDepth = 8;
   static constexpr uint16_t MAX_VALUE = 65535U; // DAC fullscale 
 
-  static constexpr int32_t kGateVoltage = 5;
+#ifdef BUCHLA_4U
+# if !defined(IO_10V)
+  static constexpr int32_t kMillvoltsPerOctave = 1200;
+# else
+  static constexpr int32_t kMillvoltsPerOctave = 1000;
+# endif
+  static constexpr int kOctaveZero = 0;
+  static constexpr int32_t kOctaveGateHigh = kOctaveZero + 8;
+#elif defined(VOR)
+  static constexpr int32_t kMillvoltsPerOctave = 1000;
+  static int kOctaveZero;
+  // TODO: dynamic gate high value as well
+  static constexpr int32_t kOctaveGateHigh = 8;
 
-  #ifdef BUCHLA_4U
-    static constexpr int kOctaveZero = 0;
-    static constexpr int32_t kOctaveGateHigh = kOctaveZero + 8;
-  #elif defined(VOR) 
-    static int kOctaveZero;
-    static constexpr int VBiasUnipolar = 3900;   // onboard DAC @ Vref 1.2V (internal), 1.75x gain
-    static constexpr int VBiasBipolar = 2000;    // onboard DAC @ Vref 1.2V (internal), 1.75x gain
-    static constexpr int VBiasAsymmetric = 2760; // onboard DAC @ Vref 1.2V (internal), 1.75x gain
-  #else
-    static constexpr int kOctaveZero = 3;
-    static constexpr int32_t kOctaveGateHigh = kOctaveZero + 5;
-  #endif
+  static constexpr int VBiasUnipolar = 3900;   // onboard DAC @ Vref 1.2V (internal), 1.75x gain
+  static constexpr int VBiasBipolar = 2000;    // onboard DAC @ Vref 1.2V (internal), 1.75x gain
+  static constexpr int VBiasAsymmetric = 2760; // onboard DAC @ Vref 1.2V (internal), 1.75x gain
+#else
+  static constexpr int32_t kMillvoltsPerOctave = 1000;
+  static constexpr int kOctaveZero = 3;
+  static constexpr int32_t kOctaveGateHigh = kOctaveZero + 5;
+#endif
 
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void DAC8568_Vref_enable();
