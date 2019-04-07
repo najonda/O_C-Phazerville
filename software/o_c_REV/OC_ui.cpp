@@ -104,7 +104,6 @@ void FASTRUN Ui::Poll() {
 
 UiMode Ui::DispatchEvents(AppBase *app) {
 
-  bool screensaver = false;
   while (event_queue_.available()) {
     const UI::Event event = event_queue_.PullEvent();
     if (IgnoreEvent(event))
@@ -123,14 +122,16 @@ UiMode Ui::DispatchEvents(AppBase *app) {
     }
 
     if (UI_MODE_SCREENSAVER == app->DispatchEvent(event)) {
-      screensaver = true;
+      screensaver_ = true;
       // Break to handle screensaver; queued events will be handled next call
-      break;
+      return UI_MODE_SCREENSAVER;
     }
   }
 
-  if ((screensaver || idle_time() > screensaver_timeout()) && !preempt_screensaver_) {
+  if (idle_time() > screensaver_timeout() && !preempt_screensaver_)
     screensaver_ = true;
+
+  if (screensaver_) {
     return UI_MODE_SCREENSAVER;
   } else {
     return UI_MODE_MENU;   
