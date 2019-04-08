@@ -35,11 +35,12 @@
 
 namespace OC {
 
+static constexpr kMaxIOLabelLength = 10;
 
 // Structs to hold information about IO ports;
 // Apps get queried and can fill this at runtime
 struct OutputDesc {
-  char label[11] = "";
+  char label[kMaxIOLabelLength + 1] = "";
   OutputMode mode = OUTPUT_MODE_RAW;
 
   void set(const char *l, OutputMode m) {
@@ -49,7 +50,7 @@ struct OutputDesc {
 };
 
 struct InputDesc {
-  char label[11] = "";
+  char label[kMaxIOLabelLength + 1] = "";
 
   void set(const char *l) {
     strncpy(label, l, sizeof(label));

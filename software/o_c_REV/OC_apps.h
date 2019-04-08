@@ -109,6 +109,8 @@ protected:
     return true;
   }
 
+  uint32_t io_settings_status_mask() const;
+
   DISALLOW_COPY_AND_ASSIGN(AppBase);
 };
 
