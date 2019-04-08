@@ -24,6 +24,7 @@
 //
 
 #include "OC_apps.h"
+#include "OC_global_settings.h"
 #include "OC_io_settings_menu.h"
 
 namespace OC {
@@ -126,6 +127,12 @@ void AppBase::EditIOSettings()
     APPS_SERIAL_PRINTLN("EditIOSettings(%s)", name());
     io_settings_menu.Edit(this);
   }
+}
+
+uint32_t AppBase::io_settings_status_mask() const
+{
+  return io_settings_.status_mask() &
+         global_settings.autotune_calibration_data.valid_mask();
 }
 
 } // OC

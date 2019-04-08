@@ -1252,10 +1252,12 @@ void AppQuadQuantizer::Process(IOFrame *ioframe) {
 
 void AppQuadQuantizer::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OUTPUT_MODE_PITCH);
+  char label[kMaxIOLabelLength + 1];
+  for (auto &channel : quantizer_channels_) {
+    auto i = channel.get_channel_index();
+    snprintf(label, sizeof(label), "CH%d %s", i + 1, scale_names_short[channel.get_scale()]);
+    ioconfig.outputs[i].set(label, OUTPUT_MODE_PITCH);
+  }
 }
 
 void AppQuadQuantizer::Loop() {
@@ -1265,7 +1267,7 @@ void AppQuadQuantizer::DrawMenu() const {
 
   using TitleBar = menu::QuadTitleBar;
 
-  TitleBar::Draw();
+  TitleBar::Draw(io_settings_status_mask());
   for (int i = 0, x = 0; i < 4; ++i, x += 32) {
     const QuantizerChannel &channel = quantizer_channels_[i];
     TitleBar::SetColumn(i);
@@ -1276,8 +1278,6 @@ void AppQuadQuantizer::DrawMenu() const {
       graphics.pretty_print(octave);
 
     TitleBar::DrawGateIndicator(i, channel.getTriggerState());
-    //TitleBar::DrawOutputIcons(i, TitleBar::kColumnWidth - 5, i & 2);
-
   }
   TitleBar::Selected(selected_channel_);
 
