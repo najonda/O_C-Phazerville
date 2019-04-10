@@ -35,10 +35,9 @@
 
 namespace OC {
 
-static constexpr kMaxIOLabelLength = 10;
+static constexpr size_t kMaxIOLabelLength = 10;
 
-// Structs to hold information about IO ports;
-// Apps get queried and can fill this at runtime
+// Structs to hold information about IO ports
 struct OutputDesc {
   char label[kMaxIOLabelLength + 1] = "";
   OutputMode mode = OUTPUT_MODE_RAW;
@@ -47,19 +46,31 @@ struct OutputDesc {
     strncpy(label, l, sizeof(label));
     mode = m;
   }
+
+  void set_printf(OutputMode output_mode, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 };
 
 struct InputDesc {
   char label[kMaxIOLabelLength + 1] = "";
+
+  void set_printf(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 
   void set(const char *l) {
     strncpy(label, l, sizeof(label));
   }
 };
 
+// Struct that apps can use to describe the function of the IO ports.
+// NOTE it's generally assumed that there's 4 of each type in the settings
+// menu for simplicity.
 struct IOConfig {
-  InputDesc inputs[DAC_CHANNEL_LAST];
+  InputDesc digital_inputs[DIGITAL_INPUT_LAST];
+  InputDesc cv[ADC_CHANNEL_LAST];
   OutputDesc outputs[DAC_CHANNEL_LAST];
+
+  void Reset() {
+    memset(this, 0, sizeof(IOConfig));
+  }
 };
 
 struct IOFrame;

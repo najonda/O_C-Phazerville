@@ -815,10 +815,39 @@ void AppASR::Process(IOFrame *ioframe) {
 
 void AppASR::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("TAP1", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_B].set("TAP2", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_C].set("TAP3", OUTPUT_MODE_PITCH);
-  ioconfig.outputs[DAC_CHANNEL_D].set("TAP4", OUTPUT_MODE_PITCH);
+  ioconfig.digital_inputs[DIGITAL_INPUT_1].set("Clock");
+  ioconfig.digital_inputs[DIGITAL_INPUT_2].set("Freeze");
+  ioconfig.digital_inputs[DIGITAL_INPUT_3].set("Oct+");
+  ioconfig.digital_inputs[DIGITAL_INPUT_4].set("Oct-");
+
+  const char *src = asr_input_sources[asr_.get_cv_source()];
+  const char *mod = nullptr;
+  switch (asr_.get_cv_source()) {
+    case ASR_CHANNEL_SOURCE_TURING:
+      mod = Strings::TM_aux_cv_destinations[asr_.get_turing_CV()];
+      break;
+    case ASR_CHANNEL_SOURCE_BYTEBEAT:
+      mod = bb_CV_destinations[asr_.get_bytebeat_CV()];
+      break;
+    case ASR_CHANNEL_SOURCE_INTEGER_SEQUENCES:
+      mod = int_seq_CV_destinations[asr_.get_int_seq_CV()];
+      break;
+    default:
+      break;
+  }
+  auto &cv_ch1 = ioconfig.cv[ADC_CHANNEL_1];
+  if (mod)
+    cv_ch1.set_printf("*%s:%s", src, mod);
+  else
+    cv_ch1.set_printf("S&H");
+  ioconfig.cv[ADC_CHANNEL_2].set("*index");
+  ioconfig.cv[ADC_CHANNEL_3].set("*scale");
+  ioconfig.cv[ADC_CHANNEL_4].set_printf("*%s", asr_cv4_destinations[asr_.get_cv4_destination()]);
+
+  ioconfig.outputs[DAC_CHANNEL_A].set("ASR Tap1", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_B].set("ASR Tap2", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_C].set("ASR Tap3", OUTPUT_MODE_PITCH);
+  ioconfig.outputs[DAC_CHANNEL_D].set("ASR Tap4", OUTPUT_MODE_PITCH);
 }
 
 void AppASR::HandleButtonEvent(const UI::Event &event) {
@@ -941,7 +970,7 @@ void AppASR::HandleDownButtonLong() {
 
 void AppASR::DrawMenu() const {
 
-  menu::TitleBar<0, 4, 0>::Draw();
+  menu::TitleBar<0, 4, 0>::Draw(io_settings_status_mask());
 
   int scale = left_encoder_value_;
   graphics.movePrintPos(weegfx::Graphics::kFixedFontW, 0);

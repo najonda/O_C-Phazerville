@@ -117,6 +117,15 @@ public:
     void Reset() {
       for (auto &ch : channels) ch.Reset();
     }
+
+    uint32_t valid_mask() const {
+      uint32_t mask = 0;
+      for (auto &ch : channels) {
+        mask >>= 8;
+        mask |= (ch.is_valid() ? 0xFF000000 : 0xF7000000);
+      }
+      return mask;
+    }
   };
 
   // Init internals and SPI interface
