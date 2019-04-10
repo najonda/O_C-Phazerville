@@ -41,6 +41,7 @@ namespace OC {
 void IOSettingsMenu::Edit(AppBase *app)
 {
   io_settings_ = &app->mutable_io_settings();
+  io_config_.Reset();
   app->GetIOConfig(io_config_);
 
   cursor_.Init(IO_SETTING_CV1_GAIN, IO_SETTING_A_TUNING);
@@ -61,8 +62,8 @@ void IOSettingsMenu::Draw() const
   for (int i = 0; i < 4; ++i) {
     TitleBar::SetColumn(i);
     graphics.print((char)('A' + i));
-    graphics.movePrintPos(8, 0);
-    graphics.printBitmap8(8, bitmap_output_mode_8 + io_config_.outputs[i].mode * 8);
+//    graphics.movePrintPos(8, 0);
+//    graphics.printBitmap8(8, bitmap_output_mode_8 + io_config_.outputs[i].mode * 8);
   }
   TitleBar::Selected(channel);
 
@@ -82,7 +83,7 @@ void IOSettingsMenu::Draw() const
       snprintf(label, sizeof(label), "%s  %.10s",
                Strings::channel_id[channel],
                output_desc.label);
-      //graphics.drawBitmap8(list_item.x + 2, list_item.y + 1, 8, bitmap_output_mode_8 + output_desc.mode * 8);
+      graphics.drawBitmap8(list_item.x + 13, list_item.y + 2, 8, bitmap_output_mode_8 + output_desc.mode * 8);
       if (output_desc.mode == OUTPUT_MODE_PITCH) {
         list_item.DrawCustomName(label, value, attr);
       } else {
@@ -93,7 +94,7 @@ void IOSettingsMenu::Draw() const
     break;
 
     case IO_SETTING_CV1_GAIN: {
-      const auto &input_desc = io_config_.inputs[channel];
+      const auto &input_desc = io_config_.cv[channel];
       snprintf(label, sizeof(label),
           "%s %.10s",
           Strings::cv_input_names[channel],
@@ -114,6 +115,16 @@ void IOSettingsMenu::Draw() const
         list_item.DrawCustomValue(attr, "N/A");
         list_item.DrawCustom();
       }
+    break;
+
+    case IO_SETTING_TR1: {
+      const auto &desc = io_config_.digital_inputs[channel];
+      snprintf(label, sizeof(label), "%s %.10s",
+               Strings::trigger_input_names[channel],
+               desc.label[0] ? desc.label : "????");
+      list_item.DrawCharName(label);
+      list_item.DrawCustom();
+    }
     break;
 
     case IO_SETTING_CV1_FILTER:

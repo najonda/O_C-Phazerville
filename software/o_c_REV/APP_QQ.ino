@@ -1237,11 +1237,10 @@ void AppQuadQuantizer::Process(IOFrame *ioframe) {
 
 void AppQuadQuantizer::GetIOConfig(IOConfig &ioconfig) const
 {
-  char label[kMaxIOLabelLength + 1];
   for (auto &channel : quantizer_channels_) {
     auto i = channel.get_channel_index();
-    snprintf(label, sizeof(label), "CH%d %s", i + 1, scale_names_short[channel.get_scale()]);
-    ioconfig.outputs[i].set(label, OUTPUT_MODE_PITCH);
+    ioconfig.outputs[i].set_printf(OUTPUT_MODE_PITCH,
+                                   "CH%d %s", i + 1, scale_names_short[channel.get_scale()]);
   }
 }
 

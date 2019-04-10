@@ -32,8 +32,24 @@
 
 namespace OC {
 
-const char * const autotune_enable_strings[] = { "dflt", "auto" };
+const char * const autotune_enable_strings[] = { "Dflt", "Auto" };
 SETTINGS_ARRAY_DEFINE(IOSettings);
+
+void OutputDesc::set_printf(OutputMode output_mode, const char *fmt, ...) {
+  mode = output_mode;
+  va_list args;
+  va_start(args, fmt );
+  vsnprintf(label, sizeof(label), fmt, args);
+  va_end(args);
+}
+
+void InputDesc::set_printf(const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt );
+  vsnprintf(label, sizeof(label), fmt, args);
+  va_end(args);
+}
 
 /*static*/ void IO::ReadDigitalInputs(IOFrame *ioframe)
 {

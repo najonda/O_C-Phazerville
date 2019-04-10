@@ -41,10 +41,10 @@ enum OutputMode {
 };
 
 enum IO_SETTING {
-  IO_SETTING_CV1_GAIN, IO_SETTING_CV1_FILTER, IO_SETTING_A_SCALING, IO_SETTING_A_TUNING,
-  IO_SETTING_CV2_GAIN, IO_SETTING_CV2_FILTER, IO_SETTING_B_SCALING, IO_SETTING_B_TUNING,
-  IO_SETTING_CV3_GAIN, IO_SETTING_CV3_FILTER, IO_SETTING_C_SCALING, IO_SETTING_C_TUNING,
-  IO_SETTING_CV4_GAIN, IO_SETTING_CV4_FILTER, IO_SETTING_D_SCALING, IO_SETTING_D_TUNING,
+  IO_SETTING_CV1_GAIN, IO_SETTING_CV1_FILTER, IO_SETTING_TR1, IO_SETTING_A_SCALING, IO_SETTING_A_TUNING,
+  IO_SETTING_CV2_GAIN, IO_SETTING_CV2_FILTER, IO_SETTING_TR2, IO_SETTING_B_SCALING, IO_SETTING_B_TUNING,
+  IO_SETTING_CV3_GAIN, IO_SETTING_CV3_FILTER, IO_SETTING_TR3, IO_SETTING_C_SCALING, IO_SETTING_C_TUNING,
+  IO_SETTING_CV4_GAIN, IO_SETTING_CV4_FILTER, IO_SETTING_TR4, IO_SETTING_D_SCALING, IO_SETTING_D_TUNING,
   IO_SETTING_LAST
 };
 
@@ -55,9 +55,11 @@ extern const char *const voltage_scalings[];
 
 class IOSettings: public settings::SettingsBase<IOSettings, IO_SETTING_LAST> {
 public:
+  static constexpr int kSettingsPerChannel = IO_SETTING_CV2_GAIN - IO_SETTING_CV1_GAIN;
+
 
   static inline IO_SETTING channel_setting(IO_SETTING setting, int channel) {
-    return static_cast<IO_SETTING>(setting + channel * 4);
+    return static_cast<IO_SETTING>(setting + channel * kSettingsPerChannel);
   }
 
   inline int input_gain(int channel) const {
@@ -97,23 +99,27 @@ public:
   }
 
   SETTINGS_ARRAY_DECLARE() {{
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV1 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV1 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
     { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#A scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV2 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV2 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "TR2", nullptr, settings::STORAGE_TYPE_NOP },
     { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#B scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV3 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV3 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
     { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#C scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV4 gain", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV4 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
     { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#D scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
   }};
