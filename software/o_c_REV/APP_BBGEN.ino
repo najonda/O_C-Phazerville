@@ -385,10 +385,46 @@ void AppQuadBouncingBalls::DrawScreensaver() const {
 
 void AppQuadBouncingBalls::GetIOConfig(OC::IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_UNI);
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_UNI);
-  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_UNI);
-  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OC::OUTPUT_MODE_UNI);
+  char label[32] = {0}; // oversized, truncate later...
+
+  for (int di = DIGITAL_INPUT_1; di <= DIGITAL_INPUT_4; ++di ) {
+    char *l = label;
+    int channel = 0;
+    for (const auto &ball : balls_) {
+      ++channel;
+      if (di == ball.get_trigger_input()) {
+        if (label == l)
+          l += sprintf(l, "Ball%d", channel);
+        else
+          l += sprintf(l, ",%d", channel);
+      }
+    }
+    *l = 0;
+    ioconfig.digital_inputs[di].set(label);
+  }
+
+  for (int cv = ADC_CHANNEL_1; cv <= ADC_CHANNEL_4; ++cv) {
+    char *l = label;
+    int channel = 0;
+    for (const auto &ball : balls_) {
+      ++channel;
+      auto mapping = ball.get_value(BB_SETTING_CV1 + cv);
+      if (mapping) {
+        if (l != label)
+          l += sprintf(l, ",%d:%s", channel, bb_cv_mapping_names[mapping]);
+        else
+          l += sprintf(l, "%d:%s", channel, bb_cv_mapping_names[mapping]);
+      }
+      // Alternate: "1:*grav, 2, 3, 4"
+    }
+    *l = 0;
+    ioconfig.cv[cv].set(label);
+  }
+
+  ioconfig.outputs[DAC_CHANNEL_A].set("Ball1", OC::OUTPUT_MODE_UNI);
+  ioconfig.outputs[DAC_CHANNEL_B].set("Ball2", OC::OUTPUT_MODE_UNI);
+  ioconfig.outputs[DAC_CHANNEL_C].set("Ball3", OC::OUTPUT_MODE_UNI);
+  ioconfig.outputs[DAC_CHANNEL_D].set("Ball4", OC::OUTPUT_MODE_UNI);
 }
 
 void AppQuadBouncingBalls::DrawDebugInfo() const {

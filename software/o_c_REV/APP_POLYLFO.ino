@@ -361,6 +361,15 @@ void FASTRUN AppPolyLfo::Process(OC::IOFrame *ioframe) {
 
 void AppPolyLfo::GetIOConfig(OC::IOConfig &ioconfig) const
 {
+  ioconfig.digital_inputs[DIGITAL_INPUT_1].set("Reset");
+  ioconfig.digital_inputs[DIGITAL_INPUT_2].set("Freeze");
+  ioconfig.digital_inputs[DIGITAL_INPUT_3].set("Tempo sync");
+
+  ioconfig.cv[ADC_CHANNEL_1].set("Freq");
+  ioconfig.cv[ADC_CHANNEL_2].set("Shape");
+  ioconfig.cv[ADC_CHANNEL_3].set("Spread");
+  ioconfig.cv[ADC_CHANNEL_4].set_printf("*%s", cv4_destinations[poly_lfo_.cv4_destination()]);
+
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_RAW);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_RAW);
   ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_RAW);

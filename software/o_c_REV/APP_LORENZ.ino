@@ -367,6 +367,16 @@ void AppLorenzGenerator::HandleEncoderEvent(const UI::Event &event) {
 
 void AppLorenzGenerator::GetIOConfig(IOConfig &ioconfig) const
 {
+  ioconfig.digital_inputs[DIGITAL_INPUT_1].set("Reset 1");
+  ioconfig.digital_inputs[DIGITAL_INPUT_2].set("Reset 2");
+  ioconfig.digital_inputs[DIGITAL_INPUT_3].set("Reset 1&2");
+  ioconfig.digital_inputs[DIGITAL_INPUT_4].set("Freeze");
+
+  ioconfig.cv[ADC_CHANNEL_1].set("Freq1");
+  ioconfig.cv[ADC_CHANNEL_2].set("Rho1");
+  ioconfig.cv[ADC_CHANNEL_3].set("Freq2");
+  ioconfig.cv[ADC_CHANNEL_4].set("Rho2");
+
   ioconfig.outputs[DAC_CHANNEL_A].set(lorenz_output_names[lorenz_generator_.get_out_a()], OUTPUT_MODE_RAW);
   ioconfig.outputs[DAC_CHANNEL_B].set(lorenz_output_names[lorenz_generator_.get_out_b()], OUTPUT_MODE_RAW);
   ioconfig.outputs[DAC_CHANNEL_C].set(lorenz_output_names[lorenz_generator_.get_out_c()], OUTPUT_MODE_RAW);

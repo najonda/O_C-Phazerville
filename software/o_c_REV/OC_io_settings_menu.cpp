@@ -98,7 +98,7 @@ void IOSettingsMenu::Draw() const
       snprintf(label, sizeof(label),
           "%s %.10s",
           Strings::cv_input_names[channel],
-          input_desc.label[0] ? input_desc.label : "????");
+          input_desc.label[0] ? input_desc.label : "--");
       list_item.DrawCustomName(label, value, attr);
     }
     break;
@@ -113,7 +113,6 @@ void IOSettingsMenu::Draw() const
         }
       } else {
         list_item.DrawCustomValue(attr, "N/A");
-        list_item.DrawCustom();
       }
     break;
 
