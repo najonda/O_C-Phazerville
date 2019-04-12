@@ -63,6 +63,9 @@ struct InputDesc {
 // Struct that apps can use to describe the function of the IO ports.
 // NOTE it's generally assumed that there's 4 of each type in the settings
 // menu for simplicity.
+// What'd be really nice (if one wanted to rewrite even more of the apps...)
+// would be a way of defining a function + description instead of handling all
+// the moving parts individually.
 struct IOConfig {
   InputDesc digital_inputs[DIGITAL_INPUT_LAST];
   InputDesc cv[ADC_CHANNEL_LAST];
