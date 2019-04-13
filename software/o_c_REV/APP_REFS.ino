@@ -787,6 +787,8 @@ size_t AppReferences::RestoreAppData(util::StreamBufferReader &stream_buffer) {
 
 void AppReferences::GetIOConfig(OC::IOConfig &ioconfig) const
 {
+  ioconfig.digital_inputs[DAC_CHANNEL_FTM].set("Frequency counter");
+
   ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OC::OUTPUT_MODE_PITCH);
   ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OC::OUTPUT_MODE_PITCH);
   ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OC::OUTPUT_MODE_PITCH);
@@ -884,14 +886,17 @@ void AppReferences::DrawScreensaver() const {
 
 void AppReferences::HandleButtonEvent(const UI::Event &event) {
 
+  auto &channel = selected_channel();
   if (autotuner.active()) {
     autotuner.HandleButtonEvent(event);
     return;
   }
-  
-  if (OC::CONTROL_BUTTON_R == event.control) {
 
-    auto &channel = selected_channel();
+  if (CONTROL_BUTTON_UP == event.control) {
+    channel.change_value(REF_SETTING_OCTAVE, 1);
+  } else if (CONTROL_BUTTON_DOWN == event.control) {
+    channel.change_value(REF_SETTING_OCTAVE, -1);
+  } else if (CONTROL_BUTTON_R == event.control) {
     switch (channel.enabled_setting_at(ui.cursor.cursor_pos())) {
       case REF_SETTING_AUTOTUNE:
       autotuner.Open(&channel);
@@ -912,7 +917,7 @@ void AppReferences::HandleEncoderEvent(const UI::Event &event) {
     return;
   }
   
-  if (OC::CONTROL_ENCODER_L == event.control) {
+  if (CONTROL_ENCODER_L == event.control) {
     
     int previous = selected_channel().num_enabled_settings();
     int selected = ui.selected_channel + event.value;
@@ -926,7 +931,7 @@ void AppReferences::HandleEncoderEvent(const UI::Event &event) {
     }
     else
       ui.cursor.AdjustEnd(selected_channel().num_enabled_settings() - 1);
-  } else if (OC::CONTROL_ENCODER_R == event.control) {
+  } else if (CONTROL_ENCODER_R == event.control) {
     if (ui.cursor.editing()) {
         auto &channel = selected_channel();
         ReferenceSetting setting = channel.enabled_setting_at(ui.cursor.cursor_pos());
