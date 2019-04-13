@@ -542,6 +542,14 @@ void FASTRUN AppAutomatonnetz::Process(IOFrame *ioframe) {
 
 void AppAutomatonnetz::GetIOConfig(IOConfig &ioconfig) const
 {
+  ioconfig.digital_inputs[DIGITAL_INPUT_1].set("Clock");
+  ioconfig.digital_inputs[DIGITAL_INPUT_2].set("Arp");
+  ioconfig.digital_inputs[DIGITAL_INPUT_3].set("Reset");
+  ioconfig.digital_inputs[DIGITAL_INPUT_4].set("!Strum");
+
+  ioconfig.cv[ADC_CHANNEL_1].set("Root pitch");
+  ioconfig.cv[ADC_CHANNEL_4].set("Inversion");
+
   switch (automatonnetz_state.output_mode()) {
   case OUTPUTA_MODE_ROOT:  ioconfig.outputs[DAC_CHANNEL_A].set("Root", OUTPUT_MODE_PITCH); break;
   case OUTPUTA_MODE_TRIG:  ioconfig.outputs[DAC_CHANNEL_A].set("Trig", OUTPUT_MODE_GATE); break;
