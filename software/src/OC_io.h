@@ -35,7 +35,7 @@
 
 namespace OC {
 
-static constexpr size_t kMaxIOLabelLength = 10;
+static constexpr size_t kMaxIOLabelLength = 32;
 
 // Structs to hold information about IO ports
 struct OutputDesc {

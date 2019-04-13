@@ -387,7 +387,7 @@ void AppQuadBouncingBalls::DrawScreensaver() const {
 
 void AppQuadBouncingBalls::GetIOConfig(OC::IOConfig &ioconfig) const
 {
-  char label[32] = {0}; // oversized, truncate later...
+  char label[kMaxIOLabelLength + 1] = {0}; // oversized, truncate later...
 
   for (int di = DIGITAL_INPUT_1; di <= DIGITAL_INPUT_4; ++di ) {
     char *l = label;

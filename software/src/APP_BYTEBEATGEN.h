@@ -601,10 +601,44 @@ void AppQuadByteBeats::DrawScreensaver() const {
 
 void AppQuadByteBeats::GetIOConfig(IOConfig &ioconfig) const
 {
-  ioconfig.outputs[DAC_CHANNEL_A].set("CH1", OUTPUT_MODE_RAW);
-  ioconfig.outputs[DAC_CHANNEL_B].set("CH2", OUTPUT_MODE_RAW);
-  ioconfig.outputs[DAC_CHANNEL_C].set("CH3", OUTPUT_MODE_RAW);
-  ioconfig.outputs[DAC_CHANNEL_D].set("CH4", OUTPUT_MODE_RAW);
+  char label[kMaxIOLabelLength + 1] = {0}; // oversized, truncate later...
+
+  for (int di = DIGITAL_INPUT_1; di <= DIGITAL_INPUT_4; ++di ) {
+    char *l = label;
+    int channel = 0;
+    for (const auto &bb : bytebeats_) {
+      ++channel;
+      if (di == bb.get_trigger_input()) {
+        if (label == l)
+          l += sprintf(l, "CH%d", channel);
+        else
+          l += sprintf(l, ",CH%d", channel);
+      }
+    }
+    *l = 0;
+    ioconfig.digital_inputs[di].set(label);
+  }
+
+  for (int cv = ADC_CHANNEL_1; cv <= ADC_CHANNEL_4; ++cv) {
+    char *l = label;
+    int channel = 0;
+    for (const auto &bb : bytebeats_) {
+      ++channel;
+      auto mapping = bb.get_value(BYTEBEAT_SETTING_CV1 + cv);
+      if (mapping) {
+        if (l != label)
+          l += sprintf(l, ",%d:%s", channel, bytebeat_cv_mapping_names[mapping]);
+        else
+          l += sprintf(l, "%d:%s", channel, bytebeat_cv_mapping_names[mapping]);
+      }
+    }
+    *l = 0;
+    ioconfig.cv[cv].set(label);
+  }
+
+  for (int i = DAC_CHANNEL_A; i <= DAC_CHANNEL_D; ++i)
+    ioconfig.outputs[i].set_printf(OUTPUT_MODE_RAW, "CH%d %s", i + 1,
+                                   Strings::bytebeat_equation_names[bytebeats_[i].get_equation()]);
 }
 
 } // namespace OC
