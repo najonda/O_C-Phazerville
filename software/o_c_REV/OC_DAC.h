@@ -144,7 +144,7 @@ public:
     const int32_t fractional = pitch - octave * (12 << 7);
 
     const uint16_t *calibrated_octaves =
-      (!autotune_enabled || autotune_calibration_data_->channels[channel].is_valid())
+      (!autotune_enabled || !autotune_calibration_data_->channels[channel].is_valid())
       ? calibration_data_->calibrated_octaves[channel]
       : autotune_calibration_data_->channels[channel].calibrated_octaves;
 
