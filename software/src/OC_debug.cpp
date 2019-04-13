@@ -215,33 +215,35 @@ static const DebugMenu debug_menus[] = {
   { " ASR", ASR_debug },
 #endif // ASR_DEBUG
   { " ", debug_menu_app },
-  { nullptr, nullptr }
 };
 
 void Ui::DebugStats() {
   SERIAL_PRINTLN("DEBUG/STATS MENU");
 
-  const DebugMenu *current_menu = &debug_menus[0];
+  int current_menu_index = 0;
   bool exit_loop = false;
   while (!exit_loop) {
+    const auto &current_menu = debug_menus[current_menu_index];
 
     GRAPHICS_BEGIN_FRAME(false);
       graphics.setPrintPos(2, 2);
-      graphics.printf("%d/%u", (int)(current_menu - &debug_menus[0]) + 1, ARRAY_SIZE(debug_menus) - 1);
-      graphics.print(current_menu->title);
-      current_menu->display_fn();
+      graphics.printf("%d/%u", current_menu_index + 1, ARRAY_SIZE(debug_menus));
+      graphics.print(current_menu.title);
+      current_menu.display_fn();
     GRAPHICS_END_FRAME();
 
     while (event_queue_.available()) {
       UI::Event event = event_queue_.PullEvent();
-      if (CONTROL_BUTTON_R == event.control && UI::EVENT_BUTTON_PRESS == event.type) {
-        exit_loop = true;
-      } else if (CONTROL_BUTTON_L == event.control && UI::EVENT_BUTTON_PRESS == event.type) {
-        ++current_menu;
-        if (!current_menu->title || !current_menu->display_fn)
-          current_menu = &debug_menus[0];
+      if (UI::EVENT_ENCODER == event.type && CONTROL_ENCODER_L == event.control) {
+        current_menu_index = current_menu_index + event.value;
+      } else if (UI::EVENT_BUTTON_PRESS == event.type) {
+        if (CONTROL_BUTTON_R == event.control)
+          exit_loop = true;
+        if (CONTROL_BUTTON_L == event.control)
+          ++current_menu_index;
       }
     }
+    CONSTRAIN(current_menu_index, 0, (int)ARRAY_SIZE(debug_menus) - 1);
   }
 
   event_queue_.Flush();
