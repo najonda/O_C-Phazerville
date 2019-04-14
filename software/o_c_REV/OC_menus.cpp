@@ -5,32 +5,56 @@
 #include "OC_menus.h"
 #include "OC_DAC.h"
 #include "OC_options.h"
+#include "util/util_templates.h"
 
 namespace OC {
 
-static constexpr weegfx::coord_t note_circle_r = 28;
-
-static struct coords {
+struct coords {
   weegfx::coord_t x, y;
-} circle_pos_lut[12];
+};
+static constexpr float note_circle_r = 28.f;
+static constexpr float pi = 3.14159265358979323846f;
+static constexpr float semitone_radians = (2.f * pi / 12.f);
+constexpr float index_to_rads(size_t index) { return ((index + 12 - 3) % 12) * semitone_radians; }
 
-static void init_circle_lut() {
-  static const float pi = 3.14159265358979323846f;
-  static const float semitone_radians = (2.f * pi / 12.f);
-
-  for (int i = 0; i < 12; ++i) {
-    float rads = ((i + 12 - 3) % 12) * semitone_radians;
-    float x = note_circle_r * cos(rads);
-    float y = note_circle_r * sin(rads);
-    circle_pos_lut[i].x = x;
-    circle_pos_lut[i].y = y;
-  }
+template <size_t index> constexpr coords generate_circle_coords() {
+  return {
+    static_cast<weegfx::coord_t>(note_circle_r * cosf(index_to_rads(index))),
+    static_cast<weegfx::coord_t>(note_circle_r * sinf(index_to_rads(index)))
+  };
 }
 
+template <size_t ...Is>
+constexpr std::array<coords, sizeof...(Is)> generate_circle_pos_lut(util::index_sequence<Is...>) {
+  return { generate_circle_coords<Is>()... };
+}
+
+static constexpr std::array<coords, 12> circle_pos_lut = generate_circle_pos_lut(util::make_index_sequence<12>::type());
+
 namespace menu {
-void Init() {
-  init_circle_lut();
-};
+void Init()
+{
+}
+
+void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, int min_value, int max_value) {
+  const uint8_t *src = OC::bitmap_edit_indicators_8;
+  if (value == max_value)
+    src += OC::kBitmapEditIndicatorW * 2;
+  else if (value == min_value)
+    src += OC::kBitmapEditIndicatorW;
+
+  graphics.drawBitmap8(x - 5, y + 1, OC::kBitmapEditIndicatorW, src);
+}
+
+void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, const settings::ValueAttributes &attr) {
+  const uint8_t *src = OC::bitmap_edit_indicators_8;
+  if (value == attr.max_)
+    src += OC::kBitmapEditIndicatorW * 2;
+  else if (value == attr.min_)
+    src += OC::kBitmapEditIndicatorW;
+
+  graphics.drawBitmap8(x - 5, y + 1, OC::kBitmapEditIndicatorW, src);
+}
 
 void DrawIOStatusBar(uint32_t status_mask) {
   weegfx::coord_t x = 32 - 14;
@@ -42,8 +66,7 @@ void DrawIOStatusBar(uint32_t status_mask) {
   }
 }
 
-}; // namespace menu
-
+} // namespace menu
 
 void visualize_pitch_classes(uint8_t *normalized, weegfx::coord_t centerx, weegfx::coord_t centery) {
   graphics.drawCircle(centerx, centery, note_circle_r);
