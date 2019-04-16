@@ -26,28 +26,43 @@
 #define OC_CV_UTILS_H_
 
 #include <Arduino.h>
+#include <array>
 #include <stdint.h>
 #include "src/extern/dspinst.h"
 #include "util/util_macros.h"
+#include "util/util_math.h"
 
 namespace OC {
+
+//#define OC_CV_MULT_SHORTCUT1X
 
 class CVUtils {
 public:
 
   // 0.0 / 2.0 in 0.05 steps
-  static constexpr int kMultSteps = 40;
-  static constexpr int kMultOne = 19;
-  static const int32_t kMultMultipliers[];
+  static constexpr float kMultRange = 2.f;
+  static constexpr float kMultStepSize = 0.05f;
 
+  static constexpr int kMultSteps = static_cast<int>(kMultRange / kMultStepSize);
+  static constexpr int kMultOne = static_cast<int>(1.f / kMultStepSize) - 1;
+
+  static const std::array<int32_t, kMultSteps> kMultMultipliers; // 16.16
+
+  template <bool saturate = false>
   static inline int32_t Attenuate(int32_t cv, int factor) {
+    // We can optimize the 1x path, but for performance testing it's useful to
+    // do the computation always (also, smaller code size).
+#ifdef OC_CV_MULT_SHORTCUT1X
     if (kMultOne != factor) {
+#endif
       CONSTRAIN(factor, 0, kMultSteps - 1); 
-      int32_t scaled = signed_multiply_32x16b(kMultMultipliers[factor], cv);
-      return signed_saturate_rshift(scaled, 16, 0);
+      int32_t scaled = signed_multiply_32x16b(kMultMultipliers[factor], cv); // NOTE if mutlipliers end up negative, check values
+      return saturate ? SSAT16(scaled) : scaled;
+#ifdef OC_CV_MULT_SHORTCUT1X
     } else {
       return cv;
     }
+#endif
   }
 };
 

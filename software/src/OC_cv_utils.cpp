@@ -24,14 +24,26 @@
 //
 
 #include "OC_cv_utils.h"
+#include "util/util_templates.h"
 
 namespace OC {
 
-/*static*/ constexpr int32_t CVUtils::kMultMultipliers[kMultSteps] = {
+template <size_t ...Is>
+constexpr std::array<int32_t, sizeof...(Is)> generate_multipliers(float step_size, util::index_sequence<Is...>) {
+  return { static_cast<int32_t>(step_size * static_cast<float>(Is + 1) * 65536.f + .5f)... };
+}
+
+/*static*/
+const std::array<int32_t, CVUtils::kMultSteps> CVUtils::kMultMultipliers =
+  generate_multipliers(CVUtils::kMultStepSize, util::make_index_sequence<CVUtils::kMultSteps>::type());
+
+} // namespace OC
+
+/*
+  {
   3277, 6554, 9830, 13107, 16384, 19661, 22938, 26214, 29491, 32768, 
   36045, 39322, 42598, 45875, 49152, 52429, 55706, 58982, 62259, 65536, 
   68813, 72090, 75366, 78643, 81920, 85197, 88474, 91750, 95027, 98304, 
   101581, 104858, 108134, 111411, 114688, 117964, 121242, 124518, 127795, 131072
 };
-
-}
+*/
