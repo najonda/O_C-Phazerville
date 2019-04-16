@@ -403,20 +403,20 @@ static inline weegfx::font_glyph get_char_glyph(char c) {
 // OPTIMIZE When printing strings, all chars will have the same y/remainder
 // This will probably only save a few cycles, if any. Also the clipping can
 // be made optional (template?)
-void Graphics::draw_char(char c, coord_t x, coord_t y) {
-  if (!c) c = '0';
+ void Graphics::draw_char(char c, coord_t x, coord_t y, coord_t minx/*= 0*/, coord_t maxx/*= kWidth*/) {
   if (c <= 32 || c > 127)
     return;
 
   coord_t w = Graphics::kFixedFontW;
   coord_t h = Graphics::kFixedFontH;
   font_glyph data = get_char_glyph(c);
-  if (x + w > kWidth) w = kWidth - x;
-  if (x < 0) {
-    w += x;
-    data += x;
+  if (x + w > maxx) w = maxx - x;
+  if (x < minx) {
+    w -= (minx - x);
+    data += (minx - x);
+    x = minx;
   }
-  if (w <= 0) return;
+  if (w <= 0 || w > Graphics::kFixedFontW) return;
   CLIPY(y, h);
 
   uint8_t *dest = get_frame_ptr(x, y);
@@ -581,6 +581,15 @@ void Graphics::printf(const char *fmt, ...) {
 void Graphics::drawStr(coord_t x, coord_t y, const char *s) {
   while (*s) {
     draw_char(*s++, x, y);
+    x += kFixedFontW;
+  }
+}
+
+void Graphics::drawStrClipX(coord_t x, coord_t y, const char *s, coord_t clipx, coord_t clipw)
+{
+  auto maxx = clipx + clipw;
+  while (*s && x < maxx) {
+    draw_char(*s++, x, y, clipx, maxx);
     x += kFixedFontW;
   }
 }

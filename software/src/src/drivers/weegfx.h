@@ -39,12 +39,12 @@ typedef const uint8_t *font_glyph;
 class Graphics {
 public:
 
-  static const uint8_t kWidth = 128;
-  static const uint8_t kHeight = 64;
-  static const size_t kFrameSize = kWidth * kHeight / 8;
+  static constexpr uint8_t kWidth = 128;
+  static constexpr uint8_t kHeight = 64;
+  static constexpr size_t kFrameSize = kWidth * kHeight / 8;
 
-  static const weegfx::coord_t kFixedFontW = 6;
-  static const weegfx::coord_t kFixedFontH = 8;
+  static constexpr weegfx::coord_t kFixedFontW = 6;
+  static constexpr weegfx::coord_t kFixedFontH = 8;
 
   void Init();
 
@@ -102,6 +102,7 @@ public:
 
   // Print string at absolute coords, doesn't move print pos
   void drawStr(coord_t x, coord_t y, const char *str);
+  void drawStrClipX(coord_t x, coord_t y, const char *str, coord_t clipx, coord_t clipw);
 
   // Might be time-consuming
   void printf(const char *fmt, ...); // warnings ahoy -> __attribute__((format(printf, 2, 3)));
@@ -115,7 +116,7 @@ private:
   coord_t text_y_;
 
   inline uint8_t *get_frame_ptr(const coord_t x, const coord_t y) __attribute__((always_inline));
-  void draw_char(char c, coord_t x, coord_t y);
+  void draw_char(char c, coord_t x, coord_t y, coord_t minx = 0, coord_t maxx = kWidth);
 };
 
 inline void Graphics::setPixel(coord_t x, coord_t y) {
