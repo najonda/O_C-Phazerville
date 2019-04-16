@@ -223,7 +223,7 @@ void FASTRUN loop() {
     }
 
     // Run current app
-    app_switcher.current_app()->Loop();
+    app_switcher.current_app()->DispatchLoop();
 
     // UI events
     UiMode mode = ui.DispatchEvents(app_switcher.current_app());

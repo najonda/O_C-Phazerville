@@ -129,6 +129,14 @@ void AppBase::EditIOSettings()
   }
 }
 
+void AppBase::DispatchLoop()
+{
+  if (io_settings_menu.active())
+    io_settings_menu.Update();
+
+  Loop();
+}
+
 uint32_t AppBase::io_settings_status_mask() const
 {
   return io_settings_.status_mask() &

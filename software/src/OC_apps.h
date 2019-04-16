@@ -80,6 +80,7 @@ public:
   UiMode DispatchEvent(const UI::Event &);
   void DispatchAppEvent(AppEvent);
   void EditIOSettings();
+  void DispatchLoop();
 
   // Main implementation interface for derived classes
   virtual void Init() = 0;

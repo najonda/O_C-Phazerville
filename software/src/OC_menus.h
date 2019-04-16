@@ -298,8 +298,7 @@ struct SettingsListItem {
   ~SettingsListItem() { }
 
   inline void DrawName(const settings::ValueAttributes &attr) const {
-    graphics.setPrintPos(x + kIndentDx, y + kTextDy);
-    graphics.print(attr.name);
+    DrawCharName(attr.name);
   }
 
   inline void DrawCharName(const char* name_string) const {
@@ -307,9 +306,15 @@ struct SettingsListItem {
     graphics.print(name_string);
   }
 
+  template <size_t max_chars = 0>
   inline void DrawCharName(const char* name_string, weegfx::coord_t x_offset) const {
-    graphics.setPrintPos(x + kIndentDx + x_offset, y + kTextDy);
-    graphics.print(name_string);
+    auto tx = x + kIndentDx + x_offset;
+    auto ty = y + kTextDy;
+    graphics.setPrintPos(tx, ty);
+    if (max_chars)
+      graphics.drawStrClipX(tx, ty, name_string, tx, max_chars * weegfx::Graphics::kFixedFontW);
+    else
+      graphics.print(name_string);
   }
 
   inline void DrawDefault(int value, const settings::ValueAttributes &attr) const {
@@ -327,8 +332,9 @@ struct SettingsListItem {
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
+  template <bool draw_selection = true, size_t max_chars = 0>
   inline void DrawCustomName(const char *name, int value, const settings::ValueAttributes &attr, weegfx::coord_t x_offset = 0) const {
-    DrawCharName(name, x_offset);
+    DrawCharName<max_chars>(name, x_offset);
 
     graphics.setPrintPos(endx, y + kTextDy);
     if(attr.value_names)
@@ -338,7 +344,7 @@ struct SettingsListItem {
 
     if (editing)
       menu::DrawEditIcon(valuex, y, value, attr);
-    if (selected)
+    if (selected && draw_selection)
       graphics.invertRect(x, y, kDisplayWidth - x, kMenuLineH - 1);
   }
 
