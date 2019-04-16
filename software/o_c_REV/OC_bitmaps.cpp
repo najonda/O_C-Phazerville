@@ -79,4 +79,8 @@ const uint8_t bitmap_io_settings_8[] = {
   0x04, 0x04
 };
 
+const uint8_t bitmap_ellipsis_8[] = {
+  0x80, 0x0, 0x80, 0x00, 0x80
+};
+
 };

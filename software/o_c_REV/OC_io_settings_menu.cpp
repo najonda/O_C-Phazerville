@@ -36,7 +36,18 @@
 #include "OC_ui.h"
 #include "OC_io_settings_menu.h"
 
+// NOTE The marquee thing is a bit how-ya-doing, and only applies to CV
+// labels since they are potentially long. Since it only scrolls a substring
+// it was "easier" to just overwrite the area; this is slightly wasteful but
+// drawing is generally low-priority anyway, and the book-keeping is often
+// more complex (similarly for avoid redraws). There are a couple of gotchas
+// since it assumes the label string format with a "CHx " prefix.
+// The TRx item doesn't have anything settable so it's hopefully long enough,
+// but would require a separate (longer) marquee if not.
+
 namespace OC {
+
+static constexpr size_t kLabelVisibleChars = 10;
 
 void IOSettingsMenu::Edit(AppBase *app)
 {
@@ -46,11 +57,20 @@ void IOSettingsMenu::Edit(AppBase *app)
 
   cursor_.Init(IO_SETTING_CV1_GAIN, IO_SETTING_A_TUNING);
   cursor_.set_editing(false);
+
+  selected_channel_ = -1;
+  memset(labels_, 0, sizeof(labels_));
+  SetChannel(0);
 }
 
 void IOSettingsMenu::Close()
 {
   io_settings_ = nullptr;
+}
+
+void IOSettingsMenu::Update()
+{
+  marquee_.Update();
 }
 
 void IOSettingsMenu::Draw() const
@@ -69,7 +89,6 @@ void IOSettingsMenu::Draw() const
 
   menu::SettingsList<menu::kScreenLines, 0, menu::kDefaultValueX> settings_list(cursor_);
   menu::SettingsListItem list_item;
-  char label[16];
 
   while (settings_list.available()) {
     const IO_SETTING setting = static_cast<IO_SETTING>(settings_list.Next(list_item));
@@ -80,26 +99,21 @@ void IOSettingsMenu::Draw() const
 
     switch (setting) {
     case IO_SETTING_A_SCALING: {
-      snprintf(label, sizeof(label), "%s  %.10s",
-               Strings::channel_id[channel],
-               output_desc.label);
       graphics.drawBitmap8(list_item.x + 13, list_item.y + 2, 8, bitmap_output_mode_8 + output_desc.mode * 8);
       if (output_desc.mode == OUTPUT_MODE_PITCH) {
-        list_item.DrawCustomName(label, value, attr);
+        list_item.DrawCustomName(labels_[IO_SETTING_A_SCALING], value, attr);
       } else {
-        list_item.DrawCharName(label);
+        list_item.DrawCharName(labels_[IO_SETTING_A_SCALING]);
         list_item.DrawCustom();
       }
     }
     break;
 
     case IO_SETTING_CV1_GAIN: {
-      const auto &input_desc = io_config_.cv[channel];
-      snprintf(label, sizeof(label),
-          "%s %.10s",
-          Strings::cv_input_names[channel],
-          input_desc.label[0] ? input_desc.label : "--");
-      list_item.DrawCustomName(label, value, attr);
+      list_item.DrawCustomName<false, 15>(labels_[IO_SETTING_CV1_GAIN], value, attr, 0);
+      if (list_item.selected && !list_item.editing)
+        marquee_.Draw(list_item.x + menu::kIndentDx + 24, list_item.y + menu::kTextDy);
+      list_item.DrawCustom();
     }
     break;
 
@@ -117,11 +131,7 @@ void IOSettingsMenu::Draw() const
     break;
 
     case IO_SETTING_TR1: {
-      const auto &desc = io_config_.digital_inputs[channel];
-      snprintf(label, sizeof(label), "%s %.10s",
-               Strings::trigger_input_names[channel],
-               desc.label[0] ? desc.label : "????");
-      list_item.DrawCharName(label);
+      list_item.DrawCharName(labels_[IO_SETTING_TR1], 0);
       list_item.DrawCustom();
     }
     break;
@@ -139,6 +149,35 @@ bool IOSettingsMenu::autotune_available() const
   return global_settings.autotune_calibration_data.channels[selected_channel_].is_valid();
 }
 
+void IOSettingsMenu::SetChannel(int channel)
+{
+  if (channel != selected_channel_) {
+    selected_channel_ = channel;
+    cursor_.set_editing(false);
+
+    const auto &input = io_config_.cv[channel];
+    sprintf(labels_[IO_SETTING_CV1_GAIN], "%s %.32s",
+             Strings::cv_input_names[channel],
+             input.label[0] ? input.label : "--");
+
+    // IO_SETTING_CV1_FILTER = default
+
+    const auto &di = io_config_.digital_inputs[channel];
+    sprintf(labels_[IO_SETTING_TR1], "%s %.32s",
+             Strings::trigger_input_names[channel],
+             di.label[0] ? di.label : "--");
+
+    const auto &output = io_config_.outputs[channel];
+    sprintf(labels_[IO_SETTING_A_SCALING], "%s  %.10s",
+             Strings::channel_id[channel],
+             output.label);
+
+    // IO_SETTING_A_TUNING = handled in Draw
+
+    marquee_.Init(labels_[cursor_.cursor_pos()] + 4);
+  }
+}
+
 UiMode IOSettingsMenu::DispatchEvent(const UI::Event &event)
 {
   UiMode ui_mode = UI_MODE_MENU;
@@ -152,21 +191,27 @@ UiMode IOSettingsMenu::DispatchEvent(const UI::Event &event)
         Close();
       break;
 
-      case CONTROL_BUTTON_R:
+      case CONTROL_BUTTON_R: {
+        bool toggle_editing = false;
         switch(cursor_.cursor_pos()) {
         case IO_SETTING_A_SCALING:
           if (OUTPUT_MODE_PITCH == io_config_.outputs[selected_channel_].mode)
-            cursor_.toggle_editing();
+            toggle_editing = true;
         break;
         case IO_SETTING_A_TUNING:
           if (OUTPUT_MODE_PITCH == io_config_.outputs[selected_channel_].mode &&
               autotune_available())
-            cursor_.toggle_editing();
+            toggle_editing = true;
         break;
         default:
-          cursor_.toggle_editing();
+          toggle_editing = true;
         break;
         }
+        if (toggle_editing) {
+          cursor_.toggle_editing();
+          marquee_.Reset();
+        }
+      }
       break;
     }
   } else if (UI::EVENT_ENCODER == event.type) {
@@ -174,8 +219,7 @@ UiMode IOSettingsMenu::DispatchEvent(const UI::Event &event)
     case CONTROL_ENCODER_L: {
       int selected_channel = selected_channel_ + event.value;
       CONSTRAIN(selected_channel, 0, 3);
-      selected_channel_ = selected_channel;
-      cursor_.set_editing(false);
+      SetChannel(selected_channel);
     }
     break;
     case CONTROL_ENCODER_R:
@@ -186,7 +230,10 @@ UiMode IOSettingsMenu::DispatchEvent(const UI::Event &event)
               selected_channel_),
           event.value);
     } else {
+      auto old_pos = cursor_.cursor_pos();
       cursor_.Scroll(event.value);
+      if (cursor_.cursor_pos() != old_pos && IO_SETTING_CV1_GAIN == cursor_.cursor_pos())
+        marquee_.Init(labels_[cursor_.cursor_pos()] + 4);
     }
     break;
     }

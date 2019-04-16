@@ -99,28 +99,28 @@ public:
   }
 
   SETTINGS_ARRAY_DECLARE() {{
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV1 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
-    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#A scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "", nullptr, settings::STORAGE_TYPE_NOP },
+    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV2 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-    { 0, 0, 1, "TR2", nullptr, settings::STORAGE_TYPE_NOP },
-    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#B scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "", nullptr, settings::STORAGE_TYPE_NOP },
+    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV3 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
-    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#C scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "", nullptr, settings::STORAGE_TYPE_NOP },
+    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
 
-    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "CV", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
+    { OC::CVUtils::kMultOne, 0, OC::CVUtils::kMultSteps - 1, "", OC::Strings::mult, settings::STORAGE_TYPE_U8 },
     { 0, 0, 1, "CV4 filter", OC::Strings::off_on, settings::STORAGE_TYPE_U4 },
-    { 0, 0, 1, "TR", nullptr, settings::STORAGE_TYPE_NOP },
-    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "#D scaling", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
+    { 0, 0, 1, "", nullptr, settings::STORAGE_TYPE_NOP },
+    { VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_1V_PER_OCT, VOLTAGE_SCALING_LAST - 1, "", OC::voltage_scalings, settings::STORAGE_TYPE_U4 },
     { 0, 0, 1, "DAC calibr.", OC::autotune_enable_strings, settings::STORAGE_TYPE_U4 },
   }};
 };

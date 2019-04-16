@@ -29,6 +29,7 @@
 #include "OC_io.h"
 #include "OC_menus.h"
 #include "OC_ui.h"
+#include "OC_visualfx.h"
 
 namespace OC {
 
@@ -44,6 +45,8 @@ public:
     return io_settings_ != nullptr;
   }
 
+  void Update();
+
   void Draw() const;
   UiMode DispatchEvent(const UI::Event &event);
 
@@ -54,7 +57,13 @@ private:
   IOSettings *io_settings_ = nullptr;
   IOConfig io_config_;
 
+  vfx::Marquee<11> marquee_;
+
+  // Cached labels
+  char labels_[IOSettings::kSettingsPerChannel][kMaxIOLabelLength + 1];
+
   bool autotune_available() const;
+  void SetChannel(int channel);
 };
 
 } // namespace OC
