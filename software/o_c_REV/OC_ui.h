@@ -122,7 +122,7 @@ private:
   UI::EventQueue<kEventQueueDepth> event_queue_;
 
   inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
-#ifdef OC_UI_DEBUG
+#ifdef OC_DEBUG_UI
     if (!event_queue_.writable())
       ++DEBUG::UI_queue_overflow;
     ++DEBUG::UI_event_count;

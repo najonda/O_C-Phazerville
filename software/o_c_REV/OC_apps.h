@@ -28,7 +28,7 @@
 #include "OC_ui.h"
 #include "util/util_misc.h"
 
-#ifdef APPS_DEBUG
+#ifdef OC_DEBUG_APPS
 # define APPS_SERIAL_PRINTLN(msg, ...) serial_printf(msg "\n", ##__VA_ARGS__)
 #else
 # define APPS_SERIAL_PRINTLN(...)

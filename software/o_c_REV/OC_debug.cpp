@@ -45,7 +45,7 @@ static void debug_menu_core() {
                   debug::cycles_to_us(DEBUG::UI_cycles.value()),
                   debug::cycles_to_us(DEBUG::UI_cycles.max_value()));
 
-#ifdef OC_UI_DEBUG
+#ifdef OC_DEBUG_UI
   graphics.setPrintPos(2, 42);
   graphics.printf("UI   !%u #%u", DEBUG::UI_queue_overflow, DEBUG::UI_event_count);
   graphics.setPrintPos(2, 52);
@@ -94,13 +94,9 @@ static void debug_menu_adc() {
 
   graphics.setPrintPos(2, 42);
   graphics.printf("CV4 %5d %5u", ADC::value<ADC_CHANNEL_4>(), ADC::raw_value(ADC_CHANNEL_4));
-
-//      graphics.setPrintPos(2, 42);
-//      graphics.print((long)ADC::busy_waits());
-//      graphics.setPrintPos(2, 42); graphics.print(ADC::fail_flag0());
-//      graphics.setPrintPos(2, 52); graphics.print(ADC::fail_flag1());
 }
 
+#ifdef OC_DEBUG_ADC_STATS
 static void debug_menu_adc2() {
   weegfx::coord_t y = 12;
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
@@ -110,6 +106,7 @@ static void debug_menu_adc2() {
     y += 10;
   }
 }
+#endif
 
 static void debug_menu_app() {
   auto app = app_switcher.current_app();
@@ -131,7 +128,9 @@ static const DebugMenu debug_menus[] = {
   { " VERSION", debug_menu_version },
   { " GFX", debug_menu_gfx },
   { " ADC", debug_menu_adc },
+#ifdef OC_DEBUG_ADC_STATS
   { " ADC min/max", debug_menu_adc2 },
+#endif
   { " ", debug_menu_app },
 };
 
