@@ -10,6 +10,9 @@
 #include "OC_config.h"
 #include "OC_options.h"
 
+// If enabled, use an interrupt to track DMA completion; otherwise use polling
+//#define OC_ADC_ENABLE_DMA_INTERRUPT
+
 // Grmpfarglbarg
 #undef max
 #undef min
@@ -111,9 +114,11 @@ public:
 
   static float Read_ID_Voltage();
 
+#ifdef OC_DEBUG_ADC_STATS
   static const ChannelStats &get_channel_stats(ADC_CHANNEL channel) {
     return channel_stats_[channel];
   }
+#endif
 
 private:
 
@@ -121,26 +126,31 @@ private:
   static void update(uint32_t value) {
     value = (value  >> (kAdcScanResolution - kAdcResolution)) << kAdcSmoothBits;
     raw_[channel] = value;
+#ifdef OC_DEBUG_ADC_STATS
     if (stats_ticks_ & 0x3fff)
       channel_stats_[channel].Push(value >> kAdcValueShift);
     else
       channel_stats_[channel].Reset();
-
+#endif
     // division should be shift if kAdcSmoothing is power-of-two
     value = (smoothed_[channel] * (kAdcSmoothing - 1) + value) / kAdcSmoothing;
     smoothed_[channel] = value;
   }
 
   static ::ADC adc_;
-  static volatile bool ready_;
-  static size_t scan_channel_;
   static CalibrationData *calibration_data_;
 
   static uint32_t raw_[ADC_CHANNEL_LAST];
   static uint32_t smoothed_[ADC_CHANNEL_LAST];
 
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
+  static volatile bool ready_;
+#endif
+
+#ifdef OC_DEBUG_ADC_STATS
   static ChannelStats channel_stats_[ADC_CHANNEL_LAST];
   static uint32_t stats_ticks_;
+#endif
 
   /*  
    *   below: channel ids for the ADCx_SCA register: we have 4 inputs

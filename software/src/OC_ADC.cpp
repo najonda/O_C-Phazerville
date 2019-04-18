@@ -12,9 +12,15 @@ namespace OC {
 /*static*/ ADC::CalibrationData *ADC::calibration_data_;
 /*static*/ uint32_t ADC::raw_[ADC_CHANNEL_LAST];
 /*static*/ uint32_t ADC::smoothed_[ADC_CHANNEL_LAST];
+
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
 /*static*/ volatile bool ADC::ready_;
+#endif
+
+#ifdef OC_ADC_DEBUG_STATS
 /*static*/ ADC::ChannelStats ADC::channel_stats_[ADC_CHANNEL_LAST];
 /*static*/ uint32_t ADC::stats_ticks_ = 0;
+#endif
 
 
 #if defined(__MK20DX256__)
@@ -99,11 +105,22 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, 0);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, 0);
   std::fill(adcbuffer_0, adcbuffer_0 + DMA_BUF_SIZE, 0);
+  adc_.enableDMA();
+
+#ifdef OC_ADC_DEBUG_STATS
   for (auto &stats: channel_stats_)
     stats.Reset();
-  
-  adc_.enableDMA();
+#endif  
 }
+
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
+/*static*/ void FASTRUN ADC::DMA_ISR() {
+
+  ADC::ready_ = true;
+  dma0->clearInterrupt();
+  /* restart DMA in ADC::Scan_DMA() */
+}
+#endif
 
 #elif defined(__IMXRT1062__)
 /*static*/ void ADC::Init(CalibrationData *calibration_data) {
@@ -147,8 +164,11 @@ void ADC::Init_DMA() {
   dma0->TCD->CITER = DMA_BUF_SIZE; 
   dma0->triggerAtHardwareEvent(DMAMUX_SOURCE_ADC0);
   dma0->disableOnCompletion();
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
   dma0->interruptAtCompletion();
   dma0->attachInterrupt(DMA_ISR);
+  ready_ = false;
+#endif
 
   dma1->begin(true); // allocate the DMA channel 
   dma1->TCD->SADDR = &ADC::SCA_CHANNEL_ID[0];
@@ -461,10 +481,14 @@ void ADC::Read(IOFrame *ioframe)
 } 
 
 /*static*/void FASTRUN ADC::Scan_DMA() {
-  if (ADC::ready_) 
-  {  
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
+  if (ADC::ready_)  {
     ADC::ready_ = false;
-    ++stats_ticks_;
+#else
+  if (dma0->complete()) {
+    dma0->clearComplete();
+#endif
+    dma0->TCD->DADDR = &adcbuffer_0[0];
     
     /* 
      *  collect  results from adcbuffer_0; as things are, there's DMA_BUF_SIZE = 16 samples in the buffer. 
@@ -485,6 +509,10 @@ void ADC::Read(IOFrame *ioframe)
 
     /* restart */
     dma0->enable();
+
+#ifdef OC_ADC_DEBUG_STATS
+    ++stats_ticks_;
+#endif
   }
 }
 

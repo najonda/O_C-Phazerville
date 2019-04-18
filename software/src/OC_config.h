@@ -57,8 +57,6 @@ static constexpr unsigned long SETTINGS_SAVE_TIMEOUT_MS = 1000;
 #define EEPROM_APPDATA_BINARY_SIZE (EEPROM_APPDATA_END - EEPROM_APPDATA_START - 32)
 #endif
 
-#define OC_UI_DEBUG
-
 #define OC_ENCODERS_ENABLE_ACCELERATION_DEFAULT true
 
 #define OC_CALIBRATION_DEFAULT_FLAGS (0)
@@ -81,5 +79,12 @@ static constexpr unsigned long SETTINGS_SAVE_TIMEOUT_MS = 1000;
 /* ------------ uncomment line below to enable QQ debug page ----------------------------------------- */
 //#define QQ_DEBUG
 //#define QQ_DEBUG_SCREENSAVER
+/* ------------ Extra ADC debug stats ---------------------------------------------------------------  */
+//#define OC_DEBUG_ADC_STATS
+/* ------------ Debug for app load/save -------------------------------------------------------------  */
+//#define OC_DEBUG_APPS
+/* ------------ Debug for UI events/stats -----------------------------------------------------------  */
+//#define OC_DEBUG_UI
+
 
 #endif // OC_CONFIG_H_
