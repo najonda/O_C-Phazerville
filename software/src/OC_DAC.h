@@ -11,10 +11,6 @@
 #include "util/util_math.h"
 #include "util/util_macros.h"
 
-extern void set8565_CHA(uint32_t data);
-extern void set8565_CHB(uint32_t data);
-extern void set8565_CHC(uint32_t data);
-extern void set8565_CHD(uint32_t data);
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
 static inline void dac8568_raw_write(uint32_t data) {
   LPSPI4_TDR = data; // assume writes always at pace SPI FIFO can absorb
@@ -24,6 +20,43 @@ static inline void dac8568_set_channel(uint32_t channel, uint32_t data) {
   dac8568_raw_write(0x03000000 | ((channel & 0x07) << 20) | ((data & 0xFFFF) << 4));
 }
 #endif
+
+class DAC8565 {
+public:
+
+  static constexpr uint16_t kMaxValue = 65535U;
+
+#if defined(__IMXRT1062__)
+  inline static void WriteChannelA(uint32_t data) {
+    LPSPI4_TCR = (LPSPI4_TCR & 0xF8000000) | LPSPI_TCR_FRAMESZ(23)
+      | LPSPI_TCR_PCS(0) | LPSPI_TCR_RXMSK;
+    Write(kChannelCommand[0], data);
+  }
+  inline static void WriteChannelB(uint32_t data) { Write(kChannelCommand[1], data); }
+  inline static void WriteChannelC(uint32_t data) { Write(kChannelCommand[2], data); }
+  inline static void WriteChannelD(uint32_t data) {
+    LPSPI4_SR = LPSPI_SR_TCF; //  clear transmit complete flag before last write to FIFO
+    Write(kChannelCommand[3], data);
+  }
+#else
+  inline static void WriteChannelA(uint32_t data) { Write(kChannelCommand[0], data); }
+  inline static void WriteChannelB(uint32_t data) { Write(kChannelCommand[1], data); }
+  inline static void WriteChannelC(uint32_t data) { Write(kChannelCommand[2], data); }
+  inline static void WriteChannelD(uint32_t data) { Write(kChannelCommand[3], data); }
+#endif
+
+private:
+  static void Write(uint32_t cmd, uint32_t data);
+
+  static constexpr uint32_t kChannelCommand[4] = {
+#ifdef FLIP_180
+    0b00010110, 0b00010100, 0b00010010, 0b00010000 
+#else
+    0b00010000, 0b00010010, 0b00010100, 0b00010110
+#endif
+  };
+};
+
 extern void SPI_init();
 
 enum DAC_CHANNEL {
@@ -33,6 +66,8 @@ enum DAC_CHANNEL {
 #endif
   DAC_CHANNEL_LAST
 };
+
+namespace OC {
 
 enum OutputVoltageScaling {
   VOLTAGE_SCALING_1V_PER_OCT,    // 0
@@ -48,12 +83,11 @@ enum OutputVoltageScaling {
   VOLTAGE_SCALING_LAST  
 } ;
 
-namespace OC {
 
 class DAC {
 public:
   static constexpr size_t kHistoryDepth = 8;
-  static constexpr uint16_t MAX_VALUE = 65535U; // DAC fullscale 
+  static constexpr uint16_t MAX_VALUE = DAC8565::kMaxValue; // DAC fullscale 
 
 #ifdef BUCHLA_4U
 # if !defined(IO_10V)
@@ -263,10 +297,10 @@ public:
         dac8568_set_channel(7, values_[DAC_CHANNEL_H]);
       } else {
     #endif
-        set8565_CHA(values_[DAC_CHANNEL_A]);
-        set8565_CHB(values_[DAC_CHANNEL_B]);
-        set8565_CHC(values_[DAC_CHANNEL_C]);
-        set8565_CHD(values_[DAC_CHANNEL_D]);
+        DAC8565::WriteChannelA(values_[DAC_CHANNEL_A]);
+        DAC8565::WriteChannelB(values_[DAC_CHANNEL_B]);
+        DAC8565::WriteChannelC(values_[DAC_CHANNEL_C]);
+        DAC8565::WriteChannelD(values_[DAC_CHANNEL_D]);
     #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
       }
     #endif

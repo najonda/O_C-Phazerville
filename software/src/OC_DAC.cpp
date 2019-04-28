@@ -57,7 +57,7 @@ void DAC::Init(const CalibrationData *calibration_data, const AutotuneCalibratio
   autotune_calibration_data_ = autotune_calibration_data;
 
   // set up DAC pins 
-  OC::pinMode(DAC_CS, OUTPUT);
+  pinMode(DAC_CS, OUTPUT);
 
   // set Vbias, using onboard DAC - does nothing on non-VOR hardware
   init_Vbias();
@@ -66,7 +66,7 @@ void DAC::Init(const CalibrationData *calibration_data, const AutotuneCalibratio
   
 #ifndef VOR
   // VOR button uses the same pin as DAC_RST
-  OC::pinMode(DAC_RST,OUTPUT);
+  pinMode(DAC_RST,OUTPUT);
   #ifdef DAC8564 // A0 = 0, A1 = 0
     digitalWrite(DAC_RST, LOW); 
   #else  // default to DAC8565 - pull RST high 
@@ -145,132 +145,25 @@ uint16_t DAC::history_[DAC_CHANNEL_LAST][DAC::kHistoryDepth];
 /*static*/ 
 volatile size_t DAC::history_tail_;
 
-}; // namespace OC
+} // namespace OC
+
+void DAC8565::Write(uint32_t cmd, uint32_t data) {
+#ifdef BUCHLA_cOC
+#else
+  data = kMaxValue - data;
+#endif
 
 #if defined(__MK20DX256__)
-void set8565_CHA(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
+  SPIFIFO.write(cmd, SPI_CONTINUE);
+  SPIFIFO.write16(data);
   SPIFIFO.read();
   SPIFIFO.read();
-}
-
-void set8565_CHB(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read();
-}
-
-void set8565_CHC(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read(); 
-}
-
-void set8565_CHD(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read();
-}
-
-#elif defined(__IMXRT1062__) // Teensy 4.1
-void set8565_CHA(uint32_t data) {
-  LPSPI4_TCR = (LPSPI4_TCR & 0xF8000000) | LPSPI_TCR_FRAMESZ(23)
-    | LPSPI_TCR_PCS(0) | LPSPI_TCR_RXMSK;
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  _data = (0b00010110 << 16) | (_data & 0xFFFF);
-  #else
-  _data = (0b00010000 << 16) | (_data & 0xFFFF);
-  #endif
-  LPSPI4_TDR = _data;
-}
-
-void set8565_CHB(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  _data = (0b00010100 << 16) | (_data & 0xFFFF);
-  #else
-  _data = (0b00010010 << 16) | (_data & 0xFFFF);
-  #endif
-  LPSPI4_TDR = _data;
-}
-void set8565_CHC(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  _data = (0b00010010 << 16) | (_data & 0xFFFF);
-  #else
-  _data = (0b00010100 << 16) | (_data & 0xFFFF);
-  #endif
-  LPSPI4_TDR = _data;
-}
-void set8565_CHD(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  _data = (0b00010000 << 16) | (_data & 0xFFFF);
-  #else
-  _data = (0b00010110 << 16) | (_data & 0xFFFF);
-  #endif
-  LPSPI4_SR = LPSPI_SR_TCF; //  clear transmit complete flag before last write to FIFO
-  LPSPI4_TDR = _data;
-}
-
+#elif defined(__IMXRT1062__) // Teensy 4.x
+  data = (cmd << 16) | (data & 0xFFFF);
+  LPSPI4_TDR = data;
 #endif // __IMXRT1062__
+
+}
 
 // adapted from https://github.com/xxxajk/spi4teensy3 (MISO disabled) : 
 
