@@ -50,8 +50,8 @@ void DAC::Init(const CalibrationData *calibration_data, const AutotuneCalibratio
   autotune_calibration_data_ = autotune_calibration_data;
 
   // set up DAC pins 
-  OC::pinMode(DAC_CS, OUTPUT);
-  OC::pinMode(DAC_RST,OUTPUT);
+  pinMode(DAC_CS, OUTPUT);
+  pinMode(DAC_RST,OUTPUT);
   
   #ifdef DAC8564 // A0 = 0, A1 = 0
     digitalWrite(DAC_RST, LOW); 
@@ -84,74 +84,20 @@ uint16_t DAC::history_[DAC_CHANNEL_LAST][DAC::kHistoryDepth];
 /*static*/ 
 volatile size_t DAC::history_tail_;
 
-}; // namespace OC
+} // namespace OC
 
-void set8565_CHA(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read();
-}
-
-void set8565_CHB(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read();
-}
-
-void set8565_CHC(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
-  SPIFIFO.read();
-  SPIFIFO.read(); 
-}
-
-void set8565_CHD(uint32_t data) {
-  #ifdef BUCHLA_cOC
-  uint32_t _data = data;
-  #else
-  uint32_t _data = OC::DAC::MAX_VALUE - data;
-  #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #else
-  SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #endif
-  SPIFIFO.write16(_data);
+void DAC8565::Write(uint32_t cmd, uint32_t data) {
+#ifdef BUCHLA_cOC
+#else
+  data = kMaxValue - data;
+#endif
+  SPIFIFO.write(cmd, SPI_CONTINUE);
+  SPIFIFO.write16(data);
   SPIFIFO.read();
   SPIFIFO.read();
 }
 
 // adapted from https://github.com/xxxajk/spi4teensy3 (MISO disabled) : 
-
 void SPI_init() {
 
   uint32_t ctar0, ctar1;

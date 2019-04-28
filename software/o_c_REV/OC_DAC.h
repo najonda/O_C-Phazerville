@@ -10,15 +10,35 @@
 #include "util/util_math.h"
 #include "util/util_macros.h"
 
-extern void set8565_CHA(uint32_t data);
-extern void set8565_CHB(uint32_t data);
-extern void set8565_CHC(uint32_t data);
-extern void set8565_CHD(uint32_t data);
+class DAC8565 {
+public:
+
+  static constexpr uint16_t kMaxValue = 65535U;
+
+  inline static void WriteChannelA(uint32_t data) { Write(kChannelCommand[0], data); }
+  inline static void WriteChannelB(uint32_t data) { Write(kChannelCommand[1], data); }
+  inline static void WriteChannelC(uint32_t data) { Write(kChannelCommand[2], data); }
+  inline static void WriteChannelD(uint32_t data) { Write(kChannelCommand[3], data); }
+
+private:
+  static void Write(uint32_t cmd, uint32_t data);
+
+  static constexpr uint32_t kChannelCommand[4] = {
+#ifdef FLIP_180
+    0b00010110, 0b00010100, 0b00010010, 0b00010000 
+#else
+    0b00010000, 0b00010010, 0b00010100, 0b00010110
+#endif
+  };
+};
+
 extern void SPI_init();
 
 enum DAC_CHANNEL {
   DAC_CHANNEL_A, DAC_CHANNEL_B, DAC_CHANNEL_C, DAC_CHANNEL_D, DAC_CHANNEL_LAST
 };
+
+namespace OC {
 
 enum OutputVoltageScaling {
   VOLTAGE_SCALING_1V_PER_OCT,    // 0
@@ -34,12 +54,11 @@ enum OutputVoltageScaling {
   VOLTAGE_SCALING_LAST  
 } ;
 
-namespace OC {
 
 class DAC {
 public:
   static constexpr size_t kHistoryDepth = 8;
-  static constexpr uint16_t MAX_VALUE = 65535U; // DAC fullscale 
+  static constexpr uint16_t MAX_VALUE = DAC8565::kMaxValue; // DAC fullscale 
 
 #ifdef BUCHLA_4U
 # if !defined(IO_10V)
@@ -223,10 +242,10 @@ public:
   }
 
   static void Update() {
-    set8565_CHA(values_[DAC_CHANNEL_A]);
-    set8565_CHB(values_[DAC_CHANNEL_B]);
-    set8565_CHC(values_[DAC_CHANNEL_C]);
-    set8565_CHD(values_[DAC_CHANNEL_D]);
+    DAC8565::WriteChannelA(values_[DAC_CHANNEL_A]);
+    DAC8565::WriteChannelB(values_[DAC_CHANNEL_B]);
+    DAC8565::WriteChannelC(values_[DAC_CHANNEL_C]);
+    DAC8565::WriteChannelD(values_[DAC_CHANNEL_D]);
 
     size_t tail = history_tail_;
     history_[DAC_CHANNEL_A][tail] = values_[DAC_CHANNEL_A];
