@@ -64,14 +64,11 @@ public:
 private:
 
   inline static int InputPinMap(DigitalInput input) {
-    switch (input) {
-      case DIGITAL_INPUT_1: return InputPinDesc<DIGITAL_INPUT_1>::PIN;
-      case DIGITAL_INPUT_2: return InputPinDesc<DIGITAL_INPUT_2>::PIN;
-      case DIGITAL_INPUT_3: return InputPinDesc<DIGITAL_INPUT_3>::PIN;
-      case DIGITAL_INPUT_4: return InputPinDesc<DIGITAL_INPUT_4>::PIN;
-      default: break;
-    }
-    return 0;
+    static constexpr int kPinMap[] = {
+      InputPinDesc<DIGITAL_INPUT_1>::PIN, InputPinDesc<DIGITAL_INPUT_2>::PIN,
+      InputPinDesc<DIGITAL_INPUT_3>::PIN, InputPinDesc<DIGITAL_INPUT_4>::PIN
+    };
+    return kPinMap[input];
   }
 
   static uint32_t rising_edges_;

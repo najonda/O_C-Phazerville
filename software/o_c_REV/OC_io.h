@@ -80,9 +80,8 @@ struct IOFrame;
 
 class IO {
 public:
-  static void ReadDigitalInputs(IOFrame *);
-  static void ReadADC(IOFrame *, const IOSettings &);
-  static void WriteDAC(IOFrame *, const IOSettings &);
+  static void Read(IOFrame *, const IOSettings *);
+  static void Write(IOFrame *, const IOSettings *);
 
   static int32_t pitch_rel_to_abs(int32_t pitch);
   static int32_t pitch_scale(int32_t pitch, OutputVoltageScaling scaling);

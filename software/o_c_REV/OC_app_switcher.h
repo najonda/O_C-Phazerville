@@ -47,10 +47,9 @@ public:
 
   inline void Process(IOFrame *ioframe) __attribute__((always_inline)) {
     if (current_app_) {
-      IO::ReadDigitalInputs(ioframe);
-      IO::ReadADC(ioframe, current_app_->io_settings());
+      IO::Read(ioframe, &current_app_->io_settings());
       current_app_->Process(ioframe);
-      IO::WriteDAC(ioframe, current_app_->io_settings());
+      IO::Write(ioframe, &current_app_->io_settings());
     }
   }
 

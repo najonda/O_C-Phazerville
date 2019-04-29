@@ -92,12 +92,7 @@ public:
     return smoothed_[channel] >> kAdcValueShift;
   }
 
-  static int32_t pitch_value(ADC_CHANNEL channel) {
-    return (value(channel) * calibration_data_->pitch_cv_scale) >> 12;
-  }
-
-  static int32_t unsmoothed_pitch_value(ADC_CHANNEL channel) {
-    int32_t value = calibration_data_->offset[channel] - raw_value(channel);
+  static int32_t value_to_pitch(int32_t value) {
     return (value * calibration_data_->pitch_cv_scale) >> 12;
   }
 
