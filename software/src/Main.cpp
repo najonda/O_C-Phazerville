@@ -50,8 +50,8 @@
 #endif
 
 uint_fast8_t MENU_REDRAW = true;
-OC::UiMode ui_mode = OC::UI_MODE_MENU;
-OC::IOFrame io_frame;
+static OC::UiMode ui_mode = OC::UI_MODE_MENU;
+static OC::IOFrame io_frame;
 
 /*  ------------------------ UI timer ISR ---------------------------   */
 
@@ -72,12 +72,14 @@ void FASTRUN CORE_timer_ISR() {
   DEBUG_PIN_SCOPE(OC_GPIO_DEBUG_PIN2);
   OC_DEBUG_PROFILE_SCOPE(OC::DEBUG::ISR_cycles);
 
+  using namespace OC;
+
   // DAC and display share SPI. By first updating the DAC values, then starting
   // a DMA transfer to the display things are fairly nicely interleaved. In the
   // next ISR, the display transfer is finalized (CS update).
 
   display::Flush();
-  OC::DAC::Update();
+  DAC::Update();
   display::Update();
 
   // see OC_ADC.h for details; empirically (with current parameters), Scan_DMA() picks up new samples @ 5.55kHz
@@ -85,10 +87,10 @@ void FASTRUN CORE_timer_ISR() {
 
   // Pin changes are tracked in separate ISRs, so depending on prio it might
   // need extra precautions. Note: This call is required to clear flags
-  OC::DigitalInputs::Scan();
+  DigitalInputs::Scan();
 
-  ++OC::CORE::ticks;
-  if (OC::CORE::app_isr_enabled) {
+  ++CORE::ticks;
+  if (CORE::app_isr_enabled) {
     OC::app_switcher.Process(&io_frame);
   }
 
