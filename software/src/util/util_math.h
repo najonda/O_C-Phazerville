@@ -75,6 +75,15 @@ static inline uint32_t multiply_u32xu32_rshift(uint32_t a, uint32_t b, uint32_t 
   return (lo >> shift) | (hi << (32 - shift));
 }
 
+
+static inline uint32_t uhadd16(uint32_t a, uint32_t b) __attribute__((always_inline, unused));
+static inline uint32_t uhadd16(uint32_t a, uint32_t b)
+{
+  uint32_t out;
+  asm volatile("uhadd16 %0, %1, %2" : "=r" (out) : "r" (a), "r" (b));
+  return out;
+}
+
 template <typename T, T smoothing>
 struct SmoothedValue {
   SmoothedValue() : value_(0) { }
