@@ -77,6 +77,6 @@ static constexpr unsigned long SETTINGS_SAVE_TIMEOUT_MS = 1000;
 /* ------------ Debug for UI events/stats -----------------------------------------------------------  */
 //#define OC_DEBUG_UI
 /* ------------ Enable debug trace pins -------------------------------------------------------------  */
-//#define OC_DEBUG_ENABLE_PINS
+#define OC_DEBUG_ENABLE_PINS
 
 #endif // OC_CONFIG_H_

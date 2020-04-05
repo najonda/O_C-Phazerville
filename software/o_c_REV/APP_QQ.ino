@@ -947,12 +947,10 @@ public:
       break;
       case CHANNEL_SOURCE_TURING:
         *settings++ = CHANNEL_SETTING_TURING_LENGTH;
-        if (OC::Scales::SCALE_NONE != get_scale())
-            *settings++ = CHANNEL_SETTING_TURING_MODULUS;
+        *settings++ = CHANNEL_SETTING_TURING_MODULUS;
         *settings++ = CHANNEL_SETTING_TURING_RANGE;
         *settings++ = CHANNEL_SETTING_TURING_PROB;
-        if (OC::Scales::SCALE_NONE != get_scale())
-            *settings++ = CHANNEL_SETTING_TURING_RANGE_CV_SOURCE;
+        *settings++ = CHANNEL_SETTING_TURING_RANGE_CV_SOURCE;
         *settings++ = CHANNEL_SETTING_TURING_PROB_CV_SOURCE;
       break;
       case CHANNEL_SOURCE_LOGISTIC_MAP:

@@ -112,6 +112,19 @@ void ADC::Init_DMA() {
 #endif
     dma0->TCD->DADDR = &adcbuffer_0[0];
 
+    // uhadd16 = Unsigned Halving Add 16
+    // The 4 (3?) LSB should all be zeroes anyway so this shouldn't affect the
+    // result, but this is half as many adds and word transfers by default.
+    const uint32_t *src = (uint32_t *)adcbuffer_0;
+    uint32_t sum01 = uhadd16(uhadd16(src[0], src[2]), uhadd16(src[4], src[6]));
+    uint32_t sum23 = uhadd16(uhadd16(src[1], src[3]), uhadd16(src[5], src[7]));
+
+    update<ADC_CHANNEL_1>(sum01 & 0xffff);
+    update<ADC_CHANNEL_2>(sum01 >> 16);
+    update<ADC_CHANNEL_3>(sum23 & 0xffff);
+    update<ADC_CHANNEL_4>(sum23 >> 16);
+
+#if 0
     /* 
      *  collect  results from adcbuffer_0; as things are, there's DMA_BUF_SIZE = 16 samples in the buffer. 
     */
@@ -128,6 +141,7 @@ void ADC::Init_DMA() {
 
     value = (adcbuffer_0[3] + adcbuffer_0[7] + adcbuffer_0[11] + adcbuffer_0[15]) >> 2;
     update<ADC_CHANNEL_4>(value); 
+#endif
 
     /* restart */
     dma0->enable();
