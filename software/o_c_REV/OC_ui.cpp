@@ -44,6 +44,7 @@ void Ui::Init() {
   button_ignore_mask_ = 0;
   screensaver_ = false;
   preempt_screensaver_ = false;
+  force_blanking_ = false;
 
   encoder_right_.Init(OC_GPIO_ENC_PINMODE);
   encoder_left_.Init(OC_GPIO_ENC_PINMODE);
@@ -72,6 +73,14 @@ void Ui::set_blanking_timeout(uint32_t minutes) {
   blanking_timeout_ = minutes * 60U * 1000U;
 }
 
+bool Ui::blanking() const {
+  auto timeout = blanking_timeout();
+  if (force_blanking_ || (timeout && idle_time() >= timeout))
+    return true;
+  else
+    return false;
+}
+
 void FASTRUN Ui::_Poke() {
   event_queue_.Poke();
 }
@@ -95,10 +104,11 @@ void FASTRUN Ui::Poll() {
     if (button.just_pressed()) {
       button_press_time_[i] = now;
     } else if (button.released()) {
-      if (now - button_press_time_[i] < kLongPressTicks)
-        PushEvent(UI::EVENT_BUTTON_PRESS, control_mask(i), 0, button_state);
+      auto t = now - button_press_time_[i];
+      if (t < kLongPressTicks)
+        PushEvent(UI::EVENT_BUTTON_PRESS, control_mask(i), 0, button_state, t);
       else
-        PushEvent(UI::EVENT_BUTTON_LONG_PRESS, control_mask(i), 0, button_state);
+        PushEvent(UI::EVENT_BUTTON_LONG_PRESS, control_mask(i), 0, button_state, t);
     }
   }
 
@@ -108,11 +118,11 @@ void FASTRUN Ui::Poll() {
   int32_t increment;
   increment = encoder_right_.Read();
   if (increment)
-    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_R, increment, button_state);
+    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_R, increment, button_state, 0);
 
   increment = encoder_left_.Read();
   if (increment)
-    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_L, increment, button_state);
+    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_L, increment, button_state, 0);
 
   button_state_ = button_state;
 }
@@ -149,7 +159,10 @@ UiMode Ui::DispatchEvents(App *app) {
             VBiasManager *vbias_m = vbias_m->get();
             vbias_m->AdvanceBias();
         #else
-            if (!preempt_screensaver_) screensaver_ = true;
+            if (!preempt_screensaver_) {
+              screensaver_ = true;
+              force_blanking_ = event.ticks > kXLongPressTicks;
+            }
         #endif
         }
         else if (OC::CONTROL_BUTTON_R == event.control)

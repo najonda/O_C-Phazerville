@@ -49,6 +49,7 @@ class Ui {
 public:
   static const size_t kEventQueueDepth = 16;
   static const uint32_t kLongPressTicks = 1000;
+  static const uint32_t kXLongPressTicks = 4000;
 
   Ui() { }
 
@@ -116,6 +117,8 @@ public:
 
   void set_blanking_timeout(uint32_t minutes);
 
+  bool blanking() const;
+
 private:
 
   uint32_t ticks_;
@@ -128,19 +131,20 @@ private:
   uint16_t button_ignore_mask_;
   bool screensaver_;
   bool preempt_screensaver_;
+  bool force_blanking_;
 
   UI::Encoder<encR1, encR2> encoder_right_;
   UI::Encoder<encL1, encL2> encoder_left_;
 
   UI::EventQueue<kEventQueueDepth> event_queue_;
 
-  inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
+  inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m, uint32_t tk) {
 #ifdef OC_UI_DEBUG
     if (!event_queue_.writable())
       ++DEBUG::UI_queue_overflow;
     ++DEBUG::UI_event_count;
 #endif
-    event_queue_.PushEvent(t, c, v, m);
+    event_queue_.PushEvent(t, c, v, m, tk);
   }
 
   bool IgnoreEvent(const UI::Event &event) {
@@ -150,7 +154,7 @@ private:
       ignore = true;
     }
     if (screensaver_) {
-      screensaver_ = false;
+      screensaver_ = force_blanking_ = false;
       ignore = true;
     }
 

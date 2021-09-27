@@ -201,10 +201,7 @@ void FASTRUN loop() {
     }
 
     if (OC::UI_MODE_SCREENSAVER == ui_mode && !blanking) {
-      auto blanking_timeout = OC::ui.blanking_timeout();
-      if (blanking_timeout &&
-          (OC::ui.idle_time() >= blanking_timeout))
-        blanking = true;
+      blanking = OC::ui.blanking();
     }
 
     if (millis() - LAST_REDRAW_TIME > REDRAW_TIMEOUT_MS)

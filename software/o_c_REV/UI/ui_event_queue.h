@@ -58,8 +58,8 @@ public:
     Poke();
   }
 
-  inline void PushEvent(EventType t, uint16_t c, int16_t v, uint16_t m) {
-    events_.Write(Event(t, c, v, m));
+  inline void PushEvent(EventType t, uint16_t c, int16_t v, uint16_t m, uint32_t tk) {
+    events_.Write(Event(t, c, v, m, tk));
     Poke();
   }
 

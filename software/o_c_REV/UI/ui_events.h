@@ -39,10 +39,11 @@ struct Event {
   uint16_t control;
   int16_t value;
   uint16_t mask;
+  uint32_t ticks;
 
   Event() { }
-  Event(EventType t, uint16_t c, int16_t v, uint16_t m)
-  : type(t), control(c), value(v), mask(m) { }
+  Event(EventType t, uint16_t c, int16_t v, uint16_t m, uint32_t tk)
+  : type(t), control(c), value(v), mask(m), ticks(tk) { }
 };
 
 }; // namespace UI
