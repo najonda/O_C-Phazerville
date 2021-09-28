@@ -160,6 +160,7 @@ UiMode Ui::DispatchEvents(App *app) {
             vbias_m->AdvanceBias();
         #else
             if (!preempt_screensaver_) {
+              SetButtonIgnoreMask();
               screensaver_ = true;
               force_blanking_ = event.ticks > kXLongPressTicks;
             }
@@ -179,8 +180,10 @@ UiMode Ui::DispatchEvents(App *app) {
     MENU_REDRAW = 1;
   }
 
-  if (idle_time() > screensaver_timeout())
+  if (!screensaver_ && idle_time() > screensaver_timeout()) {
+    SetButtonIgnoreMask();
     screensaver_ = true;
+  }
 
   if (screensaver_)
     return UI_MODE_SCREENSAVER;

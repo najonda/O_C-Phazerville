@@ -148,17 +148,18 @@ private:
   }
 
   bool IgnoreEvent(const UI::Event &event) {
-    bool ignore = false;
     if (button_ignore_mask_ & event.control) {
       button_ignore_mask_ &= ~event.control;
-      ignore = true;
+      return true;
     }
     if (screensaver_) {
-      screensaver_ = force_blanking_ = false;
-      ignore = true;
+      if (OC::CONTROL_BUTTON_UP == event.control)
+        force_blanking_ = true;
+      else
+        screensaver_ = force_blanking_ = false;
+      return true;
     }
-
-    return ignore;
+    return false;
   }
 
 };
