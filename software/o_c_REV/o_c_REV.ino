@@ -149,7 +149,6 @@ void FASTRUN loop() {
   OC::CORE::app_isr_enabled = true;
 
   uint32_t menu_redraws = 0;
-  bool blanking = false;
 
   while (true) {
 
@@ -175,7 +174,7 @@ void FASTRUN loop() {
           #endif
           
         } else {
-          if (!blanking)
+          if (!OC::ui.blanking())
             OC::apps::current_app->DrawScreensaver();
         }
         MENU_REDRAW = 0;
@@ -195,13 +194,8 @@ void FASTRUN loop() {
         OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_ON);
       } else if (OC::UI_MODE_SCREENSAVER == ui_mode) {
         OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_OFF);
-        blanking = false;
       }
       ui_mode = mode;
-    }
-
-    if (OC::UI_MODE_SCREENSAVER == ui_mode && !blanking) {
-      blanking = OC::ui.blanking();
     }
 
     if (millis() - LAST_REDRAW_TIME > REDRAW_TIMEOUT_MS)

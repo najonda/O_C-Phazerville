@@ -117,9 +117,11 @@ public:
 
   void set_blanking_timeout(uint32_t minutes);
 
-  bool blanking() const;
+  bool blanking() const { return SCREENSAVER_BLANKING == screensaver_mode_; }
 
 private:
+
+  enum EScreensaverMode { SCREENSAVER_OFF, SCREENSAVER_ACTIVE, SCREENSAVER_BLANKING };
 
   uint32_t ticks_;
   uint32_t screensaver_timeout_;
@@ -129,9 +131,8 @@ private:
   uint32_t button_press_time_[CONTROL_BUTTON_LAST];
   uint16_t button_state_;
   uint16_t button_ignore_mask_;
-  bool screensaver_;
+  EScreensaverMode screensaver_mode_;
   bool preempt_screensaver_;
-  bool force_blanking_;
 
   UI::Encoder<encR1, encR2> encoder_right_;
   UI::Encoder<encL1, encL2> encoder_left_;
@@ -152,11 +153,13 @@ private:
       button_ignore_mask_ &= ~event.control;
       return true;
     }
-    if (screensaver_) {
-      if (OC::CONTROL_BUTTON_UP == event.control)
-        force_blanking_ = true;
+    auto screensaver_mode = screensaver_mode_;
+    if (screensaver_mode) {
+      if (OC::CONTROL_BUTTON_UP == event.control && SCREENSAVER_BLANKING != screensaver_mode)
+        screensaver_mode = SCREENSAVER_BLANKING;
       else
-        screensaver_ = force_blanking_ = false;
+        screensaver_mode = SCREENSAVER_OFF;
+      screensaver_mode_ = screensaver_mode;
       return true;
     }
     return false;

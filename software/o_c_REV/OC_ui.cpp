@@ -42,9 +42,8 @@ void Ui::Init() {
   std::fill(button_press_time_, button_press_time_ + 4, 0);
   button_state_ = 0;
   button_ignore_mask_ = 0;
-  screensaver_ = false;
+  screensaver_mode_ = SCREENSAVER_OFF;
   preempt_screensaver_ = false;
-  force_blanking_ = false;
 
   encoder_right_.Init(OC_GPIO_ENC_PINMODE);
   encoder_left_.Init(OC_GPIO_ENC_PINMODE);
@@ -71,14 +70,6 @@ void Ui::set_screensaver_timeout(uint32_t seconds) {
 
 void Ui::set_blanking_timeout(uint32_t minutes) {
   blanking_timeout_ = minutes * 60U * 1000U;
-}
-
-bool Ui::blanking() const {
-  auto timeout = blanking_timeout();
-  if (force_blanking_ || (timeout && idle_time() >= timeout))
-    return true;
-  else
-    return false;
 }
 
 void FASTRUN Ui::_Poke() {
@@ -161,8 +152,9 @@ UiMode Ui::DispatchEvents(App *app) {
         #else
             if (!preempt_screensaver_) {
               SetButtonIgnoreMask();
-              screensaver_ = true;
-              force_blanking_ = event.ticks > kXLongPressTicks;
+              screensaver_mode_ = event.ticks > kXLongPressTicks
+                ? SCREENSAVER_BLANKING
+                : SCREENSAVER_ACTIVE;
             }
         #endif
         }
@@ -180,12 +172,23 @@ UiMode Ui::DispatchEvents(App *app) {
     MENU_REDRAW = 1;
   }
 
-  if (!screensaver_ && idle_time() > screensaver_timeout()) {
-    SetButtonIgnoreMask();
-    screensaver_ = true;
+  auto screensaver_mode = screensaver_mode_;
+  switch (screensaver_mode) {
+    case SCREENSAVER_OFF:
+    case SCREENSAVER_ACTIVE: {
+      if (idle_time() > screensaver_timeout())
+        screensaver_mode = SCREENSAVER_ACTIVE;
+      if (blanking_timeout() && idle_time() > blanking_timeout()) 
+        screensaver_mode = SCREENSAVER_BLANKING;
+    } break;
+    case SCREENSAVER_BLANKING: break;
+  }
+  if (screensaver_mode != screensaver_mode_) {
+      SetButtonIgnoreMask();
+      screensaver_mode_ = screensaver_mode;
   }
 
-  if (screensaver_)
+  if (screensaver_mode_)
     return UI_MODE_SCREENSAVER;
   else
     return UI_MODE_MENU;
