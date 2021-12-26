@@ -35,7 +35,6 @@
 #include "OC_digital_inputs.h"
 #include "OC_menus.h"
 #include "OC_ui.h"
-#include "OC_version.h"
 #include "OC_options.h"
 #include "src/drivers/display.h"
 #include "src/drivers/ADC/OC_util_ADC.h"
@@ -97,8 +96,8 @@ void setup() {
   delay(50);
   NVIC_SET_PRIORITY(IRQ_PORTB, 0); // TR1 = 0 = PTB16
   SPI_init();
-  SERIAL_PRINTLN("* O&C BOOTING...");
-  SERIAL_PRINTLN("* %s", OC_VERSION);
+  SERIAL_PRINTLN("* %s BOOTING...", OC::Strings::SHORT_NAME);
+  SERIAL_PRINTLN("* %s", OC::Strings::VERSION);
 
   OC::DEBUG::Init();
   OC::DigitalInputs::Init();

@@ -10,7 +10,6 @@
 #include "OC_menus.h"
 #include "OC_strings.h"
 #include "OC_ui.h"
-#include "OC_version.h"
 #include "OC_options.h"
 #include "src/drivers/display.h"
 
@@ -220,13 +219,7 @@ UiMode Ui::Splashscreen(bool &reset_settings) {
     GRAPHICS_BEGIN_FRAME(true);
 
     menu::DefaultTitleBar::Draw();
-    #ifdef BUCHLA_cOC
-      graphics.print("NLM card O_C");
-    #elif defined(VOR)
-      graphics.print("Plum Audio O_C+");
-    #else
-      graphics.print("Ornaments & Crimes");
-    #endif
+    graphics.print(Strings::NAME);
     weegfx::coord_t y = menu::CalcLineY(0);
 
     graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
@@ -247,7 +240,7 @@ UiMode Ui::Splashscreen(bool &reset_settings) {
 
     y += menu::kMenuLineH;
     graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
-    graphics.print(OC_VERSION);
+    graphics.print(Strings::VERSION);
 
     weegfx::coord_t w;
     if (now - start < SPLASHSCREEN_DELAY_MS)

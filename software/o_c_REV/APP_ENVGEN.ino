@@ -129,8 +129,8 @@ inline int TriggerSettingToChannel(int setting_value) {
   return (setting_value - OC::DIGITAL_INPUT_LAST) / INT_TRIGGER_LAST;
 }
 
-inline IntTriggerType TriggerSettingToType(int setting_value, int channel) __attribute__((always_inline));
-inline IntTriggerType TriggerSettingToType(int setting_value, int channel) {
+static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) __attribute__((always_inline));
+static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) {
   return static_cast<IntTriggerType>((setting_value - OC::DIGITAL_INPUT_LAST) - channel * INT_TRIGGER_LAST);
 }
 
