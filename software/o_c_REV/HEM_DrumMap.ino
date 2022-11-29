@@ -146,13 +146,13 @@ public:
             if (mode[1] < 0) mode[1] = 3;
         }
         // fill
-        if (cursor == 2) fill[0] = constrain(fill[0] += (direction * accel), 0, 255);
-        if (cursor == 3) fill[1] = constrain(fill[1] += (direction * accel), 0, 255);
+        if (cursor == 2) fill[0] = constrain(fill[0] + (direction * accel), 0, 255);
+        if (cursor == 3) fill[1] = constrain(fill[1] + (direction * accel), 0, 255);
         // x/y
-        if (cursor == 4) x = constrain(x += (direction * accel), 0, 255);
-        if (cursor == 5) y = constrain(y += (direction * accel), 0, 255);
+        if (cursor == 4) x = constrain(x + (direction * accel), 0, 255);
+        if (cursor == 5) y = constrain(y + (direction * accel), 0, 255);
         // chaos
-        if (cursor == 6) chaos = constrain(chaos += (direction * accel), 0, 255);
+        if (cursor == 6) chaos = constrain(chaos + (direction * accel), 0, 255);
         // cv assign
         if (cursor == 7) {
           cv_mode += direction;

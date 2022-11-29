@@ -76,7 +76,7 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 0 && direction == -1) cursor = 1;
-        cursor = constrain(cursor += direction, 0, 23);
+        cursor = constrain(cursor + direction, 0, 23);
         ResetCursor();
     }
         

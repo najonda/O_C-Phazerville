@@ -117,12 +117,12 @@ public:
         } else {
             if (cursor < 12) {
                 // editing note probability
-                weights[cursor] = constrain(weights[cursor] += direction, 0, HEM_PROB_MEL_MAX_WEIGHT);
+                weights[cursor] = constrain(weights[cursor] + direction, 0, HEM_PROB_MEL_MAX_WEIGHT);
                 value_animation = HEMISPHERE_CURSOR_TICKS;
             } else {
                 // editing scaling
-                if (cursor == 12) down = constrain(down += direction, 1, up);
-                if (cursor == 13) up = constrain(up += direction, down, 60);
+                if (cursor == 12) down = constrain(down + direction, 1, up);
+                if (cursor == 13) up = constrain(up + direction, down, 60);
             }
             if (isLooping) {
                 GenerateLoop(); // regenerate loop on any param changes

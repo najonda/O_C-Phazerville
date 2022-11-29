@@ -98,11 +98,11 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 0) {
-            attack = constrain(attack += direction, 0, HEM_ADEG_MAX_VALUE);
+            attack = constrain(attack + direction, 0, HEM_ADEG_MAX_VALUE);
             last_ms_value = Proportion(attack, HEM_ADEG_MAX_VALUE, HEM_ADEG_MAX_TICKS) / 17;
         }
         else {
-            decay = constrain(decay += direction, 0, HEM_ADEG_MAX_VALUE);
+            decay = constrain(decay + direction, 0, HEM_ADEG_MAX_VALUE);
             last_ms_value = Proportion(decay, HEM_ADEG_MAX_VALUE, HEM_ADEG_MAX_TICKS) / 17;
         }
         last_change_ticks = OC::CORE::ticks;

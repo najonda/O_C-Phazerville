@@ -76,7 +76,7 @@ public:
             // If turning past zero, set the mute bit for this step
             muted |= (0x01 << cursor);
         } else {
-            note[cursor] = constrain(note[cursor] += direction, 0, 30);
+            note[cursor] = constrain(note[cursor] + direction, 0, 30);
             muted &= ~(0x01 << cursor);
         }
         play = 1; // Replay the changed step in the controller, so it can be heard

@@ -74,7 +74,7 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        length = constrain(length += (direction * 32), 32, HEM_LOFI_PCM_BUFFER_SIZE);
+        length = constrain(length + (direction * 32), 32, HEM_LOFI_PCM_BUFFER_SIZE);
     }
 
     uint64_t OnDataRequest() {

@@ -100,9 +100,9 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        if (cursor == 0) sequence[step] = constrain(sequence[step] += direction, -24, 60);
-        if (cursor == 1) chord = constrain(chord += direction, 0, Nr_of_arp_chords - 1);
-        if (cursor == 2) transpose = constrain(transpose += direction, -24, 24);
+        if (cursor == 0) sequence[step] = constrain(sequence[step] + direction, -24, 60);
+        if (cursor == 1) chord = constrain(chord + direction, 0, Nr_of_arp_chords - 1);
+        if (cursor == 2) transpose = constrain(transpose + direction, -24, 24);
         if (cursor == 3) {
             if (shuffle && direction < 0) {
                 ImprintChord(sel_chord);

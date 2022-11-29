@@ -74,7 +74,7 @@ public:
 
         // Update end_step
         if (this_cursor == 2) {
-            end_step[ch] = constrain(end_step[ch] += direction, 0, 7);
+            end_step[ch] = constrain(end_step[ch] + direction, 0, 7);
         } else {
             // Get the current pattern
             int curr_patt = pattern[ch];

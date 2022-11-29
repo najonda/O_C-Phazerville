@@ -71,7 +71,7 @@ public:
     void OnEncoderMove(int direction) {
         // Update end_step
         if (cursor == 4) {
-            end_step = constrain(end_step += direction, 0, 15);
+            end_step = constrain(end_step + direction, 0, 15);
         } else {
             int ch = cursor > 1 ? 1 : 0;
             int this_cursor = cursor - (ch * 2);

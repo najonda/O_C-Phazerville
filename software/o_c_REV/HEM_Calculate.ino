@@ -88,7 +88,7 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        operation[selected] = constrain(operation[selected] += direction, 0, HEMISPHERE_NUMBER_OF_CALC - 1);
+        operation[selected] = constrain(operation[selected] + direction, 0, HEMISPHERE_NUMBER_OF_CALC - 1);
         rand_clocked[selected] = 0;
     }
 

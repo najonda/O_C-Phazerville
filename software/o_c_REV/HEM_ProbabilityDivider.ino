@@ -135,13 +135,13 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        if (cursor == 0) weight_1 = constrain(weight_1 += direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
-        if (cursor == 1) weight_2 = constrain(weight_2 += direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
-        if (cursor == 2) weight_4 = constrain(weight_4 += direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
-        if (cursor == 3) weight_8 = constrain(weight_8 += direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
+        if (cursor == 0) weight_1 = constrain(weight_1 + direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
+        if (cursor == 1) weight_2 = constrain(weight_2 + direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
+        if (cursor == 2) weight_4 = constrain(weight_4 + direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
+        if (cursor == 3) weight_8 = constrain(weight_8 + direction, 0, HEM_PROB_DIV_MAX_WEIGHT);
         if (cursor == 4) {
             int old = loop_length;
-            loop_length = constrain(loop_length += direction, 0, HEM_PROB_DIV_MAX_LOOP_LENGTH);
+            loop_length = constrain(loop_length + direction, 0, HEM_PROB_DIV_MAX_LOOP_LENGTH);
             if (old == 0 && loop_length > 0) {
                 // seed loop
                 GenerateLoop(true);

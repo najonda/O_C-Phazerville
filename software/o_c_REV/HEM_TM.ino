@@ -123,8 +123,8 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        if (cursor == 0) length = constrain(length += direction, TM_MIN_LENGTH, TM_MAX_LENGTH);
-        if (cursor == 1) p = constrain(p += direction, 0, 100);
+        if (cursor == 0) length = constrain(length + direction, TM_MIN_LENGTH, TM_MAX_LENGTH);
+        if (cursor == 1) p = constrain(p + direction, 0, 100);
         if (cursor == 2) {
             scale += direction;
             if (scale >= TM_MAX_SCALE) scale = 0;
@@ -132,7 +132,7 @@ public:
             quantizer.Configure(OC::Scales::GetScale(scale), 0xffff);
         }
         if(cursor == 3){
-           quant_range = constrain(quant_range += direction, 1, 32);
+           quant_range = constrain(quant_range + direction, 1, 32);
         }
         if(cursor == 4){
           cv2 += direction;

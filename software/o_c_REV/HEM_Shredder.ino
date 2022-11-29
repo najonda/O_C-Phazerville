@@ -140,7 +140,7 @@ public:
                 }
             }
         }
-        if (cursor == 2) quant_channels = constrain(quant_channels += direction, 0, 2);
+        if (cursor == 2) quant_channels = constrain(quant_channels + direction, 0, 2);
         if (cursor == 3) {
           scale += direction;
           if (scale >= OC::Scales::NUM_SCALES) scale = 0;
