@@ -81,15 +81,15 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, scale);
         Pack(data, PackLocation {8,8}, shift[0] + 48);
         Pack(data, PackLocation {16,8}, shift[1] + 48);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         scale = Unpack(data, PackLocation {0,8});
         shift[0] = Unpack(data, PackLocation {8,8}) - 48;
         shift[1] = Unpack(data, PackLocation {16,8}) - 48;
@@ -174,5 +174,5 @@ void Squanch_View(bool hemisphere) {Squanch_instance[hemisphere].BaseView();}
 void Squanch_OnButtonPress(bool hemisphere) {Squanch_instance[hemisphere].OnButtonPress();}
 void Squanch_OnEncoderMove(bool hemisphere, int direction) {Squanch_instance[hemisphere].OnEncoderMove(direction);}
 void Squanch_ToggleHelpScreen(bool hemisphere) {Squanch_instance[hemisphere].HelpScreen();}
-uint32_t Squanch_OnDataRequest(bool hemisphere) {return Squanch_instance[hemisphere].OnDataRequest();}
-void Squanch_OnDataReceive(bool hemisphere, uint32_t data) {Squanch_instance[hemisphere].OnDataReceive(data);}
+uint64_t Squanch_OnDataRequest(bool hemisphere) {return Squanch_instance[hemisphere].OnDataRequest();}
+void Squanch_OnDataReceive(bool hemisphere, uint64_t data) {Squanch_instance[hemisphere].OnDataReceive(data);}

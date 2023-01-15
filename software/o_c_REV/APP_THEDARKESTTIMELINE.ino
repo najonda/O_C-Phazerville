@@ -22,6 +22,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifdef ENABLE_APP_DARKEST_TIMELINE
+
 #include "util/util_settings.h"
 #include "OC_DAC.h"
 #include "braids_quantizer.h"
@@ -515,7 +517,7 @@ SETTINGS_DECLARE(TheDarkestTimeline, DT_SETTING_LAST) {
     {16, 1, 32, "Length", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 31, "Index", NULL, settings::STORAGE_TYPE_U8},
     {5, 0, OC::Scales::NUM_SCALES - 1, "Scale", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 12, "Root", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 11, "Root", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 16, "MIDI Channel", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 16, "MIDI Channel Alt", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 16, "MIDI Channel In", NULL, settings::STORAGE_TYPE_U8},
@@ -589,3 +591,5 @@ void TheDarkestTimeline_handleEncoderEvent(const UI::Event &event) {
     // Right encoder turned
     if (event.control == OC::CONTROL_ENCODER_R) TheDarkestTimeline_instance.OnRightEncoderMove(event.value);
 }
+
+#endif

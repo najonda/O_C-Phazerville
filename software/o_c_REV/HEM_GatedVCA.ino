@@ -53,16 +53,16 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        amp_offset_pct = constrain(amp_offset_pct += direction, 0, 100);
+        amp_offset_pct = constrain(amp_offset_pct + direction, 0, 100);
         amp_offset_cv = Proportion(amp_offset_pct, 100, HEMISPHERE_MAX_CV);
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
     }
 
 protected:
@@ -119,10 +119,10 @@ void GatedVCA_ToggleHelpScreen(bool hemisphere) {
     GatedVCA_instance[hemisphere].HelpScreen();
 }
 
-uint32_t GatedVCA_OnDataRequest(bool hemisphere) {
+uint64_t GatedVCA_OnDataRequest(bool hemisphere) {
     return GatedVCA_instance[hemisphere].OnDataRequest();
 }
 
-void GatedVCA_OnDataReceive(bool hemisphere, uint32_t data) {
+void GatedVCA_OnDataReceive(bool hemisphere, uint64_t data) {
     GatedVCA_instance[hemisphere].OnDataReceive(data);
 }

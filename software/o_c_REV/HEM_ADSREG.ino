@@ -104,15 +104,15 @@ public:
 
     void OnEncoderMove(int direction) {
         int adsr[4] = {attack, decay, sustain, release};
-        adsr[edit_stage] = constrain(adsr[edit_stage] += direction, 1, HEM_EG_MAX_VALUE);
+        adsr[edit_stage] = constrain(adsr[edit_stage] + direction, 1, HEM_EG_MAX_VALUE);
         attack = adsr[HEM_EG_ATTACK];
         decay = adsr[HEM_EG_DECAY];
         sustain = adsr[HEM_EG_SUSTAIN];
         release = adsr[HEM_EG_RELEASE];
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, attack);
         Pack(data, PackLocation {8,8}, decay);
         Pack(data, PackLocation {16,8}, sustain);
@@ -120,7 +120,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         attack = Unpack(data, PackLocation {0,8});
         decay = Unpack(data, PackLocation {8,8});
         sustain = Unpack(data, PackLocation {16,8});
@@ -296,10 +296,10 @@ void ADSREG_ToggleHelpScreen(bool hemisphere) {
     ADSREG_instance[hemisphere].HelpScreen();
 }
 
-uint32_t ADSREG_OnDataRequest(bool hemisphere) {
+uint64_t ADSREG_OnDataRequest(bool hemisphere) {
     return ADSREG_instance[hemisphere].OnDataRequest();
 }
 
-void ADSREG_OnDataReceive(bool hemisphere, uint32_t data) {
+void ADSREG_OnDataReceive(bool hemisphere, uint64_t data) {
     ADSREG_instance[hemisphere].OnDataReceive(data);
 }

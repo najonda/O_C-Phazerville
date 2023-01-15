@@ -77,8 +77,8 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,6}, waveform_number[0]);
         Pack(data, PackLocation {6,6}, waveform_number[1]);
         Pack(data, PackLocation {12,9}, phase[0]);
@@ -86,7 +86,7 @@ public:
         Pack(data, PackLocation {30,1}, linked);
         return data;
     }
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         phase[0] = Unpack(data, PackLocation {12,9});
         phase[1] = Unpack(data, PackLocation {21,9});
         SwitchWaveform(0, Unpack(data, PackLocation {0,6}));
@@ -188,5 +188,5 @@ void VectorMorph_View(bool hemisphere) {VectorMorph_instance[hemisphere].BaseVie
 void VectorMorph_OnButtonPress(bool hemisphere) {VectorMorph_instance[hemisphere].OnButtonPress();}
 void VectorMorph_OnEncoderMove(bool hemisphere, int direction) {VectorMorph_instance[hemisphere].OnEncoderMove(direction);}
 void VectorMorph_ToggleHelpScreen(bool hemisphere) {VectorMorph_instance[hemisphere].HelpScreen();}
-uint32_t VectorMorph_OnDataRequest(bool hemisphere) {return VectorMorph_instance[hemisphere].OnDataRequest();}
-void VectorMorph_OnDataReceive(bool hemisphere, uint32_t data) {VectorMorph_instance[hemisphere].OnDataReceive(data);}
+uint64_t VectorMorph_OnDataRequest(bool hemisphere) {return VectorMorph_instance[hemisphere].OnDataRequest();}
+void VectorMorph_OnDataReceive(bool hemisphere, uint64_t data) {VectorMorph_instance[hemisphere].OnDataReceive(data);}

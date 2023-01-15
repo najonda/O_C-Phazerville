@@ -74,15 +74,15 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,6}, waveform_number[0]);
         Pack(data, PackLocation {6,6}, waveform_number[1]);
         Pack(data, PackLocation {12,10}, freq[0] & 0x03ff);
         Pack(data, PackLocation {22,10}, freq[1] & 0x03ff);
         return data;
     }
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         freq[0] = Unpack(data, PackLocation {12,10});
         freq[1] = Unpack(data, PackLocation {22,10});
         SwitchWaveform(0, Unpack(data, PackLocation {0,6}));
@@ -187,5 +187,5 @@ void VectorMod_View(bool hemisphere) {VectorMod_instance[hemisphere].BaseView();
 void VectorMod_OnButtonPress(bool hemisphere) {VectorMod_instance[hemisphere].OnButtonPress();}
 void VectorMod_OnEncoderMove(bool hemisphere, int direction) {VectorMod_instance[hemisphere].OnEncoderMove(direction);}
 void VectorMod_ToggleHelpScreen(bool hemisphere) {VectorMod_instance[hemisphere].HelpScreen();}
-uint32_t VectorMod_OnDataRequest(bool hemisphere) {return VectorMod_instance[hemisphere].OnDataRequest();}
-void VectorMod_OnDataReceive(bool hemisphere, uint32_t data) {VectorMod_instance[hemisphere].OnDataReceive(data);}
+uint64_t VectorMod_OnDataRequest(bool hemisphere) {return VectorMod_instance[hemisphere].OnDataRequest();}
+void VectorMod_OnDataReceive(bool hemisphere, uint64_t data) {VectorMod_instance[hemisphere].OnDataReceive(data);}

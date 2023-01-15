@@ -68,20 +68,20 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 0) {
-            rate = constrain(rate += direction, 0, HEM_LFO_MAX_VALUE);
+            rate = constrain(rate + direction, 0, HEM_LFO_MAX_VALUE);
         } else {
-            skew = constrain(skew += direction, 0, HEM_LFO_MAX_VALUE);
+            skew = constrain(skew + direction, 0, HEM_LFO_MAX_VALUE);
         }
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0, 8}, skew);
         Pack(data, PackLocation {8, 8}, rate);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         skew = Unpack(data, PackLocation {0,8});
         rate = Unpack(data, PackLocation {8,8});
     }
@@ -190,10 +190,10 @@ void SkewedLFO_ToggleHelpScreen(bool hemisphere) {
     SkewedLFO_instance[hemisphere].HelpScreen();
 }
 
-uint32_t SkewedLFO_OnDataRequest(bool hemisphere) {
+uint64_t SkewedLFO_OnDataRequest(bool hemisphere) {
     return SkewedLFO_instance[hemisphere].OnDataRequest();
 }
 
-void SkewedLFO_OnDataReceive(bool hemisphere, uint32_t data) {
+void SkewedLFO_OnDataReceive(bool hemisphere, uint64_t data) {
     SkewedLFO_instance[hemisphere].OnDataReceive(data);
 }

@@ -15,10 +15,28 @@ enum {
     Pulse3,
     Pulse4,
     Trapezoid,
+    TriPeak,
+    UpAndDown,
     Logarithmic,
     Exponential,
+    Diminishing,
+    Step,
 	EG1 = 48,
-	Morph1 = 57,
+    EG2,
+    EG3,
+    PositiveTriangle,
+    PositiveSawtooth,
+    PositiveRamp,
+    PositiveSquare,
+    PositiveSine,
+    HalfRectifiedSine,
+    Morph1 = 57,
+    Morph2,
+    Morph3,
+    Morph4,
+    Morph5,
+    Morph6,
+    Morph7,
 };
 
 VOSegment library_waveforms[] = {
@@ -39,16 +57,16 @@ VOSegment library_waveforms[] = {
 
     // Sine
     VOSegment {12, VO_TOC},
-    VOSegment {192, 1},
+    VOSegment {191, 1},
     VOSegment {238, 1},
     VOSegment {255, 1},
     VOSegment {238, 1},
-    VOSegment {192, 1},
+    VOSegment {191, 1},
     VOSegment {128, 1},
     VOSegment {64, 1},
-    VOSegment {18, 1},
+    VOSegment {17, 1},
     VOSegment {0, 1},
-    VOSegment {18, 1},
+    VOSegment {17, 1},
     VOSegment {64, 1},
     VOSegment {128, 1},
 
@@ -249,7 +267,6 @@ VOSegment library_waveforms[] = {
     VOSegment {191, 1},
     VOSegment {128, 1},
     VOSegment {128, 6},
-
 
 	// Morph Wave 1
 	VOSegment {3, VO_TOC},

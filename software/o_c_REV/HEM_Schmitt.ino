@@ -67,14 +67,14 @@ public:
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,16}, low);
         Pack(data, PackLocation {16,16}, high);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         low = Unpack(data, PackLocation {0,16});
         high = Unpack(data, PackLocation {16,16});
     }
@@ -185,10 +185,10 @@ void Schmitt_ToggleHelpScreen(bool hemisphere) {
     Schmitt_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Schmitt_OnDataRequest(bool hemisphere) {
+uint64_t Schmitt_OnDataRequest(bool hemisphere) {
     return Schmitt_instance[hemisphere].OnDataRequest();
 }
 
-void Schmitt_OnDataReceive(bool hemisphere, uint32_t data) {
+void Schmitt_OnDataReceive(bool hemisphere, uint64_t data) {
     Schmitt_instance[hemisphere].OnDataReceive(data);
 }

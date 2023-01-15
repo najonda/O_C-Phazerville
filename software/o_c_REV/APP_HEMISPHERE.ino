@@ -38,6 +38,8 @@ namespace menu = OC::menu;
 }
 
 #define HEMISPHERE_DOUBLE_CLICK_TIME 8000
+#define HEMISPHERE_PULSE_ANIMATION_TIME 500
+#define HEMISPHERE_PULSE_ANIMATION_TIME_LONG 1200
 
 typedef struct Applet {
   int id;
@@ -48,18 +50,23 @@ typedef struct Applet {
   void (*OnButtonPress)(bool); // Encoder button has been pressed
   void (*OnEncoderMove)(bool, int); // Encoder has been rotated
   void (*ToggleHelpScreen)(bool); // Help Screen has been requested
-  uint32_t (*OnDataRequest)(bool); // Get a data int from the applet
-  void (*OnDataReceive)(bool, uint32_t); // Send a data int to the applet
+  uint64_t (*OnDataRequest)(bool); // Get a data int from the applet
+  void (*OnDataReceive)(bool, uint64_t); // Send a data int to the applet
 } Applet;
 
 // The settings specify the selected applets, and 32 bits of data for each applet
 enum HEMISPHERE_SETTINGS {
     HEMISPHERE_SELECTED_LEFT_ID,
     HEMISPHERE_SELECTED_RIGHT_ID,
-    HEMISPHERE_LEFT_DATA_L,
-    HEMISPHERE_RIGHT_DATA_L,
-    HEMISPHERE_LEFT_DATA_H,
-    HEMISPHERE_RIGHT_DATA_H,
+    HEMISPHERE_LEFT_DATA_B1,
+    HEMISPHERE_RIGHT_DATA_B1,
+    HEMISPHERE_LEFT_DATA_B2,
+    HEMISPHERE_RIGHT_DATA_B2,
+    HEMISPHERE_LEFT_DATA_B3,
+    HEMISPHERE_RIGHT_DATA_B3,
+    HEMISPHERE_LEFT_DATA_B4,
+    HEMISPHERE_RIGHT_DATA_B4,
+    HEMISPHERE_CLOCK_DATA,
     HEMISPHERE_SETTING_LAST
 };
 
@@ -80,8 +87,8 @@ public:
         help_hemisphere = -1;
         clock_setup = 0;
 
-        SetApplet(0, get_applet_index_by_id(8)); // ADSR
-        SetApplet(1, get_applet_index_by_id(26)); // Scale Duet
+        SetApplet(0, get_applet_index_by_id(57)); // ADSR
+        SetApplet(1, get_applet_index_by_id(58)); // Scale Duet
     }
 
     void Resume() {
@@ -89,9 +96,14 @@ public:
         {
             int index = get_applet_index_by_id(values_[h]);
             SetApplet(h, index);
-            uint32_t data = (values_[4 + h] << 16) + values_[2 + h];
+            uint64_t data =
+                (uint64_t(values_[8 + h]) << 48) |
+                (uint64_t(values_[6 + h]) << 32) |
+                (uint64_t(values_[4 + h]) << 16) |
+                (uint64_t(values_[2 + h]));
             available_applets[index].OnDataReceive(h, data);
         }
+        ClockSetup.OnDataReceive(0, uint64_t(values_[HEMISPHERE_CLOCK_DATA]));
     }
 
     void SetApplet(int hemisphere, int index) {
@@ -124,7 +136,12 @@ public:
             }
         }
 
-        if (clock_setup) ClockSetup.Controller(LEFT_HEMISPHERE, clock_m->IsForwarded());
+        // Advance internal clock, sync to external pulse
+        if (clock_m->IsRunning())
+            clock_m->SyncTrig( OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>() );
+
+        // NJM: always execute ClockSetup controller - it handles MIDI clock out
+        ClockSetup.Controller(LEFT_HEMISPHERE, clock_m->IsForwarded());
 
         for (int h = 0; h < 2; h++)
         {
@@ -175,10 +192,13 @@ public:
     }
 
     void DelegateSelectButtonPush(int hemisphere) {
-        if (OC::CORE::ticks - click_tick < HEMISPHERE_DOUBLE_CLICK_TIME && hemisphere == first_click) {
+        if (OC::CORE::ticks - click_tick < HEMISPHERE_DOUBLE_CLICK_TIME) {
             // This is a double-click, so activate corresponding help screen, leave
             // Select Mode, and reset the double-click timer
-            SetHelpScreen(hemisphere);
+            if (hemisphere == first_click)
+                SetHelpScreen(hemisphere);
+            else // up + down simultaneous
+                clock_setup = 1;
             select_mode = -1;
             click_tick = 0;
         } else {
@@ -191,12 +211,13 @@ public:
                 // If we're in the clock setup screen, we want to exit the setup without turning on Select Mode
                 if (hemisphere == select_mode) select_mode = -1; // Leave Select Mode is same button is pressed
                 else select_mode = hemisphere; // Otherwise, set Select Mode
-                click_tick = OC::CORE::ticks;
             }
+            click_tick = OC::CORE::ticks;
             first_click = hemisphere;
         }
 
-        clock_setup = 0; // Turn off clock setup with any button press
+        if (click_tick)
+            clock_setup = 0; // Turn off clock setup with any single button press
     }
 
     void DelegateEncoderMovement(const UI::Event &event) {
@@ -239,10 +260,13 @@ public:
         for (int h = 0; h < 2; h++)
         {
             int index = my_applet[h];
-            uint32_t data = available_applets[index].OnDataRequest(h);
+            uint64_t data = available_applets[index].OnDataRequest(h);
             apply_value(2 + h, data & 0xffff);
             apply_value(4 + h, (data >> 16) & 0xffff);
+            apply_value(6 + h, (data >> 32) & 0xffff);
+            apply_value(8 + h, (data >> 48) & 0xffff);
         }
+        apply_value(HEMISPHERE_CLOCK_DATA, ClockSetup.OnDataRequest(0));
     }
 
     void OnSendSysEx() {
@@ -250,34 +274,46 @@ public:
         RequestAppletData();
 
         // Describe the data structure for the audience
-        uint8_t V[10];
+        uint8_t V[18];
         V[0] = (uint8_t)values_[HEMISPHERE_SELECTED_LEFT_ID];
         V[1] = (uint8_t)values_[HEMISPHERE_SELECTED_RIGHT_ID];
-        V[2] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_L] & 0xff);
-        V[3] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_L] >> 8) & 0xff);
-        V[4] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_L] & 0xff);
-        V[5] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_L] >> 8) & 0xff);
-        V[6] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_H] & 0xff);
-        V[7] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_H] >> 8) & 0xff);
-        V[8] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_H] & 0xff);
-        V[9] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_H] >> 8) & 0xff);
+        V[2] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_B1] & 0xff);
+        V[3] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_B1] >> 8) & 0xff);
+        V[4] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_B1] & 0xff);
+        V[5] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_B1] >> 8) & 0xff);
+        V[6] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_B2] & 0xff);
+        V[7] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_B2] >> 8) & 0xff);
+        V[8] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_B2] & 0xff);
+        V[9] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_B2] >> 8) & 0xff);
+        V[10] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_B3] & 0xff);
+        V[11] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_B3] >> 8) & 0xff);
+        V[12] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_B3] & 0xff);
+        V[13] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_B3] >> 8) & 0xff);
+        V[14] = (uint8_t)(values_[HEMISPHERE_LEFT_DATA_B4] & 0xff);
+        V[15] = (uint8_t)((values_[HEMISPHERE_LEFT_DATA_B4] >> 8) & 0xff);
+        V[16] = (uint8_t)(values_[HEMISPHERE_RIGHT_DATA_B4] & 0xff);
+        V[17] = (uint8_t)((values_[HEMISPHERE_RIGHT_DATA_B4] >> 8) & 0xff);
 
         // Pack it up, ship it out
         UnpackedData unpacked;
-        unpacked.set_data(10, V);
+        unpacked.set_data(18, V);
         PackedData packed = unpacked.pack();
         SendSysEx(packed, 'H');
     }
 
     void OnReceiveSysEx() {
-        uint8_t V[10];
+        uint8_t V[18];
         if (ExtractSysExData(V, 'H')) {
             values_[HEMISPHERE_SELECTED_LEFT_ID] = V[0];
             values_[HEMISPHERE_SELECTED_RIGHT_ID] = V[1];
-            values_[HEMISPHERE_LEFT_DATA_L] = ((uint16_t)V[3] << 8) + V[2];
-            values_[HEMISPHERE_RIGHT_DATA_L] = ((uint16_t)V[5] << 8) + V[4];
-            values_[HEMISPHERE_LEFT_DATA_H] = ((uint16_t)V[7] << 8) + V[6];
-            values_[HEMISPHERE_RIGHT_DATA_H] = ((uint16_t)V[9] << 8) + V[8];
+            values_[HEMISPHERE_LEFT_DATA_B1] = ((uint16_t)V[3] << 8) + V[2];
+            values_[HEMISPHERE_RIGHT_DATA_B1] = ((uint16_t)V[5] << 8) + V[4];
+            values_[HEMISPHERE_LEFT_DATA_B2] = ((uint16_t)V[7] << 8) + V[6];
+            values_[HEMISPHERE_RIGHT_DATA_B2] = ((uint16_t)V[9] << 8) + V[8];
+            values_[HEMISPHERE_LEFT_DATA_B3] = ((uint16_t)V[11] << 8) + V[10];
+            values_[HEMISPHERE_RIGHT_DATA_B3] = ((uint16_t)V[13] << 8) + V[12];
+            values_[HEMISPHERE_LEFT_DATA_B4] = ((uint16_t)V[15] << 8) + V[14];
+            values_[HEMISPHERE_RIGHT_DATA_B4] = ((uint16_t)V[17] << 8) + V[16];
             Resume();
         }
     }
@@ -327,10 +363,15 @@ private:
 SETTINGS_DECLARE(HemisphereManager, HEMISPHERE_SETTING_LAST) {
     {0, 0, 255, "Applet ID L", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 255, "Applet ID R", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 65535, "Data L low", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R low", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data L high", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R high", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 1", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 1", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 2", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 2", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 3", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 3", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 4", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 4", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Clock data", NULL, settings::STORAGE_TYPE_U16}
 };
 
 HemisphereManager manager;

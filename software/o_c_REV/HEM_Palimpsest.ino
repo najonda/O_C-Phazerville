@@ -92,21 +92,21 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        if (cursor == 0) compose = constrain(compose += direction, 0, HEM_PALIMPSEST_MAX_VALUE);
-        if (cursor == 1) decompose = constrain(decompose -= direction, 0, HEM_PALIMPSEST_MAX_VALUE);
-        if (cursor == 2) length = constrain(length += direction, 2, 16);
+        if (cursor == 0) compose = constrain(compose + direction, 0, HEM_PALIMPSEST_MAX_VALUE);
+        if (cursor == 1) decompose = constrain(decompose - direction, 0, HEM_PALIMPSEST_MAX_VALUE);
+        if (cursor == 2) length = constrain(length + direction, 2, 16);
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,7}, compose);
         Pack(data, PackLocation {7,7}, decompose);
         Pack(data, PackLocation {14,4}, length - 1);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         compose = Unpack(data, PackLocation {0,7});
         decompose = Unpack(data, PackLocation {7,7});
         length = Unpack(data, PackLocation {14,4}) + 1;
@@ -201,10 +201,10 @@ void Palimpsest_ToggleHelpScreen(bool hemisphere) {
     Palimpsest_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Palimpsest_OnDataRequest(bool hemisphere) {
+uint64_t Palimpsest_OnDataRequest(bool hemisphere) {
     return Palimpsest_instance[hemisphere].OnDataRequest();
 }
 
-void Palimpsest_OnDataReceive(bool hemisphere, uint32_t data) {
+void Palimpsest_OnDataReceive(bool hemisphere, uint64_t data) {
     Palimpsest_instance[hemisphere].OnDataReceive(data);
 }

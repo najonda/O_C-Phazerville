@@ -57,8 +57,8 @@ public:
         if (c == 1) trigger[ch] = 1 - trigger[ch];
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,4}, length[0] - 1);
         Pack(data, PackLocation {4,4}, length[1] - 1);
         Pack(data, PackLocation {8,1}, trigger[0]);
@@ -67,7 +67,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         length[0] = Unpack(data, PackLocation {0,4}) + 1;
         length[1] = Unpack(data, PackLocation {4,4}) + 1;
         trigger[0] = Unpack(data, PackLocation {8,1});
@@ -138,5 +138,5 @@ void ShiftGate_View(bool hemisphere) {ShiftGate_instance[hemisphere].BaseView();
 void ShiftGate_OnButtonPress(bool hemisphere) {ShiftGate_instance[hemisphere].OnButtonPress();}
 void ShiftGate_OnEncoderMove(bool hemisphere, int direction) {ShiftGate_instance[hemisphere].OnEncoderMove(direction);}
 void ShiftGate_ToggleHelpScreen(bool hemisphere) {ShiftGate_instance[hemisphere].HelpScreen();}
-uint32_t ShiftGate_OnDataRequest(bool hemisphere) {return ShiftGate_instance[hemisphere].OnDataRequest();}
-void ShiftGate_OnDataReceive(bool hemisphere, uint32_t data) {ShiftGate_instance[hemisphere].OnDataReceive(data);}
+uint64_t ShiftGate_OnDataRequest(bool hemisphere) {return ShiftGate_instance[hemisphere].OnDataRequest();}
+void ShiftGate_OnDataReceive(bool hemisphere, uint64_t data) {ShiftGate_instance[hemisphere].OnDataReceive(data);}

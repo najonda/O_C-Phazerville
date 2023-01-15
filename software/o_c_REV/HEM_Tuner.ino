@@ -87,13 +87,13 @@ public:
         A4_Hz = constrain(A4_Hz + direction, 400, 500);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,16}, A4_Hz);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         A4_Hz = Unpack(data, PackLocation {0,16});
     }
 
@@ -244,10 +244,10 @@ void Tuner_ToggleHelpScreen(bool hemisphere) {
     Tuner_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Tuner_OnDataRequest(bool hemisphere) {
+uint64_t Tuner_OnDataRequest(bool hemisphere) {
     return Tuner_instance[hemisphere].OnDataRequest();
 }
 
-void Tuner_OnDataReceive(bool hemisphere, uint32_t data) {
+void Tuner_OnDataReceive(bool hemisphere, uint64_t data) {
     Tuner_instance[hemisphere].OnDataReceive(data);
 }

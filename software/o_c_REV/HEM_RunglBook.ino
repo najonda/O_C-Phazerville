@@ -61,12 +61,12 @@ public:
         threshold = constrain(threshold, (12 << 7), (12 << 7) * 5); // 1V - 5V
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,16}, threshold);
         return data;
     }
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         threshold = Unpack(data, PackLocation {0,16});
     }
 
@@ -102,5 +102,5 @@ void RunglBook_View(bool hemisphere) {RunglBook_instance[hemisphere].BaseView();
 void RunglBook_OnButtonPress(bool hemisphere) {RunglBook_instance[hemisphere].OnButtonPress();}
 void RunglBook_OnEncoderMove(bool hemisphere, int direction) {RunglBook_instance[hemisphere].OnEncoderMove(direction);}
 void RunglBook_ToggleHelpScreen(bool hemisphere) {RunglBook_instance[hemisphere].HelpScreen();}
-uint32_t RunglBook_OnDataRequest(bool hemisphere) {return RunglBook_instance[hemisphere].OnDataRequest();}
-void RunglBook_OnDataReceive(bool hemisphere, uint32_t data) {RunglBook_instance[hemisphere].OnDataReceive(data);}
+uint64_t RunglBook_OnDataRequest(bool hemisphere) {return RunglBook_instance[hemisphere].OnDataRequest();}
+void RunglBook_OnDataReceive(bool hemisphere, uint64_t data) {RunglBook_instance[hemisphere].OnDataReceive(data);}

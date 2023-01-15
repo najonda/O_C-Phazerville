@@ -34,9 +34,9 @@ public:
 
         // Outputs
         if (clock_m->IsRunning()) {
-            if (clock_m->Tock()) {
+            if (clock_m->Tock(hemisphere)) {
                 ClockOut(0);
-                if (clock_m->EndOfBeat()) ClockOut(1);
+                if (clock_m->EndOfBeat(hemisphere)) ClockOut(1);
             }
         }
     }
@@ -49,21 +49,14 @@ public:
     void OnButtonPress() { }
 
     void OnEncoderMove(int direction) {
-        uint16_t bpm = clock_m->GetTempo();
-        bpm += direction;
-        clock_m->SetTempoBPM(bpm);
+        clock_m->SetTempoBPM(clock_m->GetTempo() + direction);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
-        Pack(data, PackLocation {0,16}, clock_m->GetTempo());
-        Pack(data, PackLocation {16,5}, clock_m->GetMultiply() - 1);
-        return data;
+    uint64_t OnDataRequest() {
+        return 0;
     }
 
-    void OnDataReceive(uint32_t data) {
-        clock_m->SetTempoBPM(Unpack(data, PackLocation {0,16}));
-        clock_m->SetMultiply(Unpack(data, PackLocation {16,5}) + 1);
+    void OnDataReceive(uint64_t data) {
     }
 
 protected:
@@ -77,7 +70,6 @@ protected:
     }
     
 private:
-    int cursor; // 0=Tempo, 1=Multiply, 2=Start/Stop
     ClockManager *clock_m = clock_m->get();
     
     void DrawInterface() {
@@ -106,7 +98,7 @@ private:
         gfxCircle(40,51,1); // Winder
 
         // Pendulum arm
-        if (clock_m->Cycle()) gfxLine(29,50,21,31);
+        if (clock_m->Cycle(hemisphere)) gfxLine(29,50,21,31);
         else gfxLine(29,50,37,32);
     }
 
@@ -130,5 +122,5 @@ void Metronome_View(bool hemisphere) {Metronome_instance[hemisphere].BaseView();
 void Metronome_OnButtonPress(bool hemisphere) {Metronome_instance[hemisphere].OnButtonPress();}
 void Metronome_OnEncoderMove(bool hemisphere, int direction) {Metronome_instance[hemisphere].OnEncoderMove(direction);}
 void Metronome_ToggleHelpScreen(bool hemisphere) {Metronome_instance[hemisphere].HelpScreen();}
-uint32_t Metronome_OnDataRequest(bool hemisphere) {return Metronome_instance[hemisphere].OnDataRequest();}
-void Metronome_OnDataReceive(bool hemisphere, uint32_t data) {Metronome_instance[hemisphere].OnDataReceive(data);}
+uint64_t Metronome_OnDataRequest(bool hemisphere) {return Metronome_instance[hemisphere].OnDataRequest();}
+void Metronome_OnDataReceive(bool hemisphere, uint64_t data) {Metronome_instance[hemisphere].OnDataReceive(data);}

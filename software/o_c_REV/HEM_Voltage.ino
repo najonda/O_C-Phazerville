@@ -56,24 +56,28 @@ public:
     }
 
     void OnButtonPress() {
-        if (++cursor > 3) cursor = 0;
-        ResetCursor();
+        isEditing = !isEditing;
     }
 
     void OnEncoderMove(int direction) {
-        uint8_t ch = cursor / 2;
-        if (cursor == 0 || cursor == 2) {
-            // Change voltage
-            int min = -HEMISPHERE_MAX_CV / VOLTAGE_INCREMENTS;
-            int max = HEMISPHERE_MAX_CV / VOLTAGE_INCREMENTS;
-            voltage[ch] = constrain(voltage[ch] + direction, min, max);
+        if (!isEditing) {
+            cursor = constrain(cursor + direction, 0, 3);
+            ResetCursor();
         } else {
-            gate[ch] = 1 - gate[ch];
+            uint8_t ch = cursor / 2;
+            if (cursor == 0 || cursor == 2) {
+                // Change voltage
+                int min = -HEMISPHERE_MAX_CV / VOLTAGE_INCREMENTS;
+                int max = HEMISPHERE_MAX_CV / VOLTAGE_INCREMENTS;
+                voltage[ch] = constrain(voltage[ch] + direction, min, max);
+            } else {
+                gate[ch] = 1 - gate[ch];
+            }
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,9}, voltage[0] + 256);
         Pack(data, PackLocation {10,9}, voltage[1] + 256);
         Pack(data, PackLocation {19,1}, gate[0]);
@@ -81,7 +85,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         voltage[0] = Unpack(data, PackLocation {0,9}) - 256;
         voltage[1] = Unpack(data, PackLocation {10,9}) - 256;
         gate[0] = Unpack(data, PackLocation {19,1});
@@ -100,6 +104,7 @@ protected:
     
 private:
     int cursor;
+    bool isEditing = false;
     bool view[2];
     
     // Settings
@@ -117,9 +122,8 @@ private:
             if (view[ch]) gfxInvert(0, 14 + (ch * 20), 7, 9);
         }
 
-        int ch = cursor / 2;
-        if (cursor == 0 or cursor == 2) gfxCursor(13, 23 + (ch * 20), 36);
-        else gfxCursor(13, 33 + (ch * 20), 36);
+        isEditing ? gfxInvert(12, 14 + cursor * 10, 37, 9)
+                  : gfxCursor(12, 23 + cursor * 10, 37);
     }
 
 };
@@ -141,5 +145,5 @@ void Voltage_View(bool hemisphere) {Voltage_instance[hemisphere].BaseView();}
 void Voltage_OnButtonPress(bool hemisphere) {Voltage_instance[hemisphere].OnButtonPress();}
 void Voltage_OnEncoderMove(bool hemisphere, int direction) {Voltage_instance[hemisphere].OnEncoderMove(direction);}
 void Voltage_ToggleHelpScreen(bool hemisphere) {Voltage_instance[hemisphere].HelpScreen();}
-uint32_t Voltage_OnDataRequest(bool hemisphere) {return Voltage_instance[hemisphere].OnDataRequest();}
-void Voltage_OnDataReceive(bool hemisphere, uint32_t data) {Voltage_instance[hemisphere].OnDataReceive(data);}
+uint64_t Voltage_OnDataRequest(bool hemisphere) {return Voltage_instance[hemisphere].OnDataRequest();}
+void Voltage_OnDataReceive(bool hemisphere, uint64_t data) {Voltage_instance[hemisphere].OnDataReceive(data);}

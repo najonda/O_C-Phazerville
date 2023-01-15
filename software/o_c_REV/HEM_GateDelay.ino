@@ -68,17 +68,17 @@ public:
         if (time[cursor] > 100) direction *= 2;
         if (time[cursor] > 500) direction *= 2;
         if (time[cursor] > 1000) direction *= 2;
-        time[cursor] = constrain(time[cursor] += direction, 0, 2000);
+        time[cursor] = constrain(time[cursor] + direction, 0, 2000);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,11}, time[0]);
         Pack(data, PackLocation {11,11}, time[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         time[0] = Unpack(data, PackLocation {0,11});
         time[1] = Unpack(data, PackLocation {11,11});
     }
@@ -173,10 +173,10 @@ void GateDelay_ToggleHelpScreen(bool hemisphere) {
     GateDelay_instance[hemisphere].HelpScreen();
 }
 
-uint32_t GateDelay_OnDataRequest(bool hemisphere) {
+uint64_t GateDelay_OnDataRequest(bool hemisphere) {
     return GateDelay_instance[hemisphere].OnDataRequest();
 }
 
-void GateDelay_OnDataReceive(bool hemisphere, uint32_t data) {
+void GateDelay_OnDataReceive(bool hemisphere, uint64_t data) {
     GateDelay_instance[hemisphere].OnDataReceive(data);
 }

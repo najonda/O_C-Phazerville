@@ -28,6 +28,9 @@ public:
         return "VectorLFO";
     }
 
+    static constexpr int min_freq = 3;
+    static constexpr int max_freq = 100000;
+
     void Start() {
         ForEachChannel(ch)
         {
@@ -58,7 +61,7 @@ public:
             if (Clock(ch)) {
                 uint32_t ticks = ClockCycleTicks(ch);
                 int new_freq = 1666666 / ticks;
-                new_freq = constrain(new_freq, 3, 99900);
+                new_freq = constrain(new_freq, min_freq, max_freq);
                 osc[ch].SetFrequency(new_freq);
                 freq[ch] = new_freq;
                 osc[ch].Reset();
@@ -104,26 +107,47 @@ public:
             ForEachChannel(ch) osc[ch].Reset();
         }
         if (c == 0) { // Frequency
-            if (freq[ch] > 100000) direction *= 10000;
-            else if (freq[ch] > 10000) direction *= 1000;
-            else if (freq[ch] > 1000) direction *= 100;
-            else if (freq[ch] > 300) direction *= 10;
-            freq[ch] = constrain(freq[ch] + direction, 10, 99900);
-            osc[ch].SetFrequency(freq[ch]);
+            int sign = (direction > 0) ? 1 : -1;
+
+            // if the encoder moved more than once, ensure we use the appropriate increment
+            //  when crossing boundaries
+            for (int i = 0; i < abs(direction); ++i) {
+              int cur_direction = sign;
+              if (freq[ch] + sign > 10000) cur_direction *= 1000;
+              else if (freq[ch] + sign > 1000) cur_direction *= 100;
+              else if (freq[ch] + sign > 250) cur_direction *= 10;  
+              freq[ch] = constrain(freq[ch] + cur_direction, min_freq, max_freq);
+            }
+            osc[ch].SetFrequency(freq[ch]);  
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,6}, waveform_number[0]);
         Pack(data, PackLocation {6,6}, waveform_number[1]);
-        Pack(data, PackLocation {12,10}, freq[0] & 0x03ff);
-        Pack(data, PackLocation {22,10}, freq[1] & 0x03ff);
+
+        for (int i = 0; i < 2; ++i) {
+          int exponent = 0;
+          if (freq[i] > 250) exponent++;
+          if (freq[i] > 1000) exponent++;
+          if (freq[i] > 10000) exponent++;
+          Pack(data, PackLocation {uint8_t(12 + i * 10), 2}, exponent);
+
+          int mantissa = freq[i] / pow10_lut[exponent];
+          Pack(data, PackLocation {uint8_t(12 + i * 10 + 2), 8}, mantissa);
+        }
+        
         return data;
     }
-    void OnDataReceive(uint32_t data) {
-        freq[0] = Unpack(data, PackLocation {12,10});
-        freq[1] = Unpack(data, PackLocation {22,10});
+    
+    void OnDataReceive(uint64_t data) {
+        for (int i = 0; i < 2; ++i) {
+          int exponent = Unpack(data, PackLocation {uint8_t(12 + i * 10), 2});
+          int mantissa = Unpack(data, PackLocation {uint8_t(12 + i * 10 + 2), 8});
+          
+          freq[i] = mantissa * pow10_lut[exponent];
+        }
         SwitchWaveform(0, Unpack(data, PackLocation {0,6}));
         SwitchWaveform(1, Unpack(data, PackLocation {6,6}));
     }
@@ -139,12 +163,13 @@ protected:
     }
     
 private:
+    static constexpr int pow10_lut[] = { 1, 10, 100, 1000 };
     int cursor; // 0=Freq A; 1=Waveform A; 2=Freq B; 3=Waveform B
     VectorOscillator osc[2];
 
     // Settings
     int waveform_number[2];
-    int freq[2];
+    int freq[2]; // in centihertz
     
     void DrawInterface() {
         byte c = cursor;
@@ -158,10 +183,13 @@ private:
         gfxInvert(1, 14, 7, 9);
 
         gfxPrint(10, 15, ones(freq[ch]));
-        gfxPrint(".");
-        int h = hundredths(freq[ch]);
-        if (h < 10) gfxPrint("0");
-        gfxPrint(h);
+        if (freq[ch] < 1000) {
+          gfxPrint(".");
+          int h = hundredths(freq[ch]);
+          if (h < 10) gfxPrint("0");
+          gfxPrint(h);  
+        }
+        
         gfxPrint(" Hz");
         DrawWaveform(ch);
 
@@ -207,6 +235,8 @@ private:
     int hundredths(int n) {return (n % 100);}
 };
 
+constexpr int VectorLFO::pow10_lut[];
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Hemisphere Applet Functions
@@ -224,5 +254,5 @@ void VectorLFO_View(bool hemisphere) {VectorLFO_instance[hemisphere].BaseView();
 void VectorLFO_OnButtonPress(bool hemisphere) {VectorLFO_instance[hemisphere].OnButtonPress();}
 void VectorLFO_OnEncoderMove(bool hemisphere, int direction) {VectorLFO_instance[hemisphere].OnEncoderMove(direction);}
 void VectorLFO_ToggleHelpScreen(bool hemisphere) {VectorLFO_instance[hemisphere].HelpScreen();}
-uint32_t VectorLFO_OnDataRequest(bool hemisphere) {return VectorLFO_instance[hemisphere].OnDataRequest();}
-void VectorLFO_OnDataReceive(bool hemisphere, uint32_t data) {VectorLFO_instance[hemisphere].OnDataReceive(data);}
+uint64_t VectorLFO_OnDataRequest(bool hemisphere) {return VectorLFO_instance[hemisphere].OnDataRequest();}
+void VectorLFO_OnDataReceive(bool hemisphere, uint64_t data) {VectorLFO_instance[hemisphere].OnDataReceive(data);}

@@ -86,8 +86,8 @@ public:
         }
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,5}, dendrite_weight[0] + 9);
         Pack(data, PackLocation {5,5}, dendrite_weight[1] + 9);
         Pack(data, PackLocation {10,5}, dendrite_weight[2] + 9);
@@ -95,7 +95,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         dendrite_weight[0] = Unpack(data, PackLocation {0,5}) - 9;
         dendrite_weight[1] = Unpack(data, PackLocation {5,5}) - 9;
         dendrite_weight[2] = Unpack(data, PackLocation {10,5}) - 9;
@@ -190,10 +190,10 @@ void TLNeuron_ToggleHelpScreen(bool hemisphere) {
     TLNeuron_instance[hemisphere].HelpScreen();
 }
 
-uint32_t TLNeuron_OnDataRequest(bool hemisphere) {
+uint64_t TLNeuron_OnDataRequest(bool hemisphere) {
     return TLNeuron_instance[hemisphere].OnDataRequest();
 }
 
-void TLNeuron_OnDataReceive(bool hemisphere, uint32_t data) {
+void TLNeuron_OnDataReceive(bool hemisphere, uint64_t data) {
     TLNeuron_instance[hemisphere].OnDataReceive(data);
 }

@@ -26,10 +26,10 @@ const Scale &Scales::GetScale(int index) {
 }
 
 const char* const scale_names_short[] = {
-    "USER1",
-    "USER2",
-    "USER3",
-    "USER4",
+    "USR1",
+    "USR2",
+    "USR3",
+    "USR4",
     "OFF ",
     "SEMI",
     "IONI",
@@ -154,16 +154,28 @@ const char* const scale_names_short[] = {
     "B-Pe",
     "B-Pj",
     "B-Pl",
-//    "16H3",
-//    "14H3",
-//    "12H3", 
-//    "10H3", 
-//    "8H3", 
-//    "16S3",
-//    "14S3",
-//    "12S3", 
-//    "10S3", 
-//    "8S3"  
+    "16H3",
+    "14H3",
+    "12H3",
+    "10H3",
+    "8H3",
+    "16S3",
+    "14S3",
+    "12S3",
+    "10S3",
+    "8S3",
+
+    "5+7", // Root +5th + 7th (5+7), 
+    "5+6", // Root + 5th + 6th (5+6), 
+    "3b7-",// Minor Triad + 7 (3b+5+7), 
+    "3b7+",// Major Triad + 7 (Triad+7), 
+    "3b6-",// Minor Triad + 6th (3b+5+6), 
+    "3b6+",// Major Triad + 6th (Triad+6), 
+    "5th", // Fifth, 
+    "3b+", // major triad (Triad), 
+    "3b-", // minor triad (3b+5), 
+    "HAR-",// Harmonic Minor (Harm Minor),
+    
     };
 
 const char* const scale_names[] = {
@@ -297,16 +309,28 @@ const char* const scale_names[] = {
     "Bohlen-Pierce =",
     "Bohlen-Pierce j",
     "Bohlen-Pierce l",
-//    "8-24-HD3[16]",
-//    "7-21-HD3[14]",
-//    "6-18-HD3[12]", 
-//    "5-15-HD3[10]", 
-//    "4-12-HD3[8]", 
-//    "24-8-SD3[16]",
-//    "21-7-SD3[14]",
-//    "18-6-SD3[12]", 
-//    "15-5-SD3[10]", 
-//    "12-4-SD3[8]"
+    "8-24-HD3[16]",
+    "7-21-HD3[14]",
+    "6-18-HD3[12]",
+    "5-15-HD3[10]",
+    "4-12-HD3[8]",
+    "24-8-SD3[16]",
+    "21-7-SD3[14]",
+    "18-6-SD3[12]",
+    "15-5-SD3[10]",
+    "12-4-SD3[8]",
+
+    "5th+7th", // Root +5th + 7th (5+7), 
+    "5th+6th", // Root + 5th + 6th (5+6), 
+    "Triad min+7",// Minor Triad + 7 (3b+5+7), 
+    "Triad maj+7",// Major Triad + 7 (Triad+7), 
+    "Triad min+6",// Minor Triad + 6th (3b+5+6), 
+    "Triad maj+6",// Major Triad + 6th (Triad+6), 
+    "Fifth",// Fifth, 
+    "TriadMaj", // major triad (Triad), 
+    "TriadMin",// minor triad (3b+5), 
+    "HarmonicMin",// Harmonic Minor (Harm Minor),
+
     };
 
 const char* const voltage_scalings[] = {

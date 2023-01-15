@@ -94,14 +94,14 @@ public:
         if (operation[selected] < 0) operation[selected] = HEMISPHERE_NUMBER_OF_LOGIC - 1;
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0, 8}, operation[0]);
         Pack(data, PackLocation {8, 8}, operation[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         operation[0] = Unpack(data, PackLocation {0, 8});
         operation[1] = Unpack(data, PackLocation {8, 8});
     }
@@ -177,10 +177,10 @@ void Logic_ToggleHelpScreen(bool hemisphere) {
     Logic_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Logic_OnDataRequest(bool hemisphere) {
+uint64_t Logic_OnDataRequest(bool hemisphere) {
     return Logic_instance[hemisphere].OnDataRequest();
 }
 
-void Logic_OnDataReceive(bool hemisphere, uint32_t data) {
+void Logic_OnDataReceive(bool hemisphere, uint64_t data) {
     Logic_instance[hemisphere].OnDataReceive(data);
 }

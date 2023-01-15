@@ -79,15 +79,15 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         byte ix = buffer_m->GetIndex();
         Pack(data, PackLocation {0,8}, ix);
         Pack(data, PackLocation {8,8}, scale);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         buffer_m->SetIndex(Unpack(data, PackLocation {0,8}));
         scale = Unpack(data, PackLocation {8,8});
     }
@@ -155,5 +155,5 @@ void ASR_View(bool hemisphere) {ASR_instance[hemisphere].BaseView();}
 void ASR_OnButtonPress(bool hemisphere) {ASR_instance[hemisphere].OnButtonPress();}
 void ASR_OnEncoderMove(bool hemisphere, int direction) {ASR_instance[hemisphere].OnEncoderMove(direction);}
 void ASR_ToggleHelpScreen(bool hemisphere) {ASR_instance[hemisphere].HelpScreen();}
-uint32_t ASR_OnDataRequest(bool hemisphere) {return ASR_instance[hemisphere].OnDataRequest();}
-void ASR_OnDataReceive(bool hemisphere, uint32_t data) {ASR_instance[hemisphere].OnDataReceive(data);}
+uint64_t ASR_OnDataRequest(bool hemisphere) {return ASR_instance[hemisphere].OnDataRequest();}
+void ASR_OnDataReceive(bool hemisphere, uint64_t data) {ASR_instance[hemisphere].OnDataReceive(data);}

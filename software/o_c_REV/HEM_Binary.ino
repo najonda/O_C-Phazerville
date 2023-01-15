@@ -61,12 +61,12 @@ public:
     void OnEncoderMove(int direction) {
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
     }
 
 protected:
@@ -132,10 +132,10 @@ void Binary_ToggleHelpScreen(bool hemisphere) {
     Binary_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Binary_OnDataRequest(bool hemisphere) {
+uint64_t Binary_OnDataRequest(bool hemisphere) {
     return Binary_instance[hemisphere].OnDataRequest();
 }
 
-void Binary_OnDataReceive(bool hemisphere, uint32_t data) {
+void Binary_OnDataReceive(bool hemisphere, uint64_t data) {
     Binary_instance[hemisphere].OnDataReceive(data);
 }

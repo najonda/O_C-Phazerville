@@ -91,8 +91,8 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,7}, p);
         Pack(data, PackLocation {7,4}, output[0].type());
         Pack(data, PackLocation {11,4}, output[1].type());
@@ -100,7 +100,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         p = Unpack(data, PackLocation {0,7});
         output[0].set_type(Unpack(data, PackLocation {7,4}));
         output[1].set_type(Unpack(data, PackLocation {11,4}));
@@ -217,5 +217,5 @@ void EnigmaJr_View(bool hemisphere) {EnigmaJr_instance[hemisphere].BaseView();}
 void EnigmaJr_OnButtonPress(bool hemisphere) {EnigmaJr_instance[hemisphere].OnButtonPress();}
 void EnigmaJr_OnEncoderMove(bool hemisphere, int direction) {EnigmaJr_instance[hemisphere].OnEncoderMove(direction);}
 void EnigmaJr_ToggleHelpScreen(bool hemisphere) {EnigmaJr_instance[hemisphere].HelpScreen();}
-uint32_t EnigmaJr_OnDataRequest(bool hemisphere) {return EnigmaJr_instance[hemisphere].OnDataRequest();}
-void EnigmaJr_OnDataReceive(bool hemisphere, uint32_t data) {EnigmaJr_instance[hemisphere].OnDataReceive(data);}
+uint64_t EnigmaJr_OnDataRequest(bool hemisphere) {return EnigmaJr_instance[hemisphere].OnDataRequest();}
+void EnigmaJr_OnDataReceive(bool hemisphere, uint64_t data) {EnigmaJr_instance[hemisphere].OnDataReceive(data);}

@@ -58,16 +58,16 @@ public:
 
     /* Change the pability */
     void OnEncoderMove(int direction) {
-        p = constrain(p += direction, 0, 100);
+        p = constrain(p + direction, 0, 100);
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,7}, p);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         p = Unpack(data, PackLocation {0,7});
     }
 
@@ -131,10 +131,10 @@ void Brancher_ToggleHelpScreen(bool hemisphere) {
     Brancher_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Brancher_OnDataRequest(bool hemisphere) {
+uint64_t Brancher_OnDataRequest(bool hemisphere) {
     return Brancher_instance[hemisphere].OnDataRequest();
 }
 
-void Brancher_OnDataReceive(bool hemisphere, uint32_t data) {
+void Brancher_OnDataReceive(bool hemisphere, uint64_t data) {
     Brancher_instance[hemisphere].OnDataReceive(data);
 }

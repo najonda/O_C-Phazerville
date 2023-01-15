@@ -68,14 +68,14 @@ public:
         }
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,3}, rate);
         Pack(data, PackLocation {3,4}, depth);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         rate = Unpack(data, PackLocation {0,3});
         depth = Unpack(data, PackLocation {3,4});
         mask = get_mask();
@@ -147,5 +147,5 @@ void DrCrusher_View(bool hemisphere) {DrCrusher_instance[hemisphere].BaseView();
 void DrCrusher_OnButtonPress(bool hemisphere) {DrCrusher_instance[hemisphere].OnButtonPress();}
 void DrCrusher_OnEncoderMove(bool hemisphere, int direction) {DrCrusher_instance[hemisphere].OnEncoderMove(direction);}
 void DrCrusher_ToggleHelpScreen(bool hemisphere) {DrCrusher_instance[hemisphere].HelpScreen();}
-uint32_t DrCrusher_OnDataRequest(bool hemisphere) {return DrCrusher_instance[hemisphere].OnDataRequest();}
-void DrCrusher_OnDataReceive(bool hemisphere, uint32_t data) {DrCrusher_instance[hemisphere].OnDataReceive(data);}
+uint64_t DrCrusher_OnDataRequest(bool hemisphere) {return DrCrusher_instance[hemisphere].OnDataRequest();}
+void DrCrusher_OnDataReceive(bool hemisphere, uint64_t data) {DrCrusher_instance[hemisphere].OnDataReceive(data);}

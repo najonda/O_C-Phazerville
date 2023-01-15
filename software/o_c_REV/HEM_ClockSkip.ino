@@ -59,17 +59,17 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        p[cursor] = constrain(p[cursor] += direction, 0, 100);
+        p[cursor] = constrain(p[cursor] + direction, 0, 100);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,7}, p[0]);
         Pack(data, PackLocation {7,7}, p[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         p[0] = Unpack(data, PackLocation {0,7});
         p[1] = Unpack(data, PackLocation {7,7});
     }
@@ -143,10 +143,10 @@ void ClockSkip_ToggleHelpScreen(bool hemisphere) {
     ClockSkip_instance[hemisphere].HelpScreen();
 }
 
-uint32_t ClockSkip_OnDataRequest(bool hemisphere) {
+uint64_t ClockSkip_OnDataRequest(bool hemisphere) {
     return ClockSkip_instance[hemisphere].OnDataRequest();
 }
 
-void ClockSkip_OnDataReceive(bool hemisphere, uint32_t data) {
+void ClockSkip_OnDataReceive(bool hemisphere, uint64_t data) {
     ClockSkip_instance[hemisphere].OnDataReceive(data);
 }

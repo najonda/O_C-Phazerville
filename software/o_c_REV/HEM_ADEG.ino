@@ -53,7 +53,7 @@ public:
             if (phase == 1) target = int2simfloat(HEMISPHERE_MAX_CV); // Rise to max for attack
             if (phase == 2) target = 0; // Fall to zero for decay
 
-            if (signal != target) {
+            //if (signal != target) { // Logarhythm fix 8/2020
                 int segment = phase == 1
                     ? effective_attack + Proportion(DetentedIn(0), HEMISPHERE_MAX_CV, HEM_ADEG_MAX_VALUE)
                     : effective_decay + Proportion(DetentedIn(1), HEMISPHERE_MAX_CV, HEM_ADEG_MAX_VALUE);
@@ -82,7 +82,7 @@ public:
                     ClockOut(1);
                     phase = 0;
                 }
-            }
+            //}
             Out(0, simfloat2int(signal));
         }
     }
@@ -98,24 +98,24 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 0) {
-            attack = constrain(attack += direction, 0, HEM_ADEG_MAX_VALUE);
+            attack = constrain(attack + direction, 0, HEM_ADEG_MAX_VALUE);
             last_ms_value = Proportion(attack, HEM_ADEG_MAX_VALUE, HEM_ADEG_MAX_TICKS) / 17;
         }
         else {
-            decay = constrain(decay += direction, 0, HEM_ADEG_MAX_VALUE);
+            decay = constrain(decay + direction, 0, HEM_ADEG_MAX_VALUE);
             last_ms_value = Proportion(decay, HEM_ADEG_MAX_VALUE, HEM_ADEG_MAX_TICKS) / 17;
         }
         last_change_ticks = OC::CORE::ticks;
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, attack);
         Pack(data, PackLocation {8,8}, decay);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         attack = Unpack(data, PackLocation {0,8});
         decay = Unpack(data, PackLocation {8,8});
     }
@@ -183,5 +183,5 @@ void ADEG_View(bool hemisphere) {ADEG_instance[hemisphere].BaseView();}
 void ADEG_OnButtonPress(bool hemisphere) {ADEG_instance[hemisphere].OnButtonPress();}
 void ADEG_OnEncoderMove(bool hemisphere, int direction) {ADEG_instance[hemisphere].OnEncoderMove(direction);}
 void ADEG_ToggleHelpScreen(bool hemisphere) {ADEG_instance[hemisphere].HelpScreen();}
-uint32_t ADEG_OnDataRequest(bool hemisphere) {return ADEG_instance[hemisphere].OnDataRequest();}
-void ADEG_OnDataReceive(bool hemisphere, uint32_t data) {ADEG_instance[hemisphere].OnDataReceive(data);}
+uint64_t ADEG_OnDataRequest(bool hemisphere) {return ADEG_instance[hemisphere].OnDataRequest();}
+void ADEG_OnDataReceive(bool hemisphere, uint64_t data) {ADEG_instance[hemisphere].OnDataReceive(data);}

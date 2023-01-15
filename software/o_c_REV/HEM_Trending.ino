@@ -104,15 +104,15 @@ public:
         else sensitivity = constrain(sensitivity + direction, 4, TRENDING_MAX_SENS);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,4}, assign[0]);
         Pack(data, PackLocation {4,4}, assign[1]);
         Pack(data, PackLocation {8,8}, sensitivity);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         assign[0] = Unpack(data, PackLocation {0,4});
         assign[1] = Unpack(data, PackLocation {4,4});
         sensitivity = Unpack(data, PackLocation {8,8});
@@ -200,5 +200,5 @@ void Trending_View(bool hemisphere) {Trending_instance[hemisphere].BaseView();}
 void Trending_OnButtonPress(bool hemisphere) {Trending_instance[hemisphere].OnButtonPress();}
 void Trending_OnEncoderMove(bool hemisphere, int direction) {Trending_instance[hemisphere].OnEncoderMove(direction);}
 void Trending_ToggleHelpScreen(bool hemisphere) {Trending_instance[hemisphere].HelpScreen();}
-uint32_t Trending_OnDataRequest(bool hemisphere) {return Trending_instance[hemisphere].OnDataRequest();}
-void Trending_OnDataReceive(bool hemisphere, uint32_t data) {Trending_instance[hemisphere].OnDataReceive(data);}
+uint64_t Trending_OnDataRequest(bool hemisphere) {return Trending_instance[hemisphere].OnDataRequest();}
+void Trending_OnDataReceive(bool hemisphere, uint64_t data) {Trending_instance[hemisphere].OnDataReceive(data);}

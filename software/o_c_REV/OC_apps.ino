@@ -23,6 +23,7 @@
 #include "OC_apps.h"
 #include "OC_digital_inputs.h"
 #include "OC_autotune.h"
+#include "enigma/TuringMachine.h"
 
 #define DECLARE_APP(a, b, name, prefix) \
 { TWOCC<a,b>::value, name, \
@@ -36,13 +37,23 @@
 
 OC::App available_apps[] = {
   DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
+  #ifdef ENABLE_APP_MIDI
   DECLARE_APP('M','I', "Captain MIDI", MIDI),
+  #endif
+  #ifdef ENABLE_APP_DARKEST_TIMELINE
   DECLARE_APP('D','2', "Darkest Timeline", TheDarkestTimeline),
+  #endif
+  #ifdef ENABLE_APP_ENIGMA
   DECLARE_APP('E','N', "Enigma", EnigmaTMWS),
+  #endif
+  #ifdef ENABLE_APP_NEURAL_NETWORK
   DECLARE_APP('N','N', "Neural Net", NeuralNetwork),
+  #endif
   DECLARE_APP('S','C', "Scale Editor", SCALEEDITOR),
   DECLARE_APP('W','A', "Waveform Editor", WaveformEditor),
+  #ifdef ENABLE_APP_PONG
   DECLARE_APP('P','O', "Pong", PONGGAME),
+  #endif
   DECLARE_APP('B','R', "Backup / Restore", Backup),
   DECLARE_APP('S','E', "Setup / About", Settings),
 };

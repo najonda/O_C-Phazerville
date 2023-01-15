@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifdef ENABLE_APP_ENIGMA
+
 #include "OC_strings.h"
 #include "HSApplication.h"
 #include "HSMIDI.h"
@@ -1235,3 +1237,4 @@ void EnigmaTMWS_handleEncoderEvent(const UI::Event &event) {
 }
 
 
+#endif

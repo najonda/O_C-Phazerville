@@ -22,7 +22,7 @@
 #define HEMISPHERE_NUMBER_OF_CALC 7
 int hem_MIN(int v1, int v2) {return (v1 < v2) ? v1 : v2;}
 int hem_MAX(int v1, int v2) {return (v1 > v2) ? v1 : v2;}
-int hem_SUM(int v1, int v2) {return constrain(v1 + v2, 0, HEMISPHERE_MAX_CV);}
+int hem_SUM(int v1, int v2) {return constrain(v1 + v2, -HEMISPHERE_3V_CV, HEMISPHERE_MAX_CV);}
 int hem_DIFF(int v1, int v2) {return hem_MAX(v1, v2) - hem_MIN(v1, v2);}
 int hem_MEAN(int v1, int v2) {return (v1 + v2) / 2;}
 typedef int(*CalcFunction)(int, int);
@@ -88,18 +88,18 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        operation[selected] = constrain(operation[selected] += direction, 0, HEMISPHERE_NUMBER_OF_CALC - 1);
+        operation[selected] = constrain(operation[selected] + direction, 0, HEMISPHERE_NUMBER_OF_CALC - 1);
         rand_clocked[selected] = 0;
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0, 8}, operation[0]);
         Pack(data, PackLocation {8, 8}, operation[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         operation[0] = Unpack(data, PackLocation {0, 8});
         operation[1] = Unpack(data, PackLocation {8, 8});
     }
@@ -169,10 +169,10 @@ void Calculate_ToggleHelpScreen(bool hemisphere) {
     Calculate_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Calculate_OnDataRequest(bool hemisphere) {
+uint64_t Calculate_OnDataRequest(bool hemisphere) {
     return Calculate_instance[hemisphere].OnDataRequest();
 }
 
-void Calculate_OnDataReceive(bool hemisphere, uint32_t data) {
+void Calculate_OnDataReceive(bool hemisphere, uint64_t data) {
     Calculate_instance[hemisphere].OnDataReceive(data);
 }

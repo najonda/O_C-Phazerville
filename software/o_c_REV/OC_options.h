@@ -24,6 +24,7 @@
 /* ------------ use DAC8564 -------------------------------------------------------------------------  */
 //#define DAC8564
 
+
 // This is the branch for the 10V OC Plus and VOR support, so these default to set
 
 /* ------------ uncomment for use with Plum Audio VOR anabled versions (OCP, 1uO_c v2, 4Robots) ---------------------------------------------------------  */
@@ -34,6 +35,15 @@
 #if defined(VOR)
   #define IO_10V
 #endif
+
+/* Flags for the full-width apps, these enable/disable them in OC_apps.ino but also zero out the app   */
+/* files to prevent them from taking up space. Only Enigma is enabled by default.                      */
+#define ENABLE_APP_ENIGMA
+#define ENABLE_APP_MIDI
+//#define ENABLE_APP_NEURAL_NETWORK
+#define ENABLE_APP_PONG
+#define ENABLE_APP_DARKEST_TIMELINE
+
 
 #endif
 

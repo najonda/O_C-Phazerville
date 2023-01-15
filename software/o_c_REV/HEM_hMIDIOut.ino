@@ -142,22 +142,22 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        if (cursor == 0) channel = constrain(channel += direction, 0, 15);
-        if (cursor == 1) transpose = constrain(transpose += direction, -24, 24);
-        if (cursor == 2) function = constrain(function += direction, 0, 3);
+        if (cursor == 0) channel = constrain(channel + direction, 0, 15);
+        if (cursor == 1) transpose = constrain(transpose + direction, -24, 24);
+        if (cursor == 2) function = constrain(function + direction, 0, 3);
         if (cursor == 3) legato = direction > 0 ? 1 : 0;
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,4}, channel);
         Pack(data, PackLocation {4,3}, function);
         Pack(data, PackLocation {7,1}, legato);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         channel = Unpack(data, PackLocation {0,4});
         function = Unpack(data, PackLocation {4,3});
         legato = Unpack(data, PackLocation {7,1});
@@ -316,10 +316,10 @@ void hMIDIOut_ToggleHelpScreen(bool hemisphere) {
     hMIDIOut_instance[hemisphere].HelpScreen();
 }
 
-uint32_t hMIDIOut_OnDataRequest(bool hemisphere) {
+uint64_t hMIDIOut_OnDataRequest(bool hemisphere) {
     return hMIDIOut_instance[hemisphere].OnDataRequest();
 }
 
-void hMIDIOut_OnDataReceive(bool hemisphere, uint32_t data) {
+void hMIDIOut_OnDataReceive(bool hemisphere, uint64_t data) {
     hMIDIOut_instance[hemisphere].OnDataReceive(data);
 }

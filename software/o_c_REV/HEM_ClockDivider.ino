@@ -27,16 +27,7 @@ public:
         return "Clock Div";
     }
 
-    void Start() {
-        ForEachChannel(ch)
-        {
-            div[ch] = ch + 1;
-            count[ch] = 0;
-            next_clock[ch] = 0;
-        }
-        cycle_time = 0;
-        cursor = 0;
-    }
+    void Start() { }
 
     void Controller() {
         int this_tick = OC::CORE::ticks;
@@ -64,10 +55,8 @@ public:
             {
                 count[ch]++;
                 if (div[ch] > 0) { // Positive value indicates clock division
-                    if (count[ch] >= div[ch]) {
-                        count[ch] = 0; // Reset
-                        ClockOut(ch);
-                    }
+                    if (count[ch] == 1) ClockOut(ch); // fire on first step
+                    if (count[ch] >= div[ch]) count[ch] = 0; // Reset on last step
                 } else {
                     // Calculate next clock for multiplication on each clock
                     int clock_every = (cycle_time / -div[ch]);
@@ -109,14 +98,14 @@ public:
         count[cursor] = 0; // Start the count over so things aren't missed
     }
 
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, div[0] + 32);
         Pack(data, PackLocation {8,8}, div[1] + 32);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         div[0] = Unpack(data, PackLocation {0,8}) - 32;
         div[1] = Unpack(data, PackLocation {8,8}) - 32;
     }
@@ -130,11 +119,11 @@ protected:
     }
 
 private:
-    int div[2]; // Division data for outputs. Positive numbers are divisions, negative numbers are multipliers
-    int count[2]; // Number of clocks since last output (for clock divide)
-    int next_clock[2]; // Tick number for the next output (for clock multiply)
-    int cursor; // Which output is currently being edited
-    int cycle_time; // Cycle time between the last two clock inputs
+    int div[2] = {1, 2}; // Division data for outputs. Positive numbers are divisions, negative numbers are multipliers
+    int count[2] = {0,0}; // Number of clocks since last output (for clock divide)
+    int next_clock[2] = {0,0}; // Tick number for the next output (for clock multiply)
+    bool cursor = 0; // Which output is currently being edited
+    int cycle_time = 0; // Cycle time between the last two clock inputs
 
     void DrawSelector() {
         ForEachChannel(ch)
@@ -191,10 +180,10 @@ void ClockDivider_ToggleHelpScreen(bool hemisphere) {
     ClockDivider_instance[hemisphere].HelpScreen();
 }
 
-uint32_t ClockDivider_OnDataRequest(bool hemisphere) {
+uint64_t ClockDivider_OnDataRequest(bool hemisphere) {
     return ClockDivider_instance[hemisphere].OnDataRequest();
 }
 
-void ClockDivider_OnDataReceive(bool hemisphere, uint32_t data) {
+void ClockDivider_OnDataReceive(bool hemisphere, uint64_t data) {
     ClockDivider_instance[hemisphere].OnDataReceive(data);
 }

@@ -57,16 +57,16 @@ public:
     }
 
     void OnEncoderMove(int direction) {
-        level = constrain(level += direction, 0, HEM_COMPARE_MAX_VALUE);
+        level = constrain(level + direction, 0, HEM_COMPARE_MAX_VALUE);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, level);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         level = Unpack(data, PackLocation {0,8});
     }
 
@@ -135,10 +135,10 @@ void Compare_ToggleHelpScreen(bool hemisphere) {
     Compare_instance[hemisphere].HelpScreen();
 }
 
-uint32_t Compare_OnDataRequest(bool hemisphere) {
+uint64_t Compare_OnDataRequest(bool hemisphere) {
     return Compare_instance[hemisphere].OnDataRequest();
 }
 
-void Compare_OnDataReceive(bool hemisphere, uint32_t data) {
+void Compare_OnDataReceive(bool hemisphere, uint64_t data) {
     Compare_instance[hemisphere].OnDataReceive(data);
 }

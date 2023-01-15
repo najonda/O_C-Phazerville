@@ -58,13 +58,13 @@ public:
         balance = constrain(balance + direction, 0, 255);
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, balance);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         balance = Unpack(data, PackLocation {0,8});
     }
 
@@ -124,10 +124,10 @@ void MixerBal_ToggleHelpScreen(bool hemisphere) {
     MixerBal_instance[hemisphere].HelpScreen();
 }
 
-uint32_t MixerBal_OnDataRequest(bool hemisphere) {
+uint64_t MixerBal_OnDataRequest(bool hemisphere) {
     return MixerBal_instance[hemisphere].OnDataRequest();
 }
 
-void MixerBal_OnDataReceive(bool hemisphere, uint32_t data) {
+void MixerBal_OnDataReceive(bool hemisphere, uint64_t data) {
     MixerBal_instance[hemisphere].OnDataReceive(data);
 }

@@ -78,8 +78,8 @@ public:
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,5}, gain[0]);
         Pack(data, PackLocation {5,5}, gain[1]);
         Pack(data, PackLocation {10,1}, duck[0]);
@@ -87,7 +87,7 @@ public:
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         gain[0] = Unpack(data, PackLocation {0,5});
         gain[1] = Unpack(data, PackLocation {5,5});
         duck[0] = Unpack(data, PackLocation {10,1});
@@ -149,5 +149,5 @@ void EnvFollow_View(bool hemisphere) {EnvFollow_instance[hemisphere].BaseView();
 void EnvFollow_OnButtonPress(bool hemisphere) {EnvFollow_instance[hemisphere].OnButtonPress();}
 void EnvFollow_OnEncoderMove(bool hemisphere, int direction) {EnvFollow_instance[hemisphere].OnEncoderMove(direction);}
 void EnvFollow_ToggleHelpScreen(bool hemisphere) {EnvFollow_instance[hemisphere].HelpScreen();}
-uint32_t EnvFollow_OnDataRequest(bool hemisphere) {return EnvFollow_instance[hemisphere].OnDataRequest();}
-void EnvFollow_OnDataReceive(bool hemisphere, uint32_t data) {EnvFollow_instance[hemisphere].OnDataReceive(data);}
+uint64_t EnvFollow_OnDataRequest(bool hemisphere) {return EnvFollow_instance[hemisphere].OnDataRequest();}
+void EnvFollow_OnDataReceive(bool hemisphere, uint64_t data) {EnvFollow_instance[hemisphere].OnDataReceive(data);}

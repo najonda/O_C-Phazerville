@@ -76,22 +76,23 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 0 && direction == -1) cursor = 1;
-        cursor = constrain(cursor += direction, 0, 23);
+        cursor = constrain(cursor + direction, 0, 23);
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,12}, mask[0]);
         Pack(data, PackLocation {12,12}, mask[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         mask[0] = Unpack(data, PackLocation {0,12});
         mask[1] = Unpack(data, PackLocation {12,12});
 
-        ForEachChannel(ch) quantizer.Configure(OC::Scales::GetScale(5), mask[ch]);
+        last_scale = 0;
+        quantizer.Configure(OC::Scales::GetScale(5), mask[last_scale]);
     }
 
 protected:
@@ -142,7 +143,10 @@ private:
         for (uint8_t i = 0; i < 12; i++)
         {
             if ((mask[scale] >> i) & 0x01) gfxInvert(x[i], (p[i] ? 37 : 51), 4 - p[i], 4 - p[i]);
-            if (i == (cursor - (scale * 12))) gfxCursor(x[i] - 1, p[i] ? 25 : 60, 6);
+            if (i == (cursor - (scale * 12))) {
+                gfxCursor(x[i] - 1, p[i] ? 24 : 60, p[i] ? 5 : 6);
+                gfxCursor(x[i] - 1, p[i] ? 25 : 61, p[i] ? 5 : 6);
+            }
         }
 
         // If C is selcted, display a selector on the higher C, too
@@ -185,10 +189,10 @@ void ScaleDuet_ToggleHelpScreen(bool hemisphere) {
     ScaleDuet_instance[hemisphere].HelpScreen();
 }
 
-uint32_t ScaleDuet_OnDataRequest(bool hemisphere) {
+uint64_t ScaleDuet_OnDataRequest(bool hemisphere) {
     return ScaleDuet_instance[hemisphere].OnDataRequest();
 }
 
-void ScaleDuet_OnDataReceive(bool hemisphere, uint32_t data) {
+void ScaleDuet_OnDataReceive(bool hemisphere, uint64_t data) {
     ScaleDuet_instance[hemisphere].OnDataReceive(data);
 }

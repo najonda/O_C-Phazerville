@@ -185,24 +185,24 @@ public:
 
     void OnEncoderMove(int direction) {
         if (cursor == 3) return;
-        if (cursor == 0) channel = constrain(channel += direction, 0, 15);
+        if (cursor == 0) channel = constrain(channel + direction, 0, 15);
         else {
             int ch = cursor - 1;
-            function[ch] = constrain(function[ch] += direction, 0, 7);
+            function[ch] = constrain(function[ch] + direction, 0, 7);
             clock_count = 0;
         }
         ResetCursor();
     }
         
-    uint32_t OnDataRequest() {
-        uint32_t data = 0;
+    uint64_t OnDataRequest() {
+        uint64_t data = 0;
         Pack(data, PackLocation {0,8}, channel);
         Pack(data, PackLocation {8,3}, function[0]);
         Pack(data, PackLocation {11,3}, function[1]);
         return data;
     }
 
-    void OnDataReceive(uint32_t data) {
+    void OnDataReceive(uint64_t data) {
         channel = Unpack(data, PackLocation {0,8});
         function[0] = Unpack(data, PackLocation {8,3});
         function[1] = Unpack(data, PackLocation {11,3});
@@ -349,10 +349,10 @@ void hMIDIIn_ToggleHelpScreen(bool hemisphere) {
     hMIDIIn_instance[hemisphere].HelpScreen();
 }
 
-uint32_t hMIDIIn_OnDataRequest(bool hemisphere) {
+uint64_t hMIDIIn_OnDataRequest(bool hemisphere) {
     return hMIDIIn_instance[hemisphere].OnDataRequest();
 }
 
-void hMIDIIn_OnDataReceive(bool hemisphere, uint32_t data) {
+void hMIDIIn_OnDataReceive(bool hemisphere, uint64_t data) {
     hMIDIIn_instance[hemisphere].OnDataReceive(data);
 }
