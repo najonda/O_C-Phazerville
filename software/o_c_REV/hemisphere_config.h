@@ -11,8 +11,6 @@
 // * Category filtering is deprecated at 1.8, but I'm leaving the per-applet categorization
 // alone to avoid breaking forked codebases by other developers.
 
-#define HEMISPHERE_AVAILABLE_APPLETS 58
-
 //////////////////  id  cat   class name
 #define HEMISPHERE_APPLETS { \
     DECLARE_APPLET(  8, 0x01, ADSREG), \
