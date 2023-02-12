@@ -42,8 +42,6 @@ public:
         legato = 1;
         log_index = 0;
 
-        const char * fn_name_list[] = {"Mod", "Aft", "Bend", "Veloc"};
-        for (int i = 0; i < 4; i++) fn_name[i] = fn_name_list[i];
     }
 
     void Controller() {
@@ -189,7 +187,7 @@ private:
     bool legato_on; // The note handler may currently respond to legato note changes
     int last_tick; // Most recent MIDI message sent
     int adc_lag_countdown;
-    const char* fn_name[4];
+    const char* fn_name[4] = {"Mod", "Aft", "Bend", "Veloc"};
 
     // Logging
     MIDILogEntry log[7];
