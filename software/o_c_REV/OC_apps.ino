@@ -42,6 +42,14 @@ OC::App available_apps[] = {
   #ifdef ENABLE_APP_METAQ
   DECLARE_APP('M','!', "Meta-Q", DQ),
   #endif
+
+  #ifdef ENABLE_APP_CHORDS
+  DECLARE_APP('A','C', "Acid Curds", CHORDS),
+  #endif
+  #ifdef ENABLE_APP_SEQUINS
+  DECLARE_APP('S','Q', "Sequins", SEQ),
+  #endif
+
   #ifdef ENABLE_APP_MIDI
   DECLARE_APP('M','I', "Captain MIDI", MIDI),
   #endif
