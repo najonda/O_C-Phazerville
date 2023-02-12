@@ -36,6 +36,12 @@
 
 OC::App available_apps[] = {
   DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
+  #ifdef ENABLE_APP_QUANTERMAIN
+  DECLARE_APP('Q','Q', "Quantermain", QQ),
+  #endif
+  #ifdef ENABLE_APP_METAQ
+  DECLARE_APP('M','!', "Meta-Q", DQ),
+  #endif
   #ifdef ENABLE_APP_MIDI
   DECLARE_APP('M','I', "Captain MIDI", MIDI),
   #endif
