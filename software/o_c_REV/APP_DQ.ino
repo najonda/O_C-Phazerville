@@ -26,6 +26,8 @@
 // from Braids by Olivier Gillet (see braids_quantizer.h/cc et al.). It has since
 // grown a little bit...
 
+#ifdef ENABLE_APP_METAQ
+
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
@@ -1568,3 +1570,5 @@ void DQ_screensaver() {
   graphics.printf("%u",  us);
 #endif
 }
+
+#endif // ENABLE_APP_METAQ

@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifdef ENABLE_APP_SEQUINS
 
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
@@ -2630,3 +2631,5 @@ void SEQ_screensaver() {
   seq_channel[1].RenderScreensaver();
 }
 
+
+#endif // ENABLE_APP_SEQUINS

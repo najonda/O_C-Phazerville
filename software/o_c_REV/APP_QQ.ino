@@ -25,6 +25,8 @@
 // from Braids by Olivier Gillet (see braids_quantizer.h/cc et al.). It has since
 // grown a little bit...
 
+#ifdef ENABLE_APP_QUANTERMAIN
+
 #include "OC_apps.h"
 #include "util/util_logistic_map.h"
 #include "util/util_settings.h"
@@ -1576,3 +1578,5 @@ void QQ_debug() {
  }
 }
 #endif // QQ_DEBUG
+
+#endif // ENABLE_APP_QUANTERMAIN
