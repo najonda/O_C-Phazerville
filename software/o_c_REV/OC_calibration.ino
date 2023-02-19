@@ -184,21 +184,21 @@ struct CalibrationState {
 
   uint16_t adc_1v;
   uint16_t adc_3v;
-  
+
   bool used_defaults;
 };
 
 OC::DigitalInputDisplay digital_input_displays[4];
 
 // 128/6=21                  |                     |
-const char *start_footer   = "              [START]";
+const char *start_footer   = "[CANCEL]         [OK]";
 const char *end_footer     = "[PREV]         [EXIT]";
 const char *default_footer = "[PREV]         [NEXT]";
 const char *default_help_r = "[R] => Adjust";
 const char *select_help    = "[R] => Select";
 
 const CalibrationStep calibration_steps[CALIBRATION_STEP_LAST] = {
-  { HELLO, "O&C Calibration", "Use defaults? ", select_help, start_footer, CALIBRATE_NONE, 0, OC::Strings::no_yes, 0, 1 },
+  { HELLO, "Setup: Calibrate", "Use defaults? ", select_help, start_footer, CALIBRATE_NONE, 0, OC::Strings::no_yes, 0, 1 },
   { CENTER_DISPLAY, "Center Display", "Pixel offset ", default_help_r, default_footer, CALIBRATE_DISPLAY, 0, nullptr, 0, 2 },
 
   #if defined(BUCHLA_4U) && !defined(IO_10V)
@@ -401,7 +401,8 @@ const CalibrationStep calibration_steps[CALIBRATION_STEP_LAST] = {
     { ADC_PITCH_C4, "CV Scaling 3V", "CV1: Input 3V (C4)", "[R] Long press to set", default_footer, CALIBRATE_ADC_3V, 0, nullptr, 0, 0 },
   #endif
   
-  { CALIBRATION_SCREENSAVER_TIMEOUT, "Screensaver", "Timeout (s)", default_help_r, default_footer, CALIBRATE_SCREENSAVER, 0, nullptr, (OC::Ui::kLongPressTicks * 2 + 500) / 1000, SCREENSAVER_TIMEOUT_MAX_S },
+  // Changing screensaver to screen blank, and seconds to minutes
+  { CALIBRATION_SCREENSAVER_TIMEOUT, "Screen Blank", "(minutes)", default_help_r, default_footer, CALIBRATE_SCREENSAVER, 0, nullptr, (OC::Ui::kLongPressTicks * 2 + 500) / 1000, SCREENSAVER_TIMEOUT_MAX_S },
 
   { CALIBRATION_EXIT, "Calibration complete", "Save values? ", select_help, end_footer, CALIBRATE_NONE, 0, OC::Strings::no_yes, 0, 1 }
 };
@@ -444,6 +445,7 @@ void OC::Ui::Calibrate() {
 
       switch (event.control) {
         case CONTROL_BUTTON_L:
+          if (calibration_state.step == HELLO) calibration_complete = 1; // Way out --jj
           if (calibration_state.step > CENTER_DISPLAY)
             calibration_state.step = static_cast<CALIBRATION_STEP>(calibration_state.step - 1);
           break;
@@ -533,7 +535,7 @@ void OC::Ui::Calibrate() {
       case CALIBRATE_DISPLAY:
         calibration_state.encoder_value = OC::calibration_data.display_offset;
         break;
-        
+
       case CALIBRATE_ADC_1V:
       case CALIBRATE_ADC_3V:
         SERIAL_PRINTLN("offset=%d", OC::calibration_data.adc.offset[ADC_CHANNEL_1]);
@@ -577,6 +579,11 @@ void calibration_draw(const CalibrationState &state) {
   GRAPHICS_BEGIN_FRAME(true);
   const CalibrationStep *step = state.current_step;
 
+  /*
+  graphics.drawLine(0, 10, 127, 10);
+  graphics.drawLine(0, 12, 127, 12);
+  graphics.setPrintPos(1, 2);
+  */
   menu::DefaultTitleBar::Draw();
   graphics.print(step->title);
 

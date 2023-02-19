@@ -28,11 +28,16 @@ enum UiControl {
   CONTROL_BUTTON_L    = 0x4,
   CONTROL_BUTTON_R    = 0x8,
 #endif
-  //CONTROL_BUTTON_MASK = 0xf,
 
+#ifdef VOR
   CONTROL_BUTTON_M    = 0x10,
   CONTROL_ENCODER_L   = 0x20,
   CONTROL_ENCODER_R   = 0x40,
+#else
+  CONTROL_BUTTON_MASK = 0xf,
+  CONTROL_ENCODER_L   = 0x10,
+  CONTROL_ENCODER_R   = 0x20,
+#endif
 
   #if defined(VOR) && !defined(VOR_NO_RANGE_BUTTON)
   CONTROL_LAST = 6,

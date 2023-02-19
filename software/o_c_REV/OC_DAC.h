@@ -67,8 +67,10 @@ public:
   static void restore_scaling(uint32_t scaling);
   static uint8_t get_voltage_scaling(uint8_t channel_id);
   static uint32_t store_scaling();
+#ifdef VOR
   static void set_Vbias(uint32_t data);
   static void init_Vbias();
+#endif
   
   static void set_all(uint32_t value) {
     for (int i = DAC_CHANNEL_A; i < DAC_CHANNEL_LAST; ++i)
