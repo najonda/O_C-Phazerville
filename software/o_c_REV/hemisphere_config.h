@@ -24,6 +24,7 @@
     DECLARE_APPLET( 31, 0x04, Burst), \
     DECLARE_APPLET( 65, 0x10, Button), \
     DECLARE_APPLET( 12, 0x10, Calculate),\
+    DECLARE_APPLET( 88, 0x10, Calibr8), \
     DECLARE_APPLET( 32, 0x0a, Carpeggio), \
     DECLARE_APPLET( 64, 0x08, Chordinator), \
     DECLARE_APPLET(  6, 0x04, ClockDivider), \
