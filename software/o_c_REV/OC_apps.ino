@@ -36,6 +36,7 @@
 }
 
 OC::App available_apps[] = {
+  DECLARE_APP('C','8', "Calibr8or", Calibr8or),
   DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
   #ifdef ENABLE_APP_QUANTERMAIN
   DECLARE_APP('Q','Q', "Quantermain", QQ),
