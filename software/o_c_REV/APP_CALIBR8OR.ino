@@ -20,29 +20,60 @@
 
 #include "HSApplication.h"
 #include "HSMIDI.h"
+#include "util/util_settings.h"
 #include "braids_quantizer.h"
 #include "braids_quantizer_scales.h"
 #include "OC_scales.h"
 
 #define CAL8_MAX_TRANSPOSE 60
+const int CAL8OR_PRECISION = 10000;
 
-class Calibr8or : public HSApplication, public SystemExclusiveHandler {
+// Settings storage spec (per channel?)
+enum CAL8SETTINGS {
+    CAL8_SCALE_A, // 12 bits
+    CAL8_SCALEFACTOR_A, // 10 bits
+    CAL8_OFFSET_A, // 8 bits
+    CAL8_TRANSPOSE_A, // 8 bits
+    CAL8_CLOCKMODE_A, // 2 bits
+
+    CAL8_SCALE_B, // 12 bits
+    CAL8_SCALEFACTOR_B, // 10 bits
+    CAL8_OFFSET_B, // 8 bits
+    CAL8_TRANSPOSE_B, // 8 bits
+    CAL8_CLOCKMODE_B, // 2 bits
+
+    CAL8_SCALE_C, // 12 bits
+    CAL8_SCALEFACTOR_C, // 10 bits
+    CAL8_OFFSET_C, // 8 bits
+    CAL8_TRANSPOSE_C, // 8 bits
+    CAL8_CLOCKMODE_C, // 2 bits
+
+    CAL8_SCALE_D, // 12 bits
+    CAL8_SCALEFACTOR_D, // 10 bits
+    CAL8_OFFSET_D, // 8 bits
+    CAL8_TRANSPOSE_D, // 8 bits
+    CAL8_CLOCKMODE_D, // 2 bits
+
+    CAL8_SETTING_LAST
+};
+
+class Calibr8or : public HSApplication,
+    public settings::SettingsBase<Calibr8or, CAL8_SETTING_LAST> {
 public:
-    const int CAL8OR_PRECISION = 10000;
+    enum Cal8Channel {
+        CAL8_CHANNEL_A,
+        CAL8_CHANNEL_B,
+        CAL8_CHANNEL_C,
+        CAL8_CHANNEL_D,
+
+        NR_OF_CHANNELS
+    };
 	enum Cal8EditMode {
         TRANSPOSE,
         TRACKING,
 
         NR_OF_EDITMODES
     };
-	enum Cal8Channel {
-		CHANNEL_A,
-		CHANNEL_B,
-		CHANNEL_C,
-		CHANNEL_D,
-
-		NR_OF_CHANNELS
-	};
     enum Cal8ClockMode {
         CONTINUOUS,
         TRIG_TRANS,
@@ -60,6 +91,7 @@ public:
 	}
 	
 	void Resume() {
+        LoadFromEEPROM();
 	}
 
     void Controller() {
@@ -91,10 +123,35 @@ public:
         DrawInterface();
     }
 
-    void OnSendSysEx() {
-    }
+    void SaveToEEPROM() {
+        int ix = 0;
 
-    void OnReceiveSysEx() {
+        for (int ch = 0; ch < NR_OF_CHANNELS; ++ch) {
+            values_[ix++] = scale[ch];
+            values_[ix++] = scale_factor[ch] + 500;
+            values_[ix++] = offset[ch] + 63;
+            values_[ix++] = transpose[ch] + CAL8_MAX_TRANSPOSE;
+            values_[ix++] = clocked_mode[ch];
+        }
+    }
+    /*
+    CAL8_SCALE_A, // 12 bits
+    CAL8_SCALEFACTOR_A, // 10 bits
+    CAL8_OFFSET_A, // 8 bits
+    CAL8_TRANSPOSE_A, // 8 bits
+    CAL8_CLOCKMODE_A, // 2 bits
+    */
+    void LoadFromEEPROM() {
+        int ix = 0;
+
+        for (int ch = 0; ch < NR_OF_CHANNELS; ++ch) {
+            int scale_ = values_[ix++];
+            scale[ch] = constrain(scale_, 0, OC::Scales::NUM_SCALES - 1);
+            scale_factor[ch] = values_[ix++] - 500;
+            offset[ch] = values_[ix++] - 63;
+            transpose[ch] = values_[ix++] - CAL8_MAX_TRANSPOSE;
+            clocked_mode[ch] = values_[ix++];
+        }
     }
 
     /////////////////////////////////////////////////////////////////
@@ -139,7 +196,7 @@ public:
         }
     }
 
-    // Right encoder: Semitones or Bias Offset
+    // Right encoder: Semitones or Bias Offset + Scale Select
     void OnRightEncoderMove(int direction) {
         if (scale_edit) {
             scale[sel_chan] += direction;
@@ -153,7 +210,7 @@ public:
             transpose[sel_chan] = constrain(transpose[sel_chan] + direction, -CAL8_MAX_TRANSPOSE, CAL8_MAX_TRANSPOSE);
         }
         else {
-            offset[sel_chan] = constrain(offset[sel_chan] + direction, -100, 100);
+            offset[sel_chan] = constrain(offset[sel_chan] + direction, -63, 64);
         }
     }
 
@@ -229,24 +286,66 @@ private:
     }
 };
 
+SETTINGS_DECLARE(Calibr8or, CAL8_SETTING_LAST) {
+    {0, 0, 65535, "Scale A", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor A", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias A", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose A", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 3, "Clock Mode A", NULL, settings::STORAGE_TYPE_U4},
+
+    {0, 0, 65535, "Scale B", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor B", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias B", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose B", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 3, "Clock Mode B", NULL, settings::STORAGE_TYPE_U4},
+
+    {0, 0, 65535, "Scale C", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor C", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias C", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose C", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 3, "Clock Mode C", NULL, settings::STORAGE_TYPE_U4},
+
+    {0, 0, 65535, "Scale D", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor D", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias D", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose D", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 3, "Clock Mode D", NULL, settings::STORAGE_TYPE_U4}
+};
+
 Calibr8or Calibr8or_instance;
 
 // App stubs
 void Calibr8or_init() { Calibr8or_instance.BaseStart(); }
 
-// Not using O_C Storage
-size_t Calibr8or_storageSize() {return 0;}
-size_t Calibr8or_save(void *storage) {return 0;}
-size_t Calibr8or_restore(const void *storage) {return 0;}
+size_t Calibr8or_storageSize() {
+    return Calibr8or::storageSize();
+}
+size_t Calibr8or_save(void *storage) {
+    return Calibr8or_instance.Save(storage);
+}
+size_t Calibr8or_restore(const void *storage) {
+    size_t s = Calibr8or_instance.Restore(storage);
+    Calibr8or_instance.Resume();
+    return s;
+}
 
 void Calibr8or_isr() { return Calibr8or_instance.BaseController(); }
 
 void Calibr8or_handleAppEvent(OC::AppEvent event) {
-    if (event ==  OC::APP_EVENT_RESUME) {
+    switch (event) {
+    case OC::APP_EVENT_RESUME:
         Calibr8or_instance.Resume();
-    }
-    if (event == OC::APP_EVENT_SUSPEND) {
-        Calibr8or_instance.OnSendSysEx();
+        break;
+
+    // The idea is to auto-save when the screen times out...
+    case OC::APP_EVENT_SUSPEND:
+    case OC::APP_EVENT_SCREENSAVER_ON:
+        Calibr8or_instance.SaveToEEPROM();
+        // TODO: initiate actual EEPROM save
+        // app_data_save();
+        break;
+
+    default: break;
     }
 }
 
@@ -255,7 +354,9 @@ void Calibr8or_loop() {} // Deprecated
 void Calibr8or_menu() { Calibr8or_instance.BaseView(); }
 
 void Calibr8or_screensaver() {
-    // TODO: Consider a view like Quantermain
+    // XXX: Consider a view like Quantermain
+    // other ideas: Actual note being played, current transpose setting
+    // ...for all 4 channels at once.
 }
 
 void Calibr8or_handleButtonEvent(const UI::Event &event) {
