@@ -74,7 +74,8 @@ public:
             // respect S&H mode
             if (clocked_mode[ch] != SAMPLE_AND_HOLD || clocked) {
                 // CV value
-                int quantized = quantizer[ch].Process(In(ch), transpose_active[ch] << 7, 0);
+                int pitch = In(ch);
+                int quantized = quantizer[ch].Process(pitch, 0, transpose_active[ch]);
                 last_note[ch] = quantized;
             }
 
@@ -127,10 +128,11 @@ public:
 
     // Left encoder: Octave or VScaling
     void OnLeftEncoderMove(int direction) {
-        if (edit_mode == TRANSPOSE) {
-            transpose[sel_chan] += (direction * 12);
-            while (transpose[sel_chan] > CAL8_MAX_TRANSPOSE) transpose[sel_chan] -= 12;
-            while (transpose[sel_chan] < -CAL8_MAX_TRANSPOSE) transpose[sel_chan] += 12;
+        if (edit_mode == TRANSPOSE) { // Octave jump
+            int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
+            transpose[sel_chan] += (direction * s);
+            while (transpose[sel_chan] > CAL8_MAX_TRANSPOSE) transpose[sel_chan] -= s;
+            while (transpose[sel_chan] < -CAL8_MAX_TRANSPOSE) transpose[sel_chan] += s;
         }
         else { // Tracking compensation
             scale_factor[sel_chan] = constrain(scale_factor[sel_chan] + direction, -500, 500);
@@ -196,8 +198,9 @@ private:
         else
             gfxPrint("-");
 
-        int octave = transpose[sel_chan] / 12;
-        int semitone = transpose[sel_chan] % 12;
+        int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
+        int octave = transpose[sel_chan] / s;
+        int semitone = transpose[sel_chan] % s;
         gfxPrint(abs(octave));
         gfxPrint(".");
         gfxPrint(abs(semitone));
