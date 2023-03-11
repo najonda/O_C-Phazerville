@@ -110,7 +110,7 @@ public:
             if (clocked_mode[ch] != SAMPLE_AND_HOLD || clocked) {
                 // CV value
                 int pitch = In(ch);
-                int quantized = quantizer[ch].Process(pitch, 0, transpose_active[ch]);
+                int quantized = quantizer[ch].Process(pitch, root_note[ch] * 128, transpose_active[ch]);
                 last_note[ch] = quantized;
             }
 
@@ -186,8 +186,13 @@ public:
     void OnDownButtonLongPress() {
     }
 
-    // Left encoder: Octave or VScaling
+    // Left encoder: Octave or VScaling + Root Note
     void OnLeftEncoderMove(int direction) {
+        if (scale_edit) {
+            root_note[sel_chan] = constrain(root_note[sel_chan] + direction, 0, 11);
+            return;
+        }
+
         if (edit_mode == TRANSPOSE) { // Octave jump
             int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
             transpose[sel_chan] += (direction * s);
@@ -225,9 +230,10 @@ private:
     SegmentDisplay segment;
     braids::Quantizer quantizer[NR_OF_CHANNELS];
     int scale[NR_OF_CHANNELS]; // Scale per channel
+    int8_t root_note[NR_OF_CHANNELS]; // in semitones from C
     int last_note[NR_OF_CHANNELS]; // for S&H mode
 
-    int clocked_mode[NR_OF_CHANNELS];
+    uint8_t clocked_mode[NR_OF_CHANNELS];
     int scale_factor[NR_OF_CHANNELS] = {0,0,0,0}; // precision of 0.01% as an offset from 100%
     int offset[NR_OF_CHANNELS] = {0,0,0,0}; // fine-tuning offset
     int transpose[NR_OF_CHANNELS] = {0,0,0,0}; // in semitones
@@ -273,7 +279,12 @@ private:
         // Scale
         gfxIcon(89, y, SCALE_ICON);
         gfxPrint(99, y, OC::scale_names_short[scale[sel_chan]]);
-        if (scale_edit) gfxInvert(98, y-1, 29, 9);
+        if (scale_edit) {
+            gfxInvert(98, y-1, 29, 9);
+            gfxIcon(100, y+10, RIGHT_ICON);
+        }
+        // Root Note
+        gfxPrint(110, y+10, OC::Strings::note_names_unpadded[root_note[sel_chan]]);
 
         // Tracking Compensation
         y += 24;
