@@ -31,6 +31,8 @@ const int CAL8OR_PRECISION = 10000;
 
 // Settings storage spec (per channel?)
 enum CAL8SETTINGS {
+    CAL8_DATA_VALID, // 1 bit
+
     CAL8_SCALE_A, // 12 bits
     CAL8_SCALEFACTOR_A, // 10 bits
     CAL8_OFFSET_A, // 8 bits
@@ -83,18 +85,26 @@ public:
         NR_OF_CLOCKMODES
     };
 
+    void set_index(int index_) { index = index_; }
+
 	void Start() {
         for (int ch = 0; ch < NR_OF_CHANNELS; ++ch) {
             quantizer[ch].Init();
             scale[ch] = OC::Scales::SCALE_SEMI;
             quantizer[ch].Configure(OC::Scales::GetScale(scale[ch]), 0xffff);
+
+            scale_factor[ch] = 0;
+            offset[ch] = 0;
+            transpose[ch] = 0;
+            clocked_mode[ch] = 0;
         }
 
         segment.Init(SegmentSize::BIG_SEGMENTS);
 	}
 	
 	void Resume() {
-        LoadFromEEPROM();
+        if (values_[CAL8_DATA_VALID])
+            LoadFromEEPROM();
 	}
 
     void Controller() {
@@ -123,11 +133,14 @@ public:
 
     void View() {
         gfxHeader("Calibr8or");
+        gfxPrint(120, 0, preset_id[index]);
         DrawInterface();
     }
 
     void SaveToEEPROM() {
         int ix = 0;
+
+        values_[ix++] = 1; // validity flag
 
         for (int ch = 0; ch < NR_OF_CHANNELS; ++ch) {
             values_[ix++] = scale[ch];
@@ -145,11 +158,13 @@ public:
     CAL8_CLOCKMODE_A, // 2 bits
     */
     void LoadFromEEPROM() {
-        int ix = 0;
+        int ix = 1; // skip validity flag
 
         for (int ch = 0; ch < NR_OF_CHANNELS; ++ch) {
-            int scale_ = values_[ix++];
-            scale[ch] = constrain(scale_, 0, OC::Scales::NUM_SCALES - 1);
+            scale[ch] = values_[ix++];
+            scale[ch] = constrain(scale[ch], 0, OC::Scales::NUM_SCALES - 1);
+            quantizer[ch].Configure(OC::Scales::GetScale(scale[ch]), 0xffff);
+
             scale_factor[ch] = values_[ix++] - 500;
             offset[ch] = values_[ix++] - 63;
             transpose[ch] = values_[ix++] - CAL8_MAX_TRANSPOSE;
@@ -223,6 +238,9 @@ public:
     }
 
 private:
+    int index = 0;
+    const char * preset_id[4] = {"A", "B", "C", "D"};
+
 	int sel_chan = 0;
     int edit_mode = 0; // Cal8EditMode
     bool scale_edit = 0;
@@ -307,6 +325,8 @@ private:
 };
 
 SETTINGS_DECLARE(Calibr8or, CAL8_SETTING_LAST) {
+    {0, 0, 1, "validity flag", NULL, settings::STORAGE_TYPE_U4},
+
     {0, 0, 65535, "Scale A", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 65535, "CV Scaling Factor A", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 255, "Offset Bias A", NULL, settings::STORAGE_TYPE_U8},
@@ -332,35 +352,57 @@ SETTINGS_DECLARE(Calibr8or, CAL8_SETTING_LAST) {
     {0, 0, 3, "Clock Mode D", NULL, settings::STORAGE_TYPE_U4}
 };
 
-Calibr8or Calibr8or_instance;
+// To allow FOUR preset configs... I just made 4 copies of everything lol
+Calibr8or Calibr8or_instance[4];
 
 // App stubs
-void Calibr8or_init() { Calibr8or_instance.BaseStart(); }
+void Calibr8or_init(int index) {
+    Calibr8or_instance[index].BaseStart();
+    Calibr8or_instance[index].set_index(index);
+}
+void Calibr8orA_init() { Calibr8or_init(0); }
+void Calibr8orB_init() { Calibr8or_init(1); }
+void Calibr8orC_init() { Calibr8or_init(2); }
+void Calibr8orD_init() { Calibr8or_init(3); }
 
-size_t Calibr8or_storageSize() {
-    return Calibr8or::storageSize();
-}
-size_t Calibr8or_save(void *storage) {
-    return Calibr8or_instance.Save(storage);
-}
-size_t Calibr8or_restore(const void *storage) {
-    size_t s = Calibr8or_instance.Restore(storage);
-    Calibr8or_instance.Resume();
+//size_t Calibr8or_storageSize() { return Calibr8or::storageSize(); }
+size_t Calibr8orA_storageSize() { return Calibr8or::storageSize(); }
+size_t Calibr8orB_storageSize() { return Calibr8or::storageSize(); }
+size_t Calibr8orC_storageSize() { return Calibr8or::storageSize(); }
+size_t Calibr8orD_storageSize() { return Calibr8or::storageSize(); }
+
+//size_t Calibr8or_save(void *storage) { return Calibr8or_instance.Save(storage); }
+size_t Calibr8orA_save(void *storage) { return Calibr8or_instance[0].Save(storage); }
+size_t Calibr8orB_save(void *storage) { return Calibr8or_instance[1].Save(storage); }
+size_t Calibr8orC_save(void *storage) { return Calibr8or_instance[2].Save(storage); }
+size_t Calibr8orD_save(void *storage) { return Calibr8or_instance[3].Save(storage); }
+
+size_t Calibr8or_restore(int index, const void *storage) {
+    size_t s = Calibr8or_instance[index].Restore(storage);
+    Calibr8or_instance[index].Resume();
     return s;
 }
+size_t Calibr8orA_restore(const void *storage) { return Calibr8or_restore(0, storage); }
+size_t Calibr8orB_restore(const void *storage) { return Calibr8or_restore(1, storage); }
+size_t Calibr8orC_restore(const void *storage) { return Calibr8or_restore(2, storage); }
+size_t Calibr8orD_restore(const void *storage) { return Calibr8or_restore(3, storage); }
 
-void Calibr8or_isr() { return Calibr8or_instance.BaseController(); }
+//void Calibr8or_isr() { return Calibr8or_instance.BaseController(); }
+void Calibr8orA_isr() { return Calibr8or_instance[0].BaseController(); }
+void Calibr8orB_isr() { return Calibr8or_instance[1].BaseController(); }
+void Calibr8orC_isr() { return Calibr8or_instance[2].BaseController(); }
+void Calibr8orD_isr() { return Calibr8or_instance[3].BaseController(); }
 
-void Calibr8or_handleAppEvent(OC::AppEvent event) {
+void Calibr8or_handleAppEvent(int index, OC::AppEvent event) {
     switch (event) {
     case OC::APP_EVENT_RESUME:
-        Calibr8or_instance.Resume();
+        Calibr8or_instance[index].Resume();
         break;
 
     // The idea is to auto-save when the screen times out...
     case OC::APP_EVENT_SUSPEND:
     case OC::APP_EVENT_SCREENSAVER_ON:
-        Calibr8or_instance.SaveToEEPROM();
+        Calibr8or_instance[index].SaveToEEPROM();
         // TODO: initiate actual EEPROM save
         // app_data_save();
         break;
@@ -368,41 +410,66 @@ void Calibr8or_handleAppEvent(OC::AppEvent event) {
     default: break;
     }
 }
+void Calibr8orA_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(0, event); }
+void Calibr8orB_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(1, event); }
+void Calibr8orC_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(2, event); }
+void Calibr8orD_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(3, event); }
 
-void Calibr8or_loop() {} // Deprecated
+//void Calibr8or_loop() {} // Deprecated
+void Calibr8orA_loop() {} // Deprecated
+void Calibr8orB_loop() {} // Deprecated
+void Calibr8orC_loop() {} // Deprecated
+void Calibr8orD_loop() {} // Deprecated
 
-void Calibr8or_menu() { Calibr8or_instance.BaseView(); }
+//void Calibr8or_menu() { Calibr8or_instance.BaseView(); }
+void Calibr8orA_menu() { Calibr8or_instance[0].BaseView(); }
+void Calibr8orB_menu() { Calibr8or_instance[1].BaseView(); }
+void Calibr8orC_menu() { Calibr8or_instance[2].BaseView(); }
+void Calibr8orD_menu() { Calibr8or_instance[3].BaseView(); }
 
+void Calibr8orA_screensaver() {}
+void Calibr8orB_screensaver() {}
+void Calibr8orC_screensaver() {}
+void Calibr8orD_screensaver() {}
 void Calibr8or_screensaver() {
     // XXX: Consider a view like Quantermain
     // other ideas: Actual note being played, current transpose setting
     // ...for all 4 channels at once.
 }
 
-void Calibr8or_handleButtonEvent(const UI::Event &event) {
+void Calibr8or_handleButtonEvent(int index, const UI::Event &event) {
     // For left encoder, handle press and long press
     if (event.control == OC::CONTROL_BUTTON_L) {
-        if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance.OnLeftButtonLongPress();
-        else Calibr8or_instance.OnLeftButtonPress();
+        if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance[index].OnLeftButtonLongPress();
+        else Calibr8or_instance[index].OnLeftButtonPress();
     }
 
     // For right encoder, only handle press (long press is reserved)
-    if (event.control == OC::CONTROL_BUTTON_R && event.type == UI::EVENT_BUTTON_PRESS) Calibr8or_instance.OnRightButtonPress();
+    if (event.control == OC::CONTROL_BUTTON_R && event.type == UI::EVENT_BUTTON_PRESS) Calibr8or_instance[index].OnRightButtonPress();
 
     // For up button, handle only press (long press is reserved)
-    if (event.control == OC::CONTROL_BUTTON_UP) Calibr8or_instance.OnUpButtonPress();
+    if (event.control == OC::CONTROL_BUTTON_UP) Calibr8or_instance[index].OnUpButtonPress();
 
     // For down button, handle press and long press
     if (event.control == OC::CONTROL_BUTTON_DOWN) {
-        if (event.type == UI::EVENT_BUTTON_PRESS) Calibr8or_instance.OnDownButtonPress();
-        if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance.OnDownButtonLongPress();
+        if (event.type == UI::EVENT_BUTTON_PRESS) Calibr8or_instance[index].OnDownButtonPress();
+        if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance[index].OnDownButtonLongPress();
     }
 }
+void Calibr8orA_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(0, event); }
+void Calibr8orB_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(1, event); }
+void Calibr8orC_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(2, event); }
+void Calibr8orD_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(3, event); }
 
-void Calibr8or_handleEncoderEvent(const UI::Event &event) {
+void Calibr8or_handleEncoderEvent(int index, const UI::Event &event) {
     // Left encoder turned
-    if (event.control == OC::CONTROL_ENCODER_L) Calibr8or_instance.OnLeftEncoderMove(event.value);
+    if (event.control == OC::CONTROL_ENCODER_L) Calibr8or_instance[index].OnLeftEncoderMove(event.value);
 
     // Right encoder turned
-    if (event.control == OC::CONTROL_ENCODER_R) Calibr8or_instance.OnRightEncoderMove(event.value);
+    if (event.control == OC::CONTROL_ENCODER_R) Calibr8or_instance[index].OnRightEncoderMove(event.value);
 }
+void Calibr8orA_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(0, event); }
+void Calibr8orB_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(1, event); }
+void Calibr8orC_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(2, event); }
+void Calibr8orD_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(3, event); }
+

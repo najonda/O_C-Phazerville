@@ -2,7 +2,7 @@
 #define OC_VERSION_H_
 
 #ifndef OC_VERSION_EXTRA
-#define OC_VERSION_EXTRA " cal8-apptest"
+#define OC_VERSION_EXTRA ""
 #endif
 
 #define OC_VERSION_TITLE "Phazerville Suite"
