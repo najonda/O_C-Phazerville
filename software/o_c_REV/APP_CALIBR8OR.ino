@@ -37,25 +37,25 @@ enum CAL8SETTINGS {
     CAL8_SCALEFACTOR_A, // 10 bits
     CAL8_OFFSET_A, // 8 bits
     CAL8_TRANSPOSE_A, // 8 bits
-    CAL8_CLOCKMODE_A, // 2 bits
+    CAL8_ROOTKEY_AND_CLOCKMODE_A, // 4 + 2 bits
 
-    CAL8_SCALE_B, // 12 bits
-    CAL8_SCALEFACTOR_B, // 10 bits
-    CAL8_OFFSET_B, // 8 bits
-    CAL8_TRANSPOSE_B, // 8 bits
-    CAL8_CLOCKMODE_B, // 2 bits
+    CAL8_SCALE_B,
+    CAL8_SCALEFACTOR_B,
+    CAL8_OFFSET_B,
+    CAL8_TRANSPOSE_B,
+    CAL8_ROOTKEY_AND_CLOCKMODE_B,
 
-    CAL8_SCALE_C, // 12 bits
-    CAL8_SCALEFACTOR_C, // 10 bits
-    CAL8_OFFSET_C, // 8 bits
-    CAL8_TRANSPOSE_C, // 8 bits
-    CAL8_CLOCKMODE_C, // 2 bits
+    CAL8_SCALE_C,
+    CAL8_SCALEFACTOR_C,
+    CAL8_OFFSET_C,
+    CAL8_TRANSPOSE_C,
+    CAL8_ROOTKEY_AND_CLOCKMODE_C,
 
-    CAL8_SCALE_D, // 12 bits
-    CAL8_SCALEFACTOR_D, // 10 bits
-    CAL8_OFFSET_D, // 8 bits
-    CAL8_TRANSPOSE_D, // 8 bits
-    CAL8_CLOCKMODE_D, // 2 bits
+    CAL8_SCALE_D,
+    CAL8_SCALEFACTOR_D,
+    CAL8_OFFSET_D,
+    CAL8_TRANSPOSE_D,
+    CAL8_ROOTKEY_AND_CLOCKMODE_D,
 
     CAL8_SETTING_LAST
 };
@@ -147,7 +147,7 @@ public:
             values_[ix++] = scale_factor[ch] + 500;
             values_[ix++] = offset[ch] + 63;
             values_[ix++] = transpose[ch] + CAL8_MAX_TRANSPOSE;
-            values_[ix++] = clocked_mode[ch];
+            values_[ix++] = ((clocked_mode[ch] & 0x03) << 4) | (root_note[ch] & 0x0f);
         }
     }
     /*
@@ -168,7 +168,10 @@ public:
             scale_factor[ch] = values_[ix++] - 500;
             offset[ch] = values_[ix++] - 63;
             transpose[ch] = values_[ix++] - CAL8_MAX_TRANSPOSE;
-            clocked_mode[ch] = values_[ix++];
+
+            uint32_t root_and_mode = uint32_t(values_[ix++]);
+            clocked_mode[ch] = (root_and_mode >> 4) & 0x03;
+            root_note[ch] = (root_and_mode & 0x0f);
         }
     }
 
@@ -248,7 +251,7 @@ private:
     SegmentDisplay segment;
     braids::Quantizer quantizer[NR_OF_CHANNELS];
     int scale[NR_OF_CHANNELS]; // Scale per channel
-    int8_t root_note[NR_OF_CHANNELS]; // in semitones from C
+    int root_note[NR_OF_CHANNELS]; // in semitones from C
     int last_note[NR_OF_CHANNELS]; // for S&H mode
 
     uint8_t clocked_mode[NR_OF_CHANNELS];
@@ -272,27 +275,21 @@ private:
         gfxLine(0, 23, 127, 23);
 
         // Draw parameters for selected channel
-        int y = 30;
+        int y = 32;
 
         // Transpose
         gfxIcon(9, y, BEND_ICON);
-        //graphics.setPrintPos(20, y);
 
-        // TODO: just draw some rectangles for bigass + or -
-        const char* c = (transpose[sel_chan] >= 0) ? "+" : "-";
-        gfxPrint(20, y, c);
+        gfxIcon(20, y, (transpose[sel_chan] >= 0)? PLUS_ICON : MINUS_ICON);
 
         int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
         int octave = transpose[sel_chan] / s;
         int semitone = transpose[sel_chan] % s;
         //gfxPrint(abs(octave));
-        segment.PrintWhole(26, y-2, abs(octave), 10);
-        gfxPrint(46, y+3, ".");
-        //gfxIcon(46, y, RECORD_ICON);
+        segment.PrintWhole(28, y-2, abs(octave), 10);
+        gfxPrint(48, y+3, ".");
         //gfxPrint(abs(semitone));
-        segment.PrintWhole(54, y-2, abs(semitone), 10);
-
-        // TODO: Root Note
+        segment.PrintWhole(56, y-2, abs(semitone), 10);
 
         // Scale
         gfxIcon(89, y, SCALE_ICON);
@@ -305,7 +302,7 @@ private:
         gfxPrint(110, y+10, OC::Strings::note_names_unpadded[root_note[sel_chan]]);
 
         // Tracking Compensation
-        y += 24;
+        y += 22;
         gfxIcon(9, y, ZAP_ICON);
         int whole = (scale_factor[sel_chan] + CAL8OR_PRECISION) / 100;
         int decimal = (scale_factor[sel_chan] + CAL8OR_PRECISION) % 100;
@@ -320,7 +317,7 @@ private:
 
         // mode indicator
         if (!scale_edit)
-            gfxIcon(0, 30 + edit_mode*24, RIGHT_ICON);
+            gfxIcon(0, 32 + edit_mode*22, RIGHT_ICON);
     }
 };
 
@@ -331,25 +328,25 @@ SETTINGS_DECLARE(Calibr8or, CAL8_SETTING_LAST) {
     {0, 0, 65535, "CV Scaling Factor A", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 255, "Offset Bias A", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 255, "Transpose A", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 3, "Clock Mode A", NULL, settings::STORAGE_TYPE_U4},
+    {0, 0, 255, "Root Key + Mode A", NULL, settings::STORAGE_TYPE_U8},
 
     {0, 0, 65535, "Scale B", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 65535, "CV Scaling Factor B", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 255, "Offset Bias B", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 255, "Transpose B", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 3, "Clock Mode B", NULL, settings::STORAGE_TYPE_U4},
+    {0, 0, 255, "Root Key + Mode B", NULL, settings::STORAGE_TYPE_U8},
 
     {0, 0, 65535, "Scale C", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 65535, "CV Scaling Factor C", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 255, "Offset Bias C", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 255, "Transpose C", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 3, "Clock Mode C", NULL, settings::STORAGE_TYPE_U4},
+    {0, 0, 255, "Root Key + Mode C", NULL, settings::STORAGE_TYPE_U8},
 
     {0, 0, 65535, "Scale D", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 65535, "CV Scaling Factor D", NULL, settings::STORAGE_TYPE_U16},
     {0, 0, 255, "Offset Bias D", NULL, settings::STORAGE_TYPE_U8},
     {0, 0, 255, "Transpose D", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 3, "Clock Mode D", NULL, settings::STORAGE_TYPE_U4}
+    {0, 0, 255, "Root Key + Mode D", NULL, settings::STORAGE_TYPE_U8}
 };
 
 // To allow FOUR preset configs... I just made 4 copies of everything lol
