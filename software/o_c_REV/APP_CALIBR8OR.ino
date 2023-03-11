@@ -24,6 +24,7 @@
 #include "braids_quantizer.h"
 #include "braids_quantizer_scales.h"
 #include "OC_scales.h"
+#include "SegmentDisplay.h"
 
 #define CAL8_MAX_TRANSPOSE 60
 const int CAL8OR_PRECISION = 10000;
@@ -88,6 +89,8 @@ public:
             scale[ch] = OC::Scales::SCALE_SEMI;
             quantizer[ch].Configure(OC::Scales::GetScale(scale[ch]), 0xffff);
         }
+
+        segment.Init(SegmentSize::BIG_SEGMENTS);
 	}
 	
 	void Resume() {
@@ -219,6 +222,7 @@ private:
     int edit_mode = 0; // Cal8EditMode
     bool scale_edit = 0;
 
+    SegmentDisplay segment;
     braids::Quantizer quantizer[NR_OF_CHANNELS];
     int scale[NR_OF_CHANNELS]; // Scale per channel
     int last_note[NR_OF_CHANNELS]; // for S&H mode
@@ -247,29 +251,33 @@ private:
         int y = 30;
 
         // Transpose
-        gfxIcon(10, y, BEND_ICON);
-        graphics.setPrintPos(20, y);
+        gfxIcon(9, y, BEND_ICON);
+        //graphics.setPrintPos(20, y);
 
-        if (transpose[sel_chan] >= 0)
-            gfxPrint("+");
-        else
-            gfxPrint("-");
+        // TODO: just draw some rectangles for bigass + or -
+        const char* c = (transpose[sel_chan] >= 0) ? "+" : "-";
+        gfxPrint(20, y, c);
 
         int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
         int octave = transpose[sel_chan] / s;
         int semitone = transpose[sel_chan] % s;
-        gfxPrint(abs(octave));
-        gfxPrint(".");
-        gfxPrint(abs(semitone));
+        //gfxPrint(abs(octave));
+        segment.PrintWhole(26, y-2, abs(octave), 10);
+        gfxPrint(46, y+3, ".");
+        //gfxIcon(46, y, RECORD_ICON);
+        //gfxPrint(abs(semitone));
+        segment.PrintWhole(54, y-2, abs(semitone), 10);
+
+        // TODO: Root Note
 
         // Scale
-        gfxIcon(60, y, SCALE_ICON);
-        gfxPrint(70, y, OC::scale_names_short[scale[sel_chan]]);
-        if (scale_edit) gfxInvert(69, y-1, 30, 9);
+        gfxIcon(89, y, SCALE_ICON);
+        gfxPrint(99, y, OC::scale_names_short[scale[sel_chan]]);
+        if (scale_edit) gfxInvert(98, y-1, 29, 9);
 
         // Tracking Compensation
-        y += 20;
-        gfxIcon(10, y, ZAP_ICON);
+        y += 24;
+        gfxIcon(9, y, ZAP_ICON);
         int whole = (scale_factor[sel_chan] + CAL8OR_PRECISION) / 100;
         int decimal = (scale_factor[sel_chan] + CAL8OR_PRECISION) % 100;
         gfxPrint(20 + pad(100, whole), y, whole);
@@ -282,7 +290,8 @@ private:
         gfxPrint(offset[sel_chan]);
 
         // mode indicator
-        gfxIcon(0, 30 + edit_mode*20, RIGHT_ICON);
+        if (!scale_edit)
+            gfxIcon(0, 30 + edit_mode*24, RIGHT_ICON);
     }
 };
 
