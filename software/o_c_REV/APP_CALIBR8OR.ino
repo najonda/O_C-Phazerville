@@ -18,6 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/*
+ * Based on a design spec from Chris Meyer / Alias Zone / Learning Modular
+ */
+
 #ifdef ENABLE_CALIBR8OR_X4
 
 #include "HSApplication.h"
