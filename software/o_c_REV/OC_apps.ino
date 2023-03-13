@@ -36,10 +36,12 @@
 }
 
 OC::App available_apps[] = {
+  #ifdef ENABLE_CALIBR8OR_X4
   DECLARE_APP('C','1', "Calibr8or A", Calibr8orA),
   DECLARE_APP('C','2', "Calibr8or B", Calibr8orB),
   DECLARE_APP('C','4', "Calibr8or C", Calibr8orC),
   DECLARE_APP('C','8', "Calibr8or D", Calibr8orD),
+  #endif
   DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
   #ifdef ENABLE_APP_QUANTERMAIN
   DECLARE_APP('Q','Q', "Quantermain", QQ),

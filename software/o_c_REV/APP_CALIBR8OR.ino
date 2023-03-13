@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifdef ENABLE_CALIBR8OR_X4
+
 #include "HSApplication.h"
 #include "HSMIDI.h"
 #include "util/util_settings.h"
@@ -59,6 +61,8 @@ enum CAL8SETTINGS {
 
     CAL8_SETTING_LAST
 };
+
+static const char * cal8_preset_id[4] = {"A", "B", "C", "D"};
 
 class Calibr8or : public HSApplication,
     public settings::SettingsBase<Calibr8or, CAL8_SETTING_LAST> {
@@ -133,7 +137,7 @@ public:
 
     void View() {
         gfxHeader("Calibr8or");
-        gfxPrint(120, 0, preset_id[index]);
+        gfxPrint(120, 0, cal8_preset_id[index]);
         DrawInterface();
     }
 
@@ -242,7 +246,6 @@ public:
 
 private:
     int index = 0;
-    const char * preset_id[4] = {"A", "B", "C", "D"};
 
 	int sel_chan = 0;
     int edit_mode = 0; // Cal8EditMode
@@ -280,16 +283,16 @@ private:
         // Transpose
         gfxIcon(9, y, BEND_ICON);
 
-        gfxIcon(20, y, (transpose[sel_chan] >= 0)? PLUS_ICON : MINUS_ICON);
+        // -- LCD Display Section --
+        gfxFrame(20, y-3, 64, 18);
+        gfxIcon(23, y+2, (transpose[sel_chan] >= 0)? PLUS_ICON : MINUS_ICON);
 
         int s = OC::Scales::GetScale(scale[sel_chan]).num_notes;
         int octave = transpose[sel_chan] / s;
         int semitone = transpose[sel_chan] % s;
-        //gfxPrint(abs(octave));
-        segment.PrintWhole(28, y-2, abs(octave), 10);
-        gfxPrint(48, y+3, ".");
-        //gfxPrint(abs(semitone));
-        segment.PrintWhole(56, y-2, abs(semitone), 10);
+        segment.PrintWhole(33, y, abs(octave), 10);
+        gfxPrint(53, y+5, ".");
+        segment.PrintWhole(61, y, abs(semitone), 10);
 
         // Scale
         gfxIcon(89, y, SCALE_ICON);
@@ -470,3 +473,4 @@ void Calibr8orB_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEnc
 void Calibr8orC_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(2, event); }
 void Calibr8orD_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(3, event); }
 
+#endif // ENABLE_CALIBR8OR_X4
