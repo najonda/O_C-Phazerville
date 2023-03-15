@@ -22,7 +22,7 @@
  * Based on a design spec from Chris Meyer / Alias Zone / Learning Modular
  */
 
-#ifdef ENABLE_CALIBR8OR_X4
+#if defined(ENABLE_APP_CALIBR8OR) || defined(ENABLE_CALIBR8OR_X4)
 
 #include "HSApplication.h"
 #include "HSMIDI.h"
@@ -65,8 +65,6 @@ enum CAL8SETTINGS {
 
     CAL8_SETTING_LAST
 };
-
-static const char * cal8_preset_id[4] = {"A", "B", "C", "D"};
 
 class Calibr8or : public HSApplication,
     public settings::SettingsBase<Calibr8or, CAL8_SETTING_LAST> {
@@ -141,7 +139,10 @@ public:
 
     void View() {
         gfxHeader("Calibr8or");
+#ifdef ENABLE_CALIBR8OR_X4
+        const char * cal8_preset_id[4] = {"A", "B", "C", "D"};
         gfxPrint(120, 0, cal8_preset_id[index]);
+#endif
         DrawInterface();
     }
 
@@ -360,6 +361,7 @@ SETTINGS_DECLARE(Calibr8or, CAL8_SETTING_LAST) {
 Calibr8or Calibr8or_instance[4];
 
 // App stubs
+void Calibr8or_init() { Calibr8or_instance[0].BaseStart(); }
 void Calibr8or_init(int index) {
     Calibr8or_instance[index].BaseStart();
     Calibr8or_instance[index].set_index(index);
@@ -369,35 +371,36 @@ void Calibr8orB_init() { Calibr8or_init(1); }
 void Calibr8orC_init() { Calibr8or_init(2); }
 void Calibr8orD_init() { Calibr8or_init(3); }
 
-//size_t Calibr8or_storageSize() { return Calibr8or::storageSize(); }
+size_t Calibr8or_storageSize() { return Calibr8or::storageSize(); }
 size_t Calibr8orA_storageSize() { return Calibr8or::storageSize(); }
 size_t Calibr8orB_storageSize() { return Calibr8or::storageSize(); }
 size_t Calibr8orC_storageSize() { return Calibr8or::storageSize(); }
 size_t Calibr8orD_storageSize() { return Calibr8or::storageSize(); }
 
-//size_t Calibr8or_save(void *storage) { return Calibr8or_instance.Save(storage); }
+size_t Calibr8or_save(void *storage) { return Calibr8or_instance[0].Save(storage); }
 size_t Calibr8orA_save(void *storage) { return Calibr8or_instance[0].Save(storage); }
 size_t Calibr8orB_save(void *storage) { return Calibr8or_instance[1].Save(storage); }
 size_t Calibr8orC_save(void *storage) { return Calibr8or_instance[2].Save(storage); }
 size_t Calibr8orD_save(void *storage) { return Calibr8or_instance[3].Save(storage); }
 
-size_t Calibr8or_restore(int index, const void *storage) {
+size_t Calibr8or_restore(const void *storage, int index) {
     size_t s = Calibr8or_instance[index].Restore(storage);
     Calibr8or_instance[index].Resume();
     return s;
 }
-size_t Calibr8orA_restore(const void *storage) { return Calibr8or_restore(0, storage); }
-size_t Calibr8orB_restore(const void *storage) { return Calibr8or_restore(1, storage); }
-size_t Calibr8orC_restore(const void *storage) { return Calibr8or_restore(2, storage); }
-size_t Calibr8orD_restore(const void *storage) { return Calibr8or_restore(3, storage); }
+size_t Calibr8or_restore(const void *storage) { return Calibr8or_restore(storage, 0); }
+size_t Calibr8orA_restore(const void *storage) { return Calibr8or_restore(storage, 0); }
+size_t Calibr8orB_restore(const void *storage) { return Calibr8or_restore(storage, 1); }
+size_t Calibr8orC_restore(const void *storage) { return Calibr8or_restore(storage, 2); }
+size_t Calibr8orD_restore(const void *storage) { return Calibr8or_restore(storage, 3); }
 
-//void Calibr8or_isr() { return Calibr8or_instance.BaseController(); }
+void Calibr8or_isr() { return Calibr8or_instance[0].BaseController(); }
 void Calibr8orA_isr() { return Calibr8or_instance[0].BaseController(); }
 void Calibr8orB_isr() { return Calibr8or_instance[1].BaseController(); }
 void Calibr8orC_isr() { return Calibr8or_instance[2].BaseController(); }
 void Calibr8orD_isr() { return Calibr8or_instance[3].BaseController(); }
 
-void Calibr8or_handleAppEvent(int index, OC::AppEvent event) {
+void Calibr8or_handleAppEvent(OC::AppEvent event, int index) {
     switch (event) {
     case OC::APP_EVENT_RESUME:
         Calibr8or_instance[index].Resume();
@@ -414,34 +417,37 @@ void Calibr8or_handleAppEvent(int index, OC::AppEvent event) {
     default: break;
     }
 }
-void Calibr8orA_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(0, event); }
-void Calibr8orB_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(1, event); }
-void Calibr8orC_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(2, event); }
-void Calibr8orD_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(3, event); }
+void Calibr8or_handleAppEvent(OC::AppEvent event) {
+    Calibr8or_handleAppEvent(event, 0);
+}
+void Calibr8orA_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(event, 0); }
+void Calibr8orB_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(event, 1); }
+void Calibr8orC_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(event, 2); }
+void Calibr8orD_handleAppEvent(OC::AppEvent event) { Calibr8or_handleAppEvent(event, 3); }
 
-//void Calibr8or_loop() {} // Deprecated
+void Calibr8or_loop() {} // Deprecated
 void Calibr8orA_loop() {} // Deprecated
 void Calibr8orB_loop() {} // Deprecated
 void Calibr8orC_loop() {} // Deprecated
 void Calibr8orD_loop() {} // Deprecated
 
-//void Calibr8or_menu() { Calibr8or_instance.BaseView(); }
+void Calibr8or_menu() { Calibr8or_instance[0].BaseView(); }
 void Calibr8orA_menu() { Calibr8or_instance[0].BaseView(); }
 void Calibr8orB_menu() { Calibr8or_instance[1].BaseView(); }
 void Calibr8orC_menu() { Calibr8or_instance[2].BaseView(); }
 void Calibr8orD_menu() { Calibr8or_instance[3].BaseView(); }
 
-void Calibr8orA_screensaver() {}
-void Calibr8orB_screensaver() {}
-void Calibr8orC_screensaver() {}
-void Calibr8orD_screensaver() {}
 void Calibr8or_screensaver() {
     // XXX: Consider a view like Quantermain
     // other ideas: Actual note being played, current transpose setting
     // ...for all 4 channels at once.
 }
+void Calibr8orA_screensaver() {}
+void Calibr8orB_screensaver() {}
+void Calibr8orC_screensaver() {}
+void Calibr8orD_screensaver() {}
 
-void Calibr8or_handleButtonEvent(int index, const UI::Event &event) {
+void Calibr8or_handleButtonEvent(const UI::Event &event, int index) {
     // For left encoder, handle press and long press
     if (event.control == OC::CONTROL_BUTTON_L) {
         if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance[index].OnLeftButtonLongPress();
@@ -460,21 +466,27 @@ void Calibr8or_handleButtonEvent(int index, const UI::Event &event) {
         if (event.type == UI::EVENT_BUTTON_LONG_PRESS) Calibr8or_instance[index].OnDownButtonLongPress();
     }
 }
-void Calibr8orA_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(0, event); }
-void Calibr8orB_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(1, event); }
-void Calibr8orC_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(2, event); }
-void Calibr8orD_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(3, event); }
+void Calibr8or_handleButtonEvent(const UI::Event &event) {
+    Calibr8or_handleButtonEvent(event, 0);
+}
+void Calibr8orA_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(event, 0); }
+void Calibr8orB_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(event, 1); }
+void Calibr8orC_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(event, 2); }
+void Calibr8orD_handleButtonEvent(const UI::Event &event) { Calibr8or_handleButtonEvent(event, 3); }
 
-void Calibr8or_handleEncoderEvent(int index, const UI::Event &event) {
+void Calibr8or_handleEncoderEvent(const UI::Event &event, int index) {
     // Left encoder turned
     if (event.control == OC::CONTROL_ENCODER_L) Calibr8or_instance[index].OnLeftEncoderMove(event.value);
 
     // Right encoder turned
     if (event.control == OC::CONTROL_ENCODER_R) Calibr8or_instance[index].OnRightEncoderMove(event.value);
 }
-void Calibr8orA_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(0, event); }
-void Calibr8orB_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(1, event); }
-void Calibr8orC_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(2, event); }
-void Calibr8orD_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(3, event); }
+void Calibr8or_handleEncoderEvent(const UI::Event &event) {
+    Calibr8or_handleEncoderEvent(event, 0);
+}
+void Calibr8orA_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(event, 0); }
+void Calibr8orB_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(event, 1); }
+void Calibr8orC_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(event, 2); }
+void Calibr8orD_handleEncoderEvent(const UI::Event &event) { Calibr8or_handleEncoderEvent(event, 3); }
 
-#endif // ENABLE_CALIBR8OR_X4
+#endif // ENABLE_APP_CALIBR8OR

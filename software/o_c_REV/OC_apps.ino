@@ -23,7 +23,9 @@
 #include "OC_apps.h"
 #include "OC_digital_inputs.h"
 #include "OC_autotune.h"
+#include "OC_patterns.h"
 #include "enigma/TuringMachine.h"
+#include "src/drivers/FreqMeasure/OC_FreqMeasure.h"
 
 #define DECLARE_APP(a, b, name, prefix) \
 { TWOCC<a,b>::value, name, \
@@ -41,7 +43,10 @@ OC::App available_apps[] = {
   DECLARE_APP('C','2', "Calibr8or B", Calibr8orB),
   DECLARE_APP('C','4', "Calibr8or C", Calibr8orC),
   DECLARE_APP('C','8', "Calibr8or D", Calibr8orD),
+  #elif defined(ENABLE_APP_CALIBR8OR)
+  DECLARE_APP('C','1', "Calibr8or", Calibr8or),
   #endif
+
   DECLARE_APP('H','S', "Hemisphere", HEMISPHERE),
   #ifdef ENABLE_APP_QUANTERMAIN
   DECLARE_APP('Q','Q', "Quantermain", QQ),
