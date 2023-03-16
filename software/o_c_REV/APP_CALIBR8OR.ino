@@ -31,6 +31,7 @@
 #include "braids_quantizer_scales.h"
 #include "OC_scales.h"
 #include "SegmentDisplay.h"
+#include "src/drivers/FreqMeasure/OC_FreqMeasure.h"
 
 #define CAL8_MAX_TRANSPOSE 60
 const int CAL8OR_PRECISION = 10000;
@@ -103,9 +104,14 @@ public:
             offset[ch] = 0;
             transpose[ch] = 0;
             clocked_mode[ch] = 0;
+            last_note[ch] = 0;
         }
 
         segment.Init(SegmentSize::BIG_SEGMENTS);
+
+        // make sure to turn this off, just in case?
+        FreqMeasure.end();
+        OC::DigitalInputs::reInit();
 	}
 	
 	void Resume() {
@@ -179,8 +185,8 @@ public:
             transpose[ch] = values_[ix++] - CAL8_MAX_TRANSPOSE;
 
             uint32_t root_and_mode = uint32_t(values_[ix++]);
-            clocked_mode[ch] = (root_and_mode >> 4) & 0x03;
-            root_note[ch] = (root_and_mode & 0x0f);
+            clocked_mode[ch] = ((root_and_mode >> 4) & 0x03) % NR_OF_CLOCKMODES;
+            root_note[ch] = constrain(int(root_and_mode & 0x0f), 0, 11);
         }
     }
 
