@@ -28,6 +28,8 @@ You can also customize the `platformio.ini` file to mix & match for yourself ;-)
 
 Plus lots of other small tweaks + experimental applets.
 
+TricksterSam: This version modifies Runglbook to be more useful in building a Benjolin. CV2 is automatically XOR against the next bit in the shift register. Out2 provides this XOR value.
+
 ### How To Get It
 
 Check the [Releases](https://github.com/djphazer/O_C-BenisphereSuite/releases) section for a .hex file (to be used with the Teensy loader app), or clone the repository and build it yourself! I think the beauty of this module is the fact that it's relatively easy to modify and build the source code to reprogram it. You are free to customize the firmware, similar to how you've no doubt already selected a custom set of physical modules.
