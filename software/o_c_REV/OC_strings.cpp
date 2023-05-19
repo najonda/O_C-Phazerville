@@ -6,12 +6,12 @@ namespace OC {
 
   const char * const VERSION =
 #include "OC_version.h"
-    " "
-#ifdef OC_BUILD_TAG
-    OC_BUILD_TAG
-#endif
 #ifdef OC_VERSION_EXTRA
     OC_VERSION_EXTRA
+#endif
+    "-"
+#ifdef OC_BUILD_TAG
+    OC_BUILD_TAG
 #endif
     ;
 #ifdef BUCHLA_cOC
