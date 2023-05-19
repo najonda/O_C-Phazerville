@@ -1,6 +1,6 @@
-// Copyright 2012 Émilie Gillet.
+// Copyright 2020 Patrick Dowling
 //
-// Author: Émilie Gillet (ol.gillet@gmail.com)
+// Author: Patrick Dowling (pld@gurkenkiste.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,47 +22,36 @@
 // 
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
-// -----------------------------------------------------------------------------
-//
-// Fast 16-bit pseudo random number generator.
+#ifndef UTIL_TEMPLATES_H_
+#define UTIL_TEMPLATES_H_
 
-#ifndef STMLIB_UTILS_RANDOM_H_
-#define STMLIB_UTILS_RANDOM_H_
+#include <type_traits>
 
-// #include "stmlib/stmlib.h"
-#include "util/util_macros.h"
-#include <stdint.h>
-#include "util/util_macros.h"
+namespace util {
 
-namespace stmlib {
-
-class Random {
- public:
-  static inline uint32_t state() { return rng_state_; }
-
-  static inline void Seed(uint32_t seed) {
-    rng_state_ = seed;
-  }
-
-  static inline uint32_t GetWord() {
-    rng_state_ = rng_state_ * 1664525L + 1013904223L;
-    return state();
-  }
-  
-  static inline int16_t GetSample() {
-    return static_cast<int16_t>(GetWord() >> 16);
-  }
-
-  static inline float GetFloat() {
-    return static_cast<float>(GetWord()) / 4294967296.0f;
-  }
-
- private:
-  static uint32_t rng_state_;
-
-  DISALLOW_COPY_AND_ASSIGN(Random);
+// C++11, >= 14 have their own
+template <size_t... Is>
+struct index_sequence {
+  template <size_t N> using append = index_sequence<Is..., N>;
 };
 
-}  // namespace stmlib
+template <size_t size>
+struct make_index_sequence {
+  using type = typename make_index_sequence<size - 1>::type::template append<size - 1>;
+};
 
-#endif  // STMLIB_UTILS_RANDOM_H_
+template <>
+struct make_index_sequence<0U> {
+  using type = index_sequence<>;
+};
+
+template<typename T, T ...>
+struct sum : std::integral_constant<T, 0> { };
+
+template<typename T, T S, T ... Ss>
+struct sum<T, S, Ss...> : std::integral_constant<T, S + sum<T, Ss...>::value > { };
+
+
+} // util
+
+#endif // UTIL_TEMPLATES_H_

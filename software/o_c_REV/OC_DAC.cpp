@@ -53,16 +53,15 @@ void DAC::Init(CalibrationData *calibration_data) {
   restore_scaling(0x0);
 
   // set up DAC pins 
-#ifdef VOR
   OC::pinMode(DAC_CS, OUTPUT);
+#ifdef VOR
   //OC::pinMode(DAC_RST,OUTPUT);
 
   // set Vbias, using onboard DAC:
   init_Vbias();
   delay(10);
 #else
-  pinMode(DAC_CS, OUTPUT);
-  pinMode(DAC_RST,OUTPUT);
+  OC::pinMode(DAC_RST,OUTPUT);
   
   #ifdef DAC8564 // A0 = 0, A1 = 0
     digitalWrite(DAC_RST, LOW); 
@@ -194,6 +193,7 @@ void DAC::restore_scaling(uint32_t scaling) {
     set_scaling(_scaling, i);
   }
 }
+/*static*/
 uint32_t DAC::store_scaling() {
 
   uint32_t _scaling = 0;

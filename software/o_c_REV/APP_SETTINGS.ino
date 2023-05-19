@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 #include "HSApplication.h"
+#include "OC_strings.h"
 
 // Bitmap representation of QR code for access to http://www.beigemaze.com/hs, which
 // redirects to Hemisphere Suite documentation.
@@ -71,9 +72,9 @@ public:
 
     void View() {
         gfxHeader("Setup / About");
-        gfxPrint(0, 15, OC_VERSION_TITLE);
-        gfxPrint(0, 25, OC_VERSION);
-        gfxPrint(0, 35, OC_VERSION_URL);
+        gfxPrint(0, 15, "Phazerville Suite");
+        gfxPrint(0, 25, OC::Strings::VERSION);
+        gfxPrint(0, 35, "github.com/djphazer");
         gfxPrint(0, 55, "[CALIBRATE]   [RESET]");
 
         //DrawQRAt(103, 15);

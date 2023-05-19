@@ -63,6 +63,7 @@ class Ui {
 public:
   static const size_t kEventQueueDepth = 16;
   static const uint32_t kLongPressTicks = 500;
+  static const uint32_t kXLongPressTicks = 4000;
 
   Ui() { }
 
@@ -124,16 +125,27 @@ public:
 
   void set_screensaver_timeout(uint32_t seconds);
 
+  uint32_t blanking_timeout() const {
+    return blanking_timeout_;
+  }
+
+  void set_blanking_timeout(uint32_t minutes);
+
+  bool blanking() const { return SCREENSAVER_BLANKING == screensaver_mode_; }
+
 private:
+
+  enum EScreensaverMode { SCREENSAVER_OFF, SCREENSAVER_ACTIVE, SCREENSAVER_BLANKING };
 
   uint32_t ticks_;
   uint32_t screensaver_timeout_;
+  uint32_t blanking_timeout_;
 
   UI::Button buttons_[CONTROL_BUTTON_LAST];
   uint32_t button_press_time_[CONTROL_BUTTON_LAST];
   uint16_t button_state_;
   uint16_t button_ignore_mask_;
-  bool screensaver_;
+  EScreensaverMode screensaver_mode_;
   bool preempt_screensaver_;
 
   /* Reverse the left and right encoders if Hemisphere Suite is installed on the left-hand
@@ -149,28 +161,31 @@ private:
 
   UI::EventQueue<kEventQueueDepth> event_queue_;
 
-  inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m) {
+  inline void PushEvent(UI::EventType t, uint16_t c, int16_t v, uint16_t m, uint32_t tk) {
 #ifdef OC_UI_DEBUG
     if (!event_queue_.writable())
       ++DEBUG::UI_queue_overflow;
     ++DEBUG::UI_event_count;
 #endif
-    event_queue_.PushEvent(t, c, v, m);
+    event_queue_.PushEvent(t, c, v, m, tk);
   }
 
   bool IgnoreEvent(const UI::Event &event) {
-    bool ignore = false;
     if (button_ignore_mask_ & event.control) {
       button_ignore_mask_ &= ~event.control;
-      ignore = true;
+      return true;
     }
-    if (screensaver_) {
-      screensaver_ = false;
+    auto screensaver_mode = screensaver_mode_;
+    if (screensaver_mode) {
+      if (OC::CONTROL_BUTTON_UP == event.control && SCREENSAVER_BLANKING != screensaver_mode)
+        screensaver_mode = SCREENSAVER_BLANKING;
+      else
+        screensaver_mode = SCREENSAVER_OFF;
+      screensaver_mode_ = screensaver_mode;
       SetButtonIgnoreMask(); // ignore whatever button is about to be released
-      ignore = true;
+      return true;
     }
-
-    return ignore;
+    return false;
   }
 
 };

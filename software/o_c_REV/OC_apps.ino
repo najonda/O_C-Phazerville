@@ -241,6 +241,11 @@ void restore_app_data() {
     }
     restored_bytes += chunk->length;
     data += chunk->length;
+    
+#ifdef VOR
+    VBiasManager *vbias_m = vbias_m->get();
+    vbias_m->SetStateForApp(apps::index_of(global_settings.current_app_id));
+#endif
   }
 
   SERIAL_PRINTLN("App data restored: %u, expected %u", restored_bytes, app_settings.used);
@@ -459,6 +464,10 @@ void Ui::AppSettings() {
   // Restore state
   apps::current_app->HandleAppEvent(APP_EVENT_RESUME);
   CORE::app_isr_enabled = true;
+#ifdef VOR
+  VBiasManager *vbias_m = vbias_m->get();
+  vbias_m->SetStateForApp(apps::index_of(global_settings.current_app_id));
+#endif
 }
 
 bool Ui::ConfirmReset() {

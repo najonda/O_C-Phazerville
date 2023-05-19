@@ -60,8 +60,9 @@ const OC::CalibrationData kCalibrationDefaults = {
   // display_offset
   SH1106_128x64_Driver::kDefaultOffset,
   OC_CALIBRATION_DEFAULT_FLAGS,
-  SCREENSAVER_TIMEOUT_S, 
-  { 0, 0, 0 }, // reserved0
+  SCREENSAVER_TIMEOUT_S,
+  BLANKING_TIMEOUT_M,
+  { 0, 0 }, // reserved0
   #ifdef VOR
   DAC::VBiasBipolar | (DAC::VBiasAsymmetric << 16) // default v_bias values
   #else
@@ -160,6 +161,7 @@ enum CALIBRATION_STEP {
   CV_OFFSET_0, CV_OFFSET_1, CV_OFFSET_2, CV_OFFSET_3,
   ADC_PITCH_C2, ADC_PITCH_C4,
   CALIBRATION_SCREENSAVER_TIMEOUT,
+  CALIBRATION_BLANKING_TIMEOUT,
   CALIBRATION_EXIT,
   CALIBRATION_STEP_LAST,
   CALIBRATION_STEP_FINAL = ADC_PITCH_C4
@@ -177,6 +179,7 @@ enum CALIBRATION_TYPE {
   CALIBRATE_ADC_3V,
   CALIBRATE_DISPLAY,
   CALIBRATE_SCREENSAVER,
+  CALIBRATE_BLANKING,
 };
 
 struct CalibrationStep {
@@ -210,7 +213,7 @@ struct CalibrationState {
 
   uint16_t adc_1v;
   uint16_t adc_3v;
-
+  
   bool used_defaults;
 };
 
@@ -427,8 +430,8 @@ const CalibrationStep calibration_steps[CALIBRATION_STEP_LAST] = {
     { ADC_PITCH_C4, "CV Scaling 3V", "CV1: Input 3V (C4)", "[R] Long press to set", default_footer, CALIBRATE_ADC_3V, 0, nullptr, 0, 0 },
   #endif
   
-  // Changing screensaver to screen blank, and seconds to minutes
-  { CALIBRATION_SCREENSAVER_TIMEOUT, "Screen Blank", "(minutes)", default_help_r, default_footer, CALIBRATE_SCREENSAVER, 0, nullptr, (OC::Ui::kLongPressTicks * 2 + 500) / 1000, SCREENSAVER_TIMEOUT_MAX_S },
+  { CALIBRATION_SCREENSAVER_TIMEOUT, "Screensaver", "Timeout (s)", default_help_r, default_footer, CALIBRATE_SCREENSAVER, 0, nullptr, (OC::Ui::kLongPressTicks * 2 + 500) / 1000, SCREENSAVER_TIMEOUT_MAX_S },
+  { CALIBRATION_BLANKING_TIMEOUT, "Blanking", "Timeout (m)", default_help_r, default_footer, CALIBRATE_BLANKING, 0, nullptr, 0, BLANKING_TIMEOUT_MAX_M },
 
   { CALIBRATION_EXIT, "Calibration complete", "Save values? ", select_help, end_footer, CALIBRATE_NONE, 0, OC::Strings::no_yes, 0, 1 }
 };
@@ -561,7 +564,7 @@ void OC::Ui::Calibrate() {
       case CALIBRATE_DISPLAY:
         calibration_state.encoder_value = OC::calibration_data.display_offset;
         break;
-
+        
       case CALIBRATE_ADC_1V:
       case CALIBRATE_ADC_3V:
         SERIAL_PRINTLN("offset=%d", OC::calibration_data.adc.offset[ADC_CHANNEL_1]);
@@ -570,6 +573,11 @@ void OC::Ui::Calibrate() {
       case CALIBRATE_SCREENSAVER:
         calibration_state.encoder_value = OC::calibration_data.screensaver_timeout;
         SERIAL_PRINTLN("timeout=%d", calibration_state.encoder_value);
+        break;
+
+      case CALIBRATE_BLANKING:
+        calibration_state.encoder_value = OC::calibration_data.blanking_timeout;
+        SERIAL_PRINTLN("blanking=%d", calibration_state.encoder_value);
         break;
 
       case CALIBRATE_NONE:
@@ -621,6 +629,7 @@ void calibration_draw(const CalibrationState &state) {
   switch (step->calibration_type) {
     case CALIBRATE_OCTAVE:
     case CALIBRATE_SCREENSAVER:
+    case CALIBRATE_BLANKING:
     #ifdef VOR
     case CALIBRATE_VBIAS_BIPOLAR:
     case CALIBRATE_VBIAS_ASYMMETRIC:
@@ -766,6 +775,9 @@ void calibration_update(CalibrationState &state) {
       DAC::set_all_octave(0);
       OC::calibration_data.screensaver_timeout = state.encoder_value;
       break;
+    case CALIBRATE_BLANKING:
+      DAC::set_all_octave(0);
+      OC::calibration_data.blanking_timeout = state.encoder_value;
   }
 }
 

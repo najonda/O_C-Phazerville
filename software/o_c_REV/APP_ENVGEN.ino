@@ -132,8 +132,8 @@ inline int TriggerSettingToChannel(int setting_value) {
 }
 
 /* redefined as a macro because of compiler complaints -NJM
-inline IntTriggerType TriggerSettingToType(int setting_value, int channel) __attribute__((always_inline));
-inline IntTriggerType TriggerSettingToType(int setting_value, int channel) {
+static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) __attribute__((always_inline));
+static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) {
   return static_cast<IntTriggerType>((setting_value - OC::DIGITAL_INPUT_LAST) - channel * INT_TRIGGER_LAST);
 }
 */

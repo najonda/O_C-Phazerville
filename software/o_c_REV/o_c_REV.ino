@@ -36,8 +36,8 @@
 #include "OC_menus.h"
 #include "OC_strings.h"
 #include "OC_ui.h"
-#include "OC_version.h"
 #include "OC_options.h"
+#include "OC_strings.h"
 #include "src/drivers/display.h"
 #include "src/drivers/ADC/OC_util_ADC.h"
 #include "util/util_debugpins.h"
@@ -75,26 +75,19 @@ void FASTRUN CORE_timer_ISR() {
   OC::DAC::Update();
   display::Update();
 
-  // The ADC scan uses async startSingleRead/readSingle and single channel each
-  // loop, so should be fast enough even at 60us (check ADC::busy_waits() == 0)
-  // to verify. Effectively, the scan rate is ISR / 4 / ADC::kAdcSmoothing
-  // 100us: 10kHz / 4 / 4 ~ .6kHz
-  // 60us: 16.666K / 4 / 4 ~ 1kHz
-  // kAdcSmoothing == 4 has some (maybe 1-2LSB) jitter but seems "Good Enough".
-  OC::ADC::Scan();
+  // see OC_ADC.h for details; empirically (with current parameters), Scan_DMA() picks up new samples @ 5.55kHz
+  OC::ADC::Scan_DMA();
 
   // Pin changes are tracked in separate ISRs, so depending on prio it might
   // need extra precautions.
   OC::DigitalInputs::Scan();
 
-#ifndef OC_UI_SEPARATE_ISR
-  TODO needs a counter
-  UI_timer_ISR();
-#endif
-
-  ++OC::CORE::ticks;
-  if (OC::CORE::app_isr_enabled)
-    OC::apps::ISR();
+  {
+    DEBUG_PIN_SCOPE(OC_GPIO_DEBUG_PIN1);
+    ++OC::CORE::ticks;
+    if (OC::CORE::app_isr_enabled)
+      OC::apps::ISR();
+  }
 
   OC_DEBUG_RESET_CYCLES(OC::CORE::ticks, 16384, OC::DEBUG::ISR_cycles);
 }
@@ -105,13 +98,14 @@ void setup() {
   delay(50);
   NVIC_SET_PRIORITY(IRQ_PORTB, 0); // TR1 = 0 = PTB16
   SPI_init();
-  SERIAL_PRINTLN("* O&C BOOTING...");
-  SERIAL_PRINTLN("* %s", OC_VERSION);
+  SERIAL_PRINTLN("* %s BOOTING...", OC::Strings::SHORT_NAME);
+  SERIAL_PRINTLN("* %s", OC::Strings::VERSION);
 
   OC::DEBUG::Init();
   OC::DigitalInputs::Init();
   delay(400); 
   OC::ADC::Init(&OC::calibration_data.adc); // Yes, it's using the calibration_data before it's loaded...
+  OC::ADC::Init_DMA();
   OC::DAC::Init(&OC::calibration_data.dac);
 
   display::Init();
@@ -131,11 +125,9 @@ void setup() {
   CORE_timer.begin(CORE_timer_ISR, OC_CORE_TIMER_RATE);
   CORE_timer.priority(OC_CORE_TIMER_PRIO);
 
-#ifdef OC_UI_SEPARATE_ISR
   SERIAL_PRINTLN("* UI ISR @%luus", OC_UI_TIMER_RATE);
   UI_timer.begin(UI_timer_ISR, OC_UI_TIMER_RATE);
   UI_timer.priority(OC_UI_TIMER_PRIO);
-#endif
 
   // Display splash screen and optional calibration
   bool reset_settings = false;
@@ -146,6 +138,7 @@ void setup() {
     ui_mode = OC::UI_MODE_MENU;
   }
   OC::ui.set_screensaver_timeout(OC::calibration_data.screensaver_timeout);
+  OC::ui.set_blanking_timeout(OC::calibration_data.blanking_timeout);
 
   // initialize apps
   OC::apps::Init(reset_settings);
@@ -161,7 +154,9 @@ void setup() {
 void FASTRUN loop() {
 
   OC::CORE::app_isr_enabled = true;
+
   uint32_t menu_redraws = 0;
+
   while (true) {
 
     // don't change current_app while it's running
@@ -179,14 +174,15 @@ void FASTRUN loop() {
           OC::apps::current_app->DrawMenu();
           ++menu_redraws;
 
-          #ifdef VOR
+#ifdef VOR
           // JEJ:On app screens, show the bias popup, if necessary
           VBiasManager *vbias_m = vbias_m->get();
           vbias_m->DrawPopupPerhaps();
-          #endif
+#endif
 
         } else {
-          OC::apps::current_app->DrawScreensaver();
+          if (!OC::ui.blanking())
+            OC::apps::current_app->DrawScreensaver();
         }
         MENU_REDRAW = 0;
         LAST_REDRAW_TIME = millis();
@@ -201,10 +197,11 @@ void FASTRUN loop() {
 
     // State transition for app
     if (mode != ui_mode) {
-      if (OC::UI_MODE_SCREENSAVER == mode)
+      if (OC::UI_MODE_SCREENSAVER == mode) {
         OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_ON);
-      else if (OC::UI_MODE_SCREENSAVER == ui_mode)
+      } else if (OC::UI_MODE_SCREENSAVER == ui_mode) {
         OC::apps::current_app->HandleAppEvent(OC::APP_EVENT_SCREENSAVER_OFF);
+      }
       ui_mode = mode;
     }
 

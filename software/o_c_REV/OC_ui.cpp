@@ -9,7 +9,6 @@
 #include "OC_gpio.h"
 #include "OC_menus.h"
 #include "OC_ui.h"
-#include "OC_version.h"
 #include "OC_options.h"
 #include "src/drivers/display.h"
 
@@ -27,6 +26,7 @@ Ui ui;
 void Ui::Init() {
   ticks_ = 0;
   set_screensaver_timeout(SCREENSAVER_TIMEOUT_S);
+  set_blanking_timeout(BLANKING_TIMEOUT_M);
 
 #if defined(VOR) && !defined(VOR_NO_RANGE_BUTTON)
   static const int button_pins[] = { but_top, but_bot, butL, butR, but_mid };
@@ -40,7 +40,7 @@ void Ui::Init() {
   std::fill(button_press_time_, button_press_time_ + 4, 0);
   button_state_ = 0;
   button_ignore_mask_ = 0;
-  screensaver_ = false;
+  screensaver_mode_ = SCREENSAVER_OFF;
   preempt_screensaver_ = false;
 
   encoder_right_.Init(OC_GPIO_ENC_PINMODE);
@@ -66,6 +66,10 @@ void Ui::set_screensaver_timeout(uint32_t seconds) {
   event_queue_.Poke();
 }
 
+void Ui::set_blanking_timeout(uint32_t minutes) {
+  blanking_timeout_ = minutes * 60U * 1000U;
+}
+
 void FASTRUN Ui::_Poke() {
   event_queue_.Poke();
 }
@@ -86,16 +90,17 @@ void FASTRUN Ui::Poll() {
 
   for (size_t i = 0; i < CONTROL_BUTTON_LAST; ++i) {
     auto &button = buttons_[i];
+    auto t = now - button_press_time_[i];
     if (button.just_pressed()) {
       button_press_time_[i] = now;
-      PushEvent(UI::EVENT_BUTTON_DOWN, control_mask(i), 0, button_state);
+      PushEvent(UI::EVENT_BUTTON_DOWN, control_mask(i), 0, button_state, 0);
     } else if (button.released()) {
-      if (now - button_press_time_[i] < kLongPressTicks)
-        PushEvent(UI::EVENT_BUTTON_PRESS, control_mask(i), 0, button_state);
+      if (t < kLongPressTicks)
+        PushEvent(UI::EVENT_BUTTON_PRESS, control_mask(i), 0, button_state, t);
       button_press_time_[i] = 0;
-    } else if (button.pressed() && (now - button_press_time_[i] == kLongPressTicks)) {
+    } else if (button.pressed() && (t == kLongPressTicks)) {
       button_state &= ~control_mask(i);
-      PushEvent(UI::EVENT_BUTTON_LONG_PRESS, control_mask(i), 0, button_state);
+      PushEvent(UI::EVENT_BUTTON_LONG_PRESS, control_mask(i), 0, button_state, t);
     }
   }
 
@@ -105,11 +110,11 @@ void FASTRUN Ui::Poll() {
   int32_t increment;
   increment = encoder_right_.Read();
   if (increment)
-    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_R, increment, button_state);
+    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_R, increment, button_state, 0);
 
   increment = encoder_left_.Read();
   if (increment)
-    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_L, increment, button_state);
+    PushEvent(UI::EVENT_ENCODER, CONTROL_ENCODER_L, increment, button_state, 0);
 
   button_state_ = button_state;
 }
@@ -145,12 +150,17 @@ UiMode Ui::DispatchEvents(App *app) {
         break;
       case UI::EVENT_BUTTON_LONG_PRESS:
         if (OC::CONTROL_BUTTON_UP == event.control) {
-#ifdef VOR_NO_RANGE_BUTTON
+        #ifdef VOR_NO_RANGE_BUTTON
             VBiasManager *vbias_m = vbias_m->get();
             vbias_m->AdvanceBias();
-#else
-            if (!preempt_screensaver_) screensaver_ = true;
-#endif
+        #else
+            if (!preempt_screensaver_) {
+              SetButtonIgnoreMask();
+              screensaver_mode_ = event.ticks > kXLongPressTicks
+                ? SCREENSAVER_BLANKING
+                : SCREENSAVER_ACTIVE;
+            }
+        #endif
         }
         else if (OC::CONTROL_BUTTON_R == event.control)
           return UI_MODE_APP_SETTINGS;
@@ -166,11 +176,23 @@ UiMode Ui::DispatchEvents(App *app) {
     MENU_REDRAW = 1;
   }
 
-  // Turning screensaver seconds into screen-blanking minutes with the * 60 (chysn 9/2/2018)
-  if (idle_time() > (screensaver_timeout() * 60))
-    screensaver_ = true;
+  auto screensaver_mode = screensaver_mode_;
+  switch (screensaver_mode) {
+    case SCREENSAVER_OFF:
+    case SCREENSAVER_ACTIVE: {
+      if (idle_time() > screensaver_timeout())
+        screensaver_mode = SCREENSAVER_ACTIVE;
+      if (blanking_timeout() && idle_time() > blanking_timeout()) 
+        screensaver_mode = SCREENSAVER_BLANKING;
+    } break;
+    case SCREENSAVER_BLANKING: break;
+  }
+  if (screensaver_mode != screensaver_mode_) {
+      SetButtonIgnoreMask();
+      screensaver_mode_ = screensaver_mode;
+  }
 
-  if (screensaver_)
+  if (screensaver_mode_)
     return UI_MODE_SCREENSAVER;
   else
     return UI_MODE_MENU;
@@ -202,6 +224,39 @@ UiMode Ui::Splashscreen(bool &reset_settings) {
     // This graphics frame is necessary for the keys to be read. I don't know why this is the case,
     // since the keys are read above, but I don't have time to figure that out right now. --jj
     GRAPHICS_BEGIN_FRAME(true);
+
+    /* Splash Screen 
+    menu::DefaultTitleBar::Draw();
+    graphics.print(Strings::NAME);
+    weegfx::coord_t y = menu::CalcLineY(0);
+
+    graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
+    graphics.print("[L] => Calibration");
+    if (UI_MODE_CALIBRATE == mode)
+      graphics.invertRect(menu::kIndentDx, y, 128, menu::kMenuLineH);
+
+    y += menu::kMenuLineH;
+    graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
+    graphics.print("[R] => Select app");
+    if (UI_MODE_APP_SETTINGS == mode)
+      graphics.invertRect(menu::kIndentDx, y, 128, menu::kMenuLineH);
+
+    y += menu::kMenuLineH;
+    graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
+    if (reset_settings)
+      graphics.print("!! RESET EEPROM !!");
+
+    y += menu::kMenuLineH;
+    graphics.setPrintPos(menu::kIndentDx, y + menu::kTextDy);
+    graphics.print(Strings::VERSION);
+
+    weegfx::coord_t w;
+    if (now - start < SPLASHSCREEN_DELAY_MS)
+      w = 128;
+    else
+      w = ((start + SPLASHSCREEN_DELAY_MS + SPLASHSCREEN_TIMEOUT_MS - now) << 7) / SPLASHSCREEN_TIMEOUT_MS;
+    graphics.drawRect(0, 62, w, 2);
+    */
 
     /* fixes spurious button presses when booting ? */
     while (event_queue_.available())

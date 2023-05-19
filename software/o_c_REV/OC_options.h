@@ -23,6 +23,8 @@
 //#define INVERT_DISPLAY
 /* ------------ use DAC8564 -------------------------------------------------------------------------  */
 //#define DAC8564
+/* ------------ 0 / 10V range ---------------------------------------------------------------  */
+//#define IO_10V
 
 
 // Phazerville Suite includes basic support for the 10V OC Plus and VOR
@@ -33,10 +35,6 @@
 /* ------------ uncomment for use with Plum Audio 1uO_c 4Robots (To use Up button long press to change VOR instead activate screensaver) ----------------  */
 //#define VOR_NO_RANGE_BUTTON
 
-// idk what this means so I'm keeping it -NJM
-#if defined(VOR)
-  #define IO_10V
-#endif
 
 /* Flags for the full-width apps, these enable/disable them in OC_apps.ino but also zero out the app   */
 /* files to prevent them from taking up space.                                                         */
@@ -56,5 +54,14 @@
 // #define ENABLE_APP_SEQUINS
 
 
+/* do not edit the stuff below (unless ... ) */
+
+#if defined(IO_10V)
+  #define BUCHLA_4U
 #endif
 
+#if defined(VOR)
+  #define IO_10V
+#endif
+
+#endif

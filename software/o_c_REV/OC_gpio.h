@@ -74,7 +74,6 @@
 #define OC_GPIO_TRx_PINMODE INPUT_PULLUP
 #define OC_GPIO_ENC_PINMODE INPUT_PULLUP
 
-#ifdef VOR
 /* local copy of pinMode (cf. cores/pins_teensy.c), using faster slew rate */
 
 namespace OC { 
@@ -117,6 +116,5 @@ void inline pinMode(uint8_t pin, uint8_t mode) {
     }
   }
 }
-#endif // VOR
 
 #endif // OC_GPIO_H_
