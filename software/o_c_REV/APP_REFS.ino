@@ -23,6 +23,8 @@
 //
 // Very simple "reference" voltage app (not so simple any more...)
 
+#ifdef ENABLE_APP_REFERENCES
+
 #include "OC_apps.h"
 #include "OC_menus.h"
 #include "OC_strings.h"
@@ -1000,3 +1002,5 @@ void REFS_handleEncoderEvent(const UI::Event &event) {
     }
   }
 }
+
+#endif // ENABLE_APP_REFERENCES
