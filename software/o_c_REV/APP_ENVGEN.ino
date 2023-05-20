@@ -131,13 +131,10 @@ inline int TriggerSettingToChannel(int setting_value) {
   return (setting_value - OC::DIGITAL_INPUT_LAST) / INT_TRIGGER_LAST;
 }
 
-/* redefined as a macro because of compiler complaints -NJM
 static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) __attribute__((always_inline));
 static inline IntTriggerType TriggerSettingToType(int setting_value, int channel) {
   return static_cast<IntTriggerType>((setting_value - OC::DIGITAL_INPUT_LAST) - channel * INT_TRIGGER_LAST);
 }
-*/
-#define TriggerSettingToType(setting_value, channel) static_cast<IntTriggerType>((setting_value - OC::DIGITAL_INPUT_LAST) - channel * INT_TRIGGER_LAST)
 
 namespace menu = OC::menu;
 

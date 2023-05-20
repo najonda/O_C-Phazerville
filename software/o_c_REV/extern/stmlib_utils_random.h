@@ -30,7 +30,6 @@
 #define STMLIB_UTILS_RANDOM_H_
 
 // #include "stmlib/stmlib.h"
-#include "util/util_macros.h"
 #include <stdint.h>
 #include "util/util_macros.h"
 
