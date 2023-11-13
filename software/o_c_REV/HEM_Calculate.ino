@@ -38,7 +38,7 @@ public:
         selected = 0;
         ForEachChannel(ch)
         {
-            operation[ch] = ch;
+            operation[ch] = 5; // Initialize to S&H
             rand_clocked[ch] = 0;
         }
     }

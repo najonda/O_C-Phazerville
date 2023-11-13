@@ -52,6 +52,7 @@
     DECLARE_APPLET( 71, 0x02, Pigeons), \
     DECLARE_APPLET( 59, 0x04, ProbabilityDivider), \
     DECLARE_APPLET( 62, 0x04, ProbabilityMelody), \
+    DECLARE_APPLET( 66, 0x01, Relabi), \
     DECLARE_APPLET( 70, 0x14, ResetClock), \
     DECLARE_APPLET( 69, 0x01, RndWalk), \
     DECLARE_APPLET( 44, 0x01, RunglBook), \
