@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+
+
 class RunglBook : public HemisphereApplet {
 public:
 
@@ -30,22 +32,29 @@ public:
     }
 
     void Controller() {
+        byte xorbit = 1;
+        
         if (Clock(0)) {
             if (Gate(1)) {
                 // Digital 2 freezes the buffer, so just rotate left
                 reg = (reg << 1) | ((reg >> 7) & 0x01);
             } else {
-                byte b0 = In(0) > threshold ? 0x01 : 0x00;
-                reg = (reg << 1) | b0;
+                byte second_msb = (reg << 1) & 0x01;
+                byte gatebit = (In(0) > threshold);
+                xorbit = second_msb ^ gatebit; 
+                reg = (reg << 1) | xorbit;
             }
 
             int rungle = Proportion(reg & 0x07, 0x07, HEMISPHERE_MAX_CV);
-            int rungle_tap = Proportion((reg >> 5) & 0x07, 0x07, HEMISPHERE_MAX_CV);
+            int xor_out = xorbit ? 8000 : 0;
 
             Out(0, rungle);
-            Out(1, rungle_tap);
+            Out(1, xor_out);
+
+            
         }
     }
+    
 
     void View() {
         gfxPrint(1, 15, "Thr:");
@@ -74,7 +83,7 @@ protected:
         //                               "------------------" <-- Size Guide
         help[HEMISPHERE_HELP_DIGITALS] = "1=Clock 2=Freeze";
         help[HEMISPHERE_HELP_CVS]      = "1=Signal";
-        help[HEMISPHERE_HELP_OUTS]     = "A=Rungle B=Alt";
+        help[HEMISPHERE_HELP_OUTS]     = "A=Rungle B=XOR";
         help[HEMISPHERE_HELP_ENCODER]  = "Threshold";
         //                               "------------------" <-- Size Guide
     }
@@ -85,14 +94,6 @@ private:
 };
 
 
-////////////////////////////////////////////////////////////////////////////////
-//// Hemisphere Applet Functions
-///
-///  Once you run the find-and-replace to make these refer to RunglBook,
-///  it's usually not necessary to do anything with these functions. You
-///  should prefer to handle things in the HemisphereApplet child class
-///  above.
-////////////////////////////////////////////////////////////////////////////////
 RunglBook RunglBook_instance[2];
 
 void RunglBook_Start(bool hemisphere) {RunglBook_instance[hemisphere].BaseStart(hemisphere);}
