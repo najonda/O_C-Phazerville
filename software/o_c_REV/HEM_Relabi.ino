@@ -24,6 +24,15 @@
 class Relabi : public HemisphereApplet {
 public:
 
+    enum RelabiCursor {
+        CHANNEL,
+        FREQUENCY,
+        CROSSMOD,
+        PHASE,
+
+        LAST_SETTING = PHASE
+    };
+
     const char* applet_name() {
         return "Relabi";
     }
@@ -93,7 +102,6 @@ public:
 
     void View() {     
         // gfxPrint(sample[0]);
-        gfxHeader(applet_name());
 
         // Display OSC label and value
         gfxPrint(15, 15, "OSC");
@@ -141,7 +149,7 @@ public:
 
 
 
-        switch (selectedParam) {
+        switch (cursor) {
         case 0:
             gfxCursor(15, 23, 30);
             break;
@@ -161,14 +169,16 @@ public:
     }
 
     void OnButtonPress() {
-        ++cursor;
-        cursor = cursor % 4;
-        selectedParam = cursor;
-        ResetCursor();
+        CursorAction(cursor, LAST_SETTING);
     }
 
     void OnEncoderMove(int direction) {
-        switch (selectedParam) {
+        if (!EditMode()) {
+            MoveCursor(cursor, direction, LAST_SETTING);
+            return;
+        }
+
+        switch (cursor) {
         case 0: // Cycle through parameters when selecting OSC
             selectedChannel = selectedChannel + direction + 4;
             selectedChannel = selectedChannel % 4;
@@ -250,7 +260,6 @@ private:
     uint8_t selectedXmod;
     uint16_t phase[ch];
     int selectedChannel = 0;
-    uint8_t selectedParam = 0;
     int sample[ch];
     simfloat outFreq[ch];
     simfloat freqKnob[4];
