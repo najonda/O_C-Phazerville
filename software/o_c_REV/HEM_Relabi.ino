@@ -127,26 +127,18 @@ public:
         
         }  
 
-        
-        
 
-        
         // Display MOD label and value
         gfxPrint(31, 26, "XMOD");
         gfxPrint(31, 35, xmod[selectedChannel]);
-        
+
         // Display PHAS label and value
-        gfxPrint(1, 46, "PHAS");
-        gfxPrint(1, 55, phase[selectedChannel]);
-        
+        gfxPrint(1, 47, "PHAS");
+        gfxPrint(31, 47, phase[selectedChannel]);
 
 
-
-        if (clkDiv == 0) {
-                gfxRect(1, 63, sample[0] / 400, 1);
-                gfxRect(31, 63, sample[2] / 400, 1);
-            }
-
+        gfxRect(1, 63, sample[0] / 400, 1);
+        gfxRect(31, 63, sample[2] / 400, 1);
 
 
         switch (cursor) {
@@ -160,7 +152,7 @@ public:
             gfxCursor(31, 43, 30);
             break;
         case 3:
-            gfxCursor(1, 63, 30);
+            gfxCursor(31, 55, 30);
             break;
         case 4:
             gfxCursor(31, 63, 30);
