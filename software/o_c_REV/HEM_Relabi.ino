@@ -64,25 +64,16 @@ public:
 
     void Controller() {
         simfloat cvIn = (10*In(0)/4096 + 1);
-        if (oldClock != Clock(0)) {
-            if (oldClock = 1) {
-                for (uint8_t pcount = 0; pcount < 4; pcount++) {
-                    if (Clock(0) > 0) {
-                        int setPhase = round(phase[pcount] / 100 * 12);
-                        osc[pcount].SetPhase(setPhase);
-                    }
-                }
+
+        // Reset
+        if (Clock(0)) {
+            for (uint8_t pcount = 0; pcount < 4; pcount++) {
+                int setPhase = round(phase[pcount] / 100 * 12);
+                osc[pcount].SetPhase(setPhase);
             }
         }
-        oldClock = Clock(0);
-        /*if (Clock(0) > 0) {
-            for (uint8_t pcount = 0; pcount < 4; pcount++) {
-                if (Clock(0) > 0) {
-                    int setPhase = round(phase[pcount] / 100 * 12);
-                    osc[pcount].SetPhase(setPhase);
-                }
-            }
-        }*/
+
+        // only compute and output every N cycles...
         if (clkDiv == 0) {
             for (uint8_t count = 0; count < 4; count++) {
                 simfloat setFreq = (freq[count] * cvIn * xmod[count] / 100 * (sample[(count + 3) % 4]) / 400 + 0.5) + (freq[count] * cvIn);
@@ -90,14 +81,15 @@ public:
                 sample[count] = 4608 + (osc[count].Next()/ 2);
             }
         
-        int wave1 = sample[0];
-        int wave2 = sample[2];
-        int relabiWave = (sample[0] + sample[1] + sample[2] + sample[3]) / 4;
-        Out(0, wave1);
-        Out(1, wave2);
+            int wave1 = sample[0];
+            int wave2 = sample[2];
+            // int relabiWave = (sample[0] + sample[1] + sample[2] + sample[3]) / 4;
+
+            Out(0, wave1);
+            Out(1, wave2);
         }
         clkDiv++;
-        clkDiv = clkDiv % 4;
+        clkDiv = clkDiv % 4; // <-- N = 4
     }
 
     void View() {     
@@ -262,7 +254,6 @@ private:
     int hundredths(int n) {return (n % 100);}
     int valueToDisplay;
     uint16_t clkDiv = 0; // clkDiv allows us to calculate every other tick to save cycles
-    uint8_t oldClock = 0;
 };
 
 
