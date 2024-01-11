@@ -83,7 +83,6 @@ public:
         ForEachChannel(ch) {
           div_seq[ch].Reset();
         }
-        reset_animation = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
     }
     void TrigOut(int ch) {
         ClockOut(ch);
@@ -119,9 +118,6 @@ public:
           if (pulse_animation[ch] > 0) {
               pulse_animation[ch]--;
           }
-        }
-        if (reset_animation > 0) {
-            reset_animation--;
         }
     }
 
@@ -185,7 +181,6 @@ private:
     int cursor; // PolyDivCursor 
 
     int pulse_animation[2] = {0,0};
-    int reset_animation = 0;
 
     ProbLoopLinker *loop_linker = loop_linker->get();
 

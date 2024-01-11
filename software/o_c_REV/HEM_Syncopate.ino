@@ -36,6 +36,9 @@ public:
       uint8_t steps;
       uint8_t clock_count;
 
+      void Set(int s) {
+        steps = constrain(s, 0, MAX_DIV);
+      }
       bool Poke() {
         if (steps == 0) return false;
         if (++clock_count > steps) {
@@ -62,7 +65,6 @@ public:
         for (int ch = 0; ch < 4; ++ch) {
           divider[ch].Reset();
         }
-        reset_animation = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
     }
     void TrigOut(int ch) {
         ClockOut(ch);
@@ -114,14 +116,10 @@ public:
               pulse_animation[ch]--;
           }
         }
-        if (reset_animation > 0) {
-            reset_animation--;
-        }
     }
 
     void View() {
         DrawInterface();
-        if (reset_animation) gfxInvert(0,0,63,63); // lol
     }
 
     void OnButtonPress() {
@@ -138,8 +136,7 @@ public:
         }
 
         if (cursor <= DIV4) {
-            const int div = divider[cursor].steps + direction;
-            divider[cursor].steps = constrain(div, 0, MAX_DIV);
+            divider[cursor].Set(divider[cursor].steps + direction);
         } else
             ToggleDiv(cursor - TOGGLE_A1);
     }
@@ -147,13 +144,20 @@ public:
     uint64_t OnDataRequest() {
         uint64_t data = 0;
         const size_t b = 6; // bitsize
-        // TODO
+
+        Pack(data, PackLocation {0, 8}, div_enabled);
+        ForAllChannels(i) {
+            Pack(data, PackLocation{8 + i*b, b}, divider[i].steps);
+        }
         return data;
     }
 
     void OnDataReceive(uint64_t data) {
         const size_t b = 6; // bitsize
-        // TODO
+        div_enabled = Unpack(data, PackLocation {0, 8});
+        ForAllChannels(i) {
+            divider[i].Set( Unpack(data, PackLocation{8 + i*b, b}) );
+        }
         Reset();
     }
 
@@ -171,7 +175,6 @@ private:
     int cursor; // SyncopateCursor 
 
     int pulse_animation[4] = {0,0,0,0};
-    int reset_animation = 0;
     uint8_t div_enabled; // bitmask for enabling dividers per output
                          // bits 0-3 for A, bits 4-7 for B
 
