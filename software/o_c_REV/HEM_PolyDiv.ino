@@ -32,7 +32,9 @@ public:
     enum PolyDivCursor {
         STEP1A, STEP2A, STEP3A, STEP4A, STEP5A,
         STEP1B, STEP2B, STEP3B, STEP4B, STEP5B,
-        LAST_SETTING = STEP5B
+        MUTE1A, MUTE2A, MUTE3A, MUTE4A, MUTE5A,
+        MUTE1B, MUTE2B, MUTE3B, MUTE4B, MUTE5B,
+        LAST_SETTING = MUTE5B
     };
 
     struct DivSequence {
@@ -40,12 +42,22 @@ public:
       int clock_count;
       // duration as number of clock pulses
       uint8_t steps[NUM_STEPS];
+      uint8_t muted = 0x0; // bitmask
 
+      void ToggleStep(int idx) {
+        muted ^= (0x01 << idx);
+      }
+      bool Muted(int idx) {
+        return (muted >> idx) & 0x01;
+      }
+      bool StepActive(int idx) {
+        return steps[idx] != 0 && !Muted(idx);
+      }
       bool Poke() {
         // reset case
         if (step_index < 0) {
             step_index = 0;
-            return steps[step_index] > 0;
+            return StepActive(step_index);
         }
 
         // quota achieved, advance to next enabled step
@@ -56,9 +68,9 @@ public:
             do {
                 ++step_index %= NUM_STEPS;
                 ++i;
-            } while (steps[step_index] == 0 && i < NUM_STEPS);
+            } while (!StepActive(step_index) && i < NUM_STEPS);
 
-            return steps[step_index] > 0;
+            return StepActive(step_index);
         }
         return false;
       }
@@ -126,7 +138,12 @@ public:
     }
 
     void OnButtonPress() {
-        CursorAction(cursor, LAST_SETTING);
+        if (cursor >= MUTE1A && !EditMode()) {
+            const int ch = (cursor - MUTE1A) / NUM_STEPS;
+            const int s = (cursor - MUTE1A) % NUM_STEPS;
+            div_seq[ch].ToggleStep(s);
+        } else
+            CursorAction(cursor, LAST_SETTING);
     }
 
     void OnEncoderMove(int direction) {
@@ -137,9 +154,12 @@ public:
 
         const int ch = cursor / NUM_STEPS;
         const int s = cursor % NUM_STEPS;
-        const int div = div_seq[ch].steps[s] + direction;
-        //if (div < 0) div = MAX_DIV;
-        div_seq[ch].steps[s] = constrain(div, 0, MAX_DIV);
+        if (ch > 1) // mutes
+            div_seq[ch-2].ToggleStep(s);
+        else {
+            const int div = div_seq[ch].steps[s] + direction;
+            div_seq[ch].steps[s] = constrain(div, 0, MAX_DIV);
+        }
     }
 
     uint64_t OnDataRequest() {
@@ -187,18 +207,30 @@ private:
     void DrawInterface() {
       // divisions
       ForEachChannel(ch) {
-        for(int i = 0; i < NUM_STEPS; i++) {
-          if (div_seq[ch].steps[i] == 0 && cursor != i + ch*NUM_STEPS) continue;
+        const size_t x = 31*ch;
 
-          gfxPrint(1 + 31*ch, 15 + (i*10), div_seq[ch].steps[i]);
-          DrawSlider(14 + 31*ch, 15 + (i*10), 14, div_seq[ch].steps[i], MAX_DIV, cursor == i+ch*NUM_STEPS);
+        for(int i = 0; i < NUM_STEPS; i++) {
+          const size_t y = 15 + i*10;
+
+          if (!div_seq[ch].StepActive(i) && cursor % MUTE1A != i + ch*NUM_STEPS) {
+            gfxIcon(x, y, X_NOTE_ICON);
+              continue;
+          }
+
+          gfxPrint(1 + x, y, div_seq[ch].steps[i]);
+
+          if (cursor >= MUTE1A) {
+            gfxIcon(16 + x, y, div_seq[ch].Muted(i) ? CHECK_OFF_ICON : CHECK_ON_ICON);
+            if (cursor - MUTE1A == i+ch*NUM_STEPS) gfxFrame(15+x, y-1, 10, 10);
+          } else
+            DrawSlider(14 + x, y, 14, div_seq[ch].steps[i], MAX_DIV, cursor == i+ch*NUM_STEPS);
 
           if (div_seq[ch].step_index == i)
-            gfxIcon(28 + 31*ch, 15 + i*10, LEFT_BTN_ICON);
+            gfxIcon(28 + x, y, LEFT_BTN_ICON);
         }
         // flash division when triggered
         if (pulse_animation[ch] > 0 && div_seq[ch].step_index >= 0) {
-          gfxInvert(1 + 31*ch, 15 + (div_seq[ch].step_index*10), 12, 8);
+          gfxInvert(1 + x, 15 + (div_seq[ch].step_index*10), 12, 8);
         }
       }
     }
