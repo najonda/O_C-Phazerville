@@ -23,12 +23,13 @@
 
 #include "HSMIDI.h"
 
-// DON'T GO PAST 8!
-#define SEQX_STEPS 8
-#define SEQX_MAX_VALUE 31
-
 class SequenceX : public HemisphereApplet {
 public:
+
+    // DON'T GO PAST 8!
+    static constexpr int SEQX_STEPS = 8;
+    static constexpr int SEQX_MIN_VALUE = -30;
+    static constexpr int SEQX_MAX_VALUE = 30;
 
     const char* applet_name() { // Maximum 10 characters
         return "SequenceX";
@@ -39,11 +40,11 @@ public:
     }
 
     void Randomize() {
-        for (int s = 0; s < SEQX_STEPS; s++) note[s] = random(0, SEQX_MAX_VALUE);
+        for (int s = 0; s < SEQX_STEPS; s++) note[s] = random(SEQX_MIN_VALUE, SEQX_MAX_VALUE);
     }
 
     void Controller() {
-        if (DetentedIn(1) > (24 << 7) ) // 24 semitones == 2V
+        if (In(1) > (24 << 7) ) // 24 semitones == 2V
         {
             // new random sequence if CV2 goes high
             if (!cv2_gate) {
@@ -78,40 +79,44 @@ public:
     }
 
     void OnButtonPress() {
-        CursorAction(cursor, SEQX_STEPS-1);
+        if (cursor >= SEQX_STEPS && !EditMode()) // toggle mute
+            muted ^= (0x01 << (cursor - SEQX_STEPS));
+        else
+            CursorAction(cursor, SEQX_STEPS*2-1);
     }
 
     void OnEncoderMove(int direction) {
         if (!EditMode()) {
-            MoveCursor(cursor, direction, SEQX_STEPS-1);
+            MoveCursor(cursor, direction, SEQX_STEPS*2-1);
             return;
         }
 
-        if (note[cursor] + direction < 0 && cursor > 0) {
-            // If turning past zero, set the mute bit for this step
-            muted |= (0x01 << cursor);
-        } else {
-            note[cursor] = constrain(note[cursor] + direction, 0, SEQX_MAX_VALUE);
-            muted &= ~(0x01 << cursor);
+        if (cursor >= SEQX_STEPS) // toggle mute
+            muted ^= (0x01 << (cursor - SEQX_STEPS));
+        else {
+            note[cursor] = constrain(note[cursor] + direction, SEQX_MIN_VALUE, SEQX_MAX_VALUE);
+            muted &= ~(0x01 << cursor); // unmute
         }
     }
 
     uint64_t OnDataRequest() {
         uint64_t data = 0;
-        for (int s = 0; s < SEQX_STEPS; s++)
+        const int b = 6; // bits per step
+        for (size_t s = 0; s < SEQX_STEPS; s++)
         {
-            Pack(data, PackLocation {uint8_t(s * 5),5}, note[s]);
+            Pack(data, PackLocation {s * b, b}, note[s] - SEQX_MIN_VALUE);
         }
-        Pack(data, PackLocation{SEQX_STEPS * 5, SEQX_STEPS}, muted);
+        Pack(data, PackLocation{SEQX_STEPS * b, SEQX_STEPS}, muted);
         return data;
     }
 
     void OnDataReceive(uint64_t data) {
-        for (int s = 0; s < SEQX_STEPS; s++)
+        const int b = 6; // bits per step
+        for (size_t s = 0; s < SEQX_STEPS; s++)
         {
-            note[s] = Unpack(data, PackLocation {uint8_t(s * 5),5});
+            note[s] = Unpack(data, PackLocation {s * b, b}) + SEQX_MIN_VALUE;
         }
-        muted = Unpack(data, PackLocation {SEQX_STEPS * 5, SEQX_STEPS});
+        muted = Unpack(data, PackLocation {SEQX_STEPS * b, SEQX_STEPS});
         Reset();
     }
 
@@ -121,14 +126,14 @@ protected:
         help[HEMISPHERE_HELP_DIGITALS] = "1=Clock 2=Reset";
         help[HEMISPHERE_HELP_CVS]      = "1=Trans 2=RndSeq";
         help[HEMISPHERE_HELP_OUTS]     = "A=CV B=Clk Step 1";
-        help[HEMISPHERE_HELP_ENCODER]  = "Edit Step";
+        help[HEMISPHERE_HELP_ENCODER]  = "Edit Step / Mutes";
         //                               "------------------" <-- Size Guide
     }
     
 private:
     int cursor = 0;
-    char muted = 0; // Bitfield for muted steps; ((muted >> step) & 1) means muted
-    int note[SEQX_STEPS]; // Sequence value (0 - 30)
+    uint8_t muted = 0xF0; // Bitfield for muted steps; ((muted >> step) & 1) means muted
+    int8_t note[SEQX_STEPS]; // Sequence value (-30 to 30)
     int step = 0; // Current sequencer step
     bool reset = true;
     bool cv2_gate = false;
@@ -145,32 +150,41 @@ private:
     }
 
     void DrawPanel() {
+        // dotted middle line
+        gfxDottedLine(0, 40, 63, 40, 3);
+
         // Sliders
         for (int s = 0; s < SEQX_STEPS; s++)
         {
-            //int x = 6 + (12 * s);
-            int x = 6 + (7 * s); // APD:  narrower to fit more
+            const int x = 3 + (8 * s);
+            const int y = 20;
+            const int h = 60 - y;
             
             if (!step_is_muted(s)) {
-                gfxLine(x, 27, x, 63, (s != cursor) ); // dotted line for unselected steps
+                gfxLine(x, y, x, 60, (s != cursor) ); // dotted line for unselected steps
+
+                // scaled pixel position on slider
+                const int pos = (note[s] + 30) * (h-2) / 60;
 
                 // When cursor, there's a solid slider
                 if (s == cursor) {
-                    gfxRect(x - 2, BottomAlign(note[s]), 5, 3);  // APD
+                    gfxRect(x - 2, 58 - pos, 5, 3);
                 } else {
-                    gfxFrame(x - 2, BottomAlign(note[s]), 5, 3);  // APD
+                    gfxFrame(x - 2, 58 - pos, 5, 3);
                 }
                 
                 // Arrow indicator for current step
                 if (s == step) {
-                    gfxIcon(x - 3, 17, DOWN_ICON);
-                    //gfxCircle(x, 20, 3);
+                    gfxIcon(x - 3, 60, UP_BTN_ICON);
                 }
-            } else if (s == cursor) {
-                gfxLine(x, 27, x, 63);
+            } else {
+                if (s == cursor)
+                    gfxLine(x, y, x, 60);
             }
 
-            if (s == cursor && EditMode()) gfxInvert(x - 2, 27, 5, 37);
+            if (s == cursor - SEQX_STEPS)
+              gfxIcon(x - 3, y - 8, step_is_muted(s) ? CHECK_OFF_ICON : CHECK_ON_ICON);
+            if (s == cursor && EditMode()) gfxInvert(x - 2, y, 5, h + 1);
         }
     }
 
