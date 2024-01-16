@@ -184,7 +184,14 @@ private:
 
             if (s == cursor - SEQX_STEPS)
               gfxIcon(x - 3, y - 8, step_is_muted(s) ? CHECK_OFF_ICON : CHECK_ON_ICON);
-            if (s == cursor && EditMode()) gfxInvert(x - 2, y, 5, h + 1);
+            if (s == cursor && EditMode()) {
+                gfxInvert(x - 2, y, 5, h + 1);
+                int w_ = 18 - pad(100, note[s]);
+                int x_ = constrain(x - 9 + pad(10, note[s]), 0, 63 - w_);
+
+                gfxLine(x_, y, x_ + w_, y);
+                gfxPrint(x_, y - 8, note[s]);
+            }
         }
     }
 
