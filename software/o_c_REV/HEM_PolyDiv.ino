@@ -20,12 +20,12 @@
 
 #include "HSProbLoopLinker.h"
 
-class Syncopate : public HemisphereApplet {
+class PolyDiv : public HemisphereApplet {
 public:
 
     static constexpr uint8_t MAX_DIV = 63;
 
-    enum SyncopateCursor {
+    enum PolyDivCursor {
         DIV1, DIV2, DIV3, DIV4,
         TOGGLE_A1, TOGGLE_A2, TOGGLE_A3, TOGGLE_A4,
         TOGGLE_B1, TOGGLE_B2, TOGGLE_B3, TOGGLE_B4,
@@ -55,7 +55,7 @@ public:
     };
 
     const char* applet_name() {
-        return "Syncopate";
+        return "PolyDiv";
     }
 
     void Start() {
@@ -172,7 +172,7 @@ protected:
     }
     
 private:
-    int cursor; // SyncopateCursor 
+    int cursor; // PolyDivCursor 
 
     int pulse_animation[4] = {0,0,0,0};
     uint8_t div_enabled; // bitmask for enabling dividers per output
@@ -207,18 +207,18 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 //// Hemisphere Applet Functions
 ///
-///  Once you run the find-and-replace to make these refer to Syncopate,
+///  Once you run the find-and-replace to make these refer to PolyDiv,
 ///  it's usually not necessary to do anything with these functions. You
 ///  should prefer to handle things in the HemisphereApplet child class
 ///  above.
 ////////////////////////////////////////////////////////////////////////////////
-Syncopate Syncopate_instance[2];
+PolyDiv PolyDiv_instance[2];
 
-void Syncopate_Start(bool hemisphere) {Syncopate_instance[hemisphere].BaseStart(hemisphere);}
-void Syncopate_Controller(bool hemisphere, bool forwarding) {Syncopate_instance[hemisphere].BaseController(forwarding);}
-void Syncopate_View(bool hemisphere) {Syncopate_instance[hemisphere].BaseView();}
-void Syncopate_OnButtonPress(bool hemisphere) {Syncopate_instance[hemisphere].OnButtonPress();}
-void Syncopate_OnEncoderMove(bool hemisphere, int direction) {Syncopate_instance[hemisphere].OnEncoderMove(direction);}
-void Syncopate_ToggleHelpScreen(bool hemisphere) {Syncopate_instance[hemisphere].HelpScreen();}
-uint64_t Syncopate_OnDataRequest(bool hemisphere) {return Syncopate_instance[hemisphere].OnDataRequest();}
-void Syncopate_OnDataReceive(bool hemisphere, uint64_t data) {Syncopate_instance[hemisphere].OnDataReceive(data);}
+void PolyDiv_Start(bool hemisphere) {PolyDiv_instance[hemisphere].BaseStart(hemisphere);}
+void PolyDiv_Controller(bool hemisphere, bool forwarding) {PolyDiv_instance[hemisphere].BaseController(forwarding);}
+void PolyDiv_View(bool hemisphere) {PolyDiv_instance[hemisphere].BaseView();}
+void PolyDiv_OnButtonPress(bool hemisphere) {PolyDiv_instance[hemisphere].OnButtonPress();}
+void PolyDiv_OnEncoderMove(bool hemisphere, int direction) {PolyDiv_instance[hemisphere].OnEncoderMove(direction);}
+void PolyDiv_ToggleHelpScreen(bool hemisphere) {PolyDiv_instance[hemisphere].HelpScreen();}
+uint64_t PolyDiv_OnDataRequest(bool hemisphere) {return PolyDiv_instance[hemisphere].OnDataRequest();}
+void PolyDiv_OnDataReceive(bool hemisphere, uint64_t data) {PolyDiv_instance[hemisphere].OnDataReceive(data);}

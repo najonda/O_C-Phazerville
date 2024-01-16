@@ -52,6 +52,7 @@
     DECLARE_APPLET( 73, 0x08, MultiScale), \
     DECLARE_APPLET( 20, 0x02, Palimpsest), \
     DECLARE_APPLET( 71, 0x02, Pigeons), \
+    DECLARE_APPLET( 72, 0x06, PolyDiv), \
     DECLARE_APPLET( 59, 0x04, ProbabilityDivider), \
     DECLARE_APPLET( 62, 0x04, ProbabilityMelody), \
     DECLARE_APPLET( 70, 0x14, ResetClock), \
@@ -68,7 +69,6 @@
     DECLARE_APPLET( 46, 0x08, Squanch), \
     DECLARE_APPLET( 61, 0x01, Stairs), \
     DECLARE_APPLET(  3, 0x10, Switch), \
-    DECLARE_APPLET( 72, 0x06, Syncopate), \
     DECLARE_APPLET( 60, 0x02, TB_3PO), \
     DECLARE_APPLET( 13, 0x40, TLNeuron), \
     DECLARE_APPLET( 37, 0x40, Trending), \
