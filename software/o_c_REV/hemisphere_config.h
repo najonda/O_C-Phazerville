@@ -31,6 +31,7 @@
     DECLARE_APPLET( 28, 0x04, ClockSkip), \
     DECLARE_APPLET( 30, 0x10, Compare), \
     DECLARE_APPLET( 24, 0x02, CVRecV2), \
+    DECLARE_APPLET( 68, 0x06, DivSeq), \
     DECLARE_APPLET( 57, 0x02, DrumMap), \
     DECLARE_APPLET(  9, 0x08, DualQuant), \
     DECLARE_APPLET( 18, 0x02, DualTM), \
@@ -51,7 +52,6 @@
     DECLARE_APPLET( 73, 0x08, MultiScale), \
     DECLARE_APPLET( 20, 0x02, Palimpsest), \
     DECLARE_APPLET( 71, 0x02, Pigeons), \
-    DECLARE_APPLET( 68, 0x06, PolyDiv), \
     DECLARE_APPLET( 59, 0x04, ProbabilityDivider), \
     DECLARE_APPLET( 62, 0x04, ProbabilityMelody), \
     DECLARE_APPLET( 70, 0x14, ResetClock), \

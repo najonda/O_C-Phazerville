@@ -23,13 +23,13 @@
 
 #include "HSProbLoopLinker.h" // singleton for linking ProbDiv and ProbMelo
 
-class PolyDiv : public HemisphereApplet {
+class DivSeq : public HemisphereApplet {
 public:
 
     static constexpr uint8_t MAX_DIV = 63;
     static constexpr uint8_t NUM_STEPS = 5;
 
-    enum PolyDivCursor {
+    enum DivSeqCursor {
         STEP1A, STEP2A, STEP3A, STEP4A, STEP5A,
         STEP1B, STEP2B, STEP3B, STEP4B, STEP5B,
         MUTE1A, MUTE2A, MUTE3A, MUTE4A, MUTE5A,
@@ -85,7 +85,7 @@ public:
     };
 
     const char* applet_name() {
-        return "PolyDiv";
+        return "DivSeq";
     }
 
     void Start() {
@@ -198,7 +198,7 @@ protected:
     }
     
 private:
-    int cursor; // PolyDivCursor 
+    int cursor; // DivSeqCursor 
 
     int pulse_animation[2] = {0,0};
 
@@ -241,18 +241,18 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 //// Hemisphere Applet Functions
 ///
-///  Once you run the find-and-replace to make these refer to PolyDiv,
+///  Once you run the find-and-replace to make these refer to DivSeq,
 ///  it's usually not necessary to do anything with these functions. You
 ///  should prefer to handle things in the HemisphereApplet child class
 ///  above.
 ////////////////////////////////////////////////////////////////////////////////
-PolyDiv PolyDiv_instance[2];
+DivSeq DivSeq_instance[2];
 
-void PolyDiv_Start(bool hemisphere) {PolyDiv_instance[hemisphere].BaseStart(hemisphere);}
-void PolyDiv_Controller(bool hemisphere, bool forwarding) {PolyDiv_instance[hemisphere].BaseController(forwarding);}
-void PolyDiv_View(bool hemisphere) {PolyDiv_instance[hemisphere].BaseView();}
-void PolyDiv_OnButtonPress(bool hemisphere) {PolyDiv_instance[hemisphere].OnButtonPress();}
-void PolyDiv_OnEncoderMove(bool hemisphere, int direction) {PolyDiv_instance[hemisphere].OnEncoderMove(direction);}
-void PolyDiv_ToggleHelpScreen(bool hemisphere) {PolyDiv_instance[hemisphere].HelpScreen();}
-uint64_t PolyDiv_OnDataRequest(bool hemisphere) {return PolyDiv_instance[hemisphere].OnDataRequest();}
-void PolyDiv_OnDataReceive(bool hemisphere, uint64_t data) {PolyDiv_instance[hemisphere].OnDataReceive(data);}
+void DivSeq_Start(bool hemisphere) {DivSeq_instance[hemisphere].BaseStart(hemisphere);}
+void DivSeq_Controller(bool hemisphere, bool forwarding) {DivSeq_instance[hemisphere].BaseController(forwarding);}
+void DivSeq_View(bool hemisphere) {DivSeq_instance[hemisphere].BaseView();}
+void DivSeq_OnButtonPress(bool hemisphere) {DivSeq_instance[hemisphere].OnButtonPress();}
+void DivSeq_OnEncoderMove(bool hemisphere, int direction) {DivSeq_instance[hemisphere].OnEncoderMove(direction);}
+void DivSeq_ToggleHelpScreen(bool hemisphere) {DivSeq_instance[hemisphere].HelpScreen();}
+uint64_t DivSeq_OnDataRequest(bool hemisphere) {return DivSeq_instance[hemisphere].OnDataRequest();}
+void DivSeq_OnDataReceive(bool hemisphere, uint64_t data) {DivSeq_instance[hemisphere].OnDataReceive(data);}
