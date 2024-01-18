@@ -227,12 +227,12 @@ public:
     }
     void Suspend() {
         if (hem_active_preset) {
-            if (HS::auto_save_enabled) StoreToPreset(preset_id);
+            if (HS::auto_save_enabled || 0 == preset_id) StoreToPreset(preset_id, !HS::auto_save_enabled);
             hem_active_preset->OnSendSysEx();
         }
     }
 
-    void StoreToPreset(HemispherePreset* preset) {
+    void StoreToPreset(HemispherePreset* preset, bool skip_eeprom = false) {
         bool doSave = (preset != hem_active_preset);
 
         hem_active_preset = preset;
@@ -254,7 +254,7 @@ public:
         hem_active_preset->SetClockData(data);
 
         // initiate actual EEPROM save - ONLY if necessary!
-        if (doSave && HS::auto_save_enabled) {
+        if (doSave && !skip_eeprom) {
             OC::CORE::app_isr_enabled = false;
             OC::draw_save_message(60);
             delay(1);
@@ -264,8 +264,8 @@ public:
         }
 
     }
-    void StoreToPreset(int id) {
-        StoreToPreset( (HemispherePreset*)(hem_presets + id) );
+    void StoreToPreset(int id, bool skip_eeprom = false) {
+        StoreToPreset( (HemispherePreset*)(hem_presets + id), skip_eeprom );
         preset_id = id;
     }
     void LoadFromPreset(int id) {
