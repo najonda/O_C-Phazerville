@@ -188,7 +188,7 @@ public:
 // HemispherePreset hem_config; // special place for Clock data and Config data, 64 bits each
 
 HemispherePreset hem_presets[HEM_NR_OF_PRESETS];
-HemispherePreset *hem_active_preset;
+HemispherePreset *hem_active_preset = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Hemisphere Manager
@@ -832,7 +832,6 @@ size_t HEMISPHERE_restore(const void *storage) {
     for (int i = 0; i < HEM_NR_OF_PRESETS; ++i) {
         used += hem_presets[i].Restore(static_cast<const char*>(storage) + used);
     }
-    manager.Resume();
     return used;
 }
 
@@ -843,6 +842,7 @@ void FASTRUN HEMISPHERE_isr() {
 void HEMISPHERE_handleAppEvent(OC::AppEvent event) {
     switch (event) {
     case OC::APP_EVENT_RESUME:
+        manager.Resume();
         break;
 
     case OC::APP_EVENT_SCREENSAVER_ON:
