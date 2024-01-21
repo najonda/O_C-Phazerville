@@ -133,12 +133,11 @@ private:
     int cycle_time = 0; // Cycle time between the last two clock inputs
 
     void DrawSelector() {
-        static const char * chan_name[] = { "A", "B", "C", "D" };
         ForEachChannel(ch)
         {
             int y = 15 + (ch * 25);
 
-            gfxPrint(1, y, chan_name[ch+hemisphere*2]);
+            gfxPrint(1, y, OC::Strings::capital_letters[ch+hemisphere*2]);
             if (div_m[ch] > 0) {
                 gfxPrint(" /");
                 gfxPrint(div_m[ch]);
