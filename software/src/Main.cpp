@@ -237,7 +237,7 @@ void FASTRUN loop() {
 
     // check for request from PC to capture the screen
     if (Serial && Serial.available() > 0) {
-      Serial.clear();
+      do { Serial.read(); } while (Serial.available() > 0);
       display::frame_buffer.capture_request();
     }
     // check for frame buffer to have capture data ready
@@ -249,9 +249,10 @@ void FASTRUN loop() {
         // which can stall running the rest of loop()
         uint8_t n = *capture_data++;
         if (n < 16) Serial.print("0");
-        Serial.print(n);
+        Serial.print(n, HEX);
       }
       Serial.println();
+      Serial.flush();
       display::frame_buffer.capture_retire();
     }
 
