@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#define HEM_CLOCKDIV_MAX 8
-
 class ClockDivider : public HemisphereApplet {
 public:
+
+    static constexpr int CLOCKDIV_MAX = 32;
 
     const char* applet_name() {
         return "Clock Div";
@@ -30,17 +30,14 @@ public:
     void Start() { }
 
     void Controller() {
-        int this_tick = OC::CORE::ticks;
+        uint32_t this_tick = OC::CORE::ticks;
 
+        // Modulate setting via CV
         // Set division via CV
         ForEachChannel(ch)
         {
-            int input = DetentedIn(ch);
-            if (input) {
-                div[ch] = Proportion(input, HEMISPHERE_MAX_INPUT_CV / 2, HEM_CLOCKDIV_MAX);
-                div[ch] = constrain(div[ch], -HEM_CLOCKDIV_MAX, HEM_CLOCKDIV_MAX);
-                if (div[ch] == 0 || div[ch] == -1) div[ch] = 1;
-            }
+          div_m[ch] = div[ch];
+          Modulate(div_m[ch], ch, -CLOCKDIV_MAX, CLOCKDIV_MAX);
         }
 
         if (Clock(1)) { // Reset
@@ -53,14 +50,17 @@ public:
             // At the clock input, handle clock division
             ForEachChannel(ch)
             {
-                count[ch]++;
-                if (div[ch] > 0) { // Positive value indicates clock division
+                if (div_m[ch] > 0) { // Positive value indicates clock division
+                    count[ch]++;
                     if (count[ch] == 1) ClockOut(ch); // fire on first step
-                    if (count[ch] >= div[ch]) count[ch] = 0; // Reset on last step
-                } else {
+                    if (count[ch] >= div_m[ch]) count[ch] = 0; // Reset on last step
+                }
+                // if (div_m[ch] == 0) doNothing;
+                if (div_m[ch] < 0) {
                     // Calculate next clock for multiplication on each clock
-                    int clock_every = (cycle_time / -div[ch]);
-                    next_clock[ch] = this_tick + clock_every;
+                    int tick_interval = (cycle_time / -div_m[ch]);
+                    next_clock[ch] = this_tick + tick_interval;
+                    count[ch] = 1;
                     ClockOut(ch); // Sync
                 }
             }
@@ -69,10 +69,11 @@ public:
         // Handle clock multiplication
         ForEachChannel(ch)
         {
-            if (div[ch] < 0) { // Negative value indicates clock multiplication
-                if (this_tick >= next_clock[ch]) {
-                    int clock_every = (cycle_time / -div[ch]);
-                    next_clock[ch] += clock_every;
+            if (div_m[ch] < 0) { // Negative value indicates clock multiplication
+                if (count[ch] < -div_m[ch] && this_tick >= next_clock[ch]) {
+                    int tick_interval = (cycle_time / -div_m[ch]);
+                    next_clock[ch] += tick_interval;
+                    count[ch]++;
                     ClockOut(ch);
                 }
             }
@@ -94,10 +95,8 @@ public:
         }
 
         div[cursor] += direction;
-        if (div[cursor] > HEM_CLOCKDIV_MAX) div[cursor] = HEM_CLOCKDIV_MAX;
-        if (div[cursor] < -HEM_CLOCKDIV_MAX) div[cursor] = -HEM_CLOCKDIV_MAX;
-        if (div[cursor] == 0) div[cursor] = direction > 0 ? 1 : -2; // No such thing as 1/1 Multiple
-        if (div[cursor] == -1) div[cursor] = 1; // Must be moving up to hit -1 (see previous line)
+        CONSTRAIN(div[cursor], -CLOCKDIV_MAX, CLOCKDIV_MAX);
+
         count[cursor] = 0; // Start the count over so things aren't missed
     }
 
@@ -122,29 +121,38 @@ protected:
     }
 
 private:
-    int div[2] = {1, 2}; // Division data for outputs. Positive numbers are divisions, negative numbers are multipliers
+    int div[2] = {1, 2}; // Division setting. Positive for divisions, negative for multipliers. Zero is mute.
+    int div_m[2]; // CV modulated value
     int count[2] = {0,0}; // Number of clocks since last output (for clock divide)
-    int next_clock[2] = {0,0}; // Tick number for the next output (for clock multiply)
+    uint32_t next_clock[2] = {0,0}; // Tick number for the next output (for clock multiply)
     int cursor = 0; // Which output is currently being edited
     int cycle_time = 0; // Cycle time between the last two clock inputs
 
     void DrawSelector() {
+        static const char * chan_name[] = { "A", "B", "C", "D" };
         ForEachChannel(ch)
         {
             int y = 15 + (ch * 25);
 
-            if (div[ch] > 0) {
-                gfxPrint(1, y, "/");
-                gfxPrint(div[ch]);
+            gfxPrint(1, y, chan_name[ch+hemisphere*2]);
+            if (div_m[ch] > 0) {
+                gfxPrint(" /");
+                gfxPrint(div_m[ch]);
                 gfxPrint(" Div");
             }
-            if (div[ch] < 0) {
-                gfxPrint(1, y, "x");
-                gfxPrint(-div[ch]);
+            if (div_m[ch] < 0) {
+                gfxPrint(" x");
+                gfxPrint(-div_m[ch]);
                 gfxPrint(" Mult");
             }
+            if (div_m[ch] == 0) {
+                gfxPrint(" (off)");
+            }
+
+            if (div_m[ch] != div[ch])
+              gfxIcon(18, y+8, CV_ICON);
         }
-        gfxCursor(0, 23 + (cursor * 25), 63);
+        gfxCursor(12, 23 + (cursor * 25), 50);
     }
 };
 
