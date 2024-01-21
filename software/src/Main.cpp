@@ -234,6 +234,27 @@ void FASTRUN loop() {
 
     if (millis() - LAST_REDRAW_TIME > REDRAW_TIMEOUT_MS)
       MENU_REDRAW = 1;
+
+    // check for request from PC to capture the screen
+    if (Serial && Serial.available() > 0) {
+      Serial.clear();
+      display::frame_buffer.capture_request();
+    }
+    // check for frame buffer to have capture data ready
+    const uint8_t *capture_data = display::frame_buffer.captured();
+    if (capture_data) {
+      for (size_t i=0; i < display::frame_buffer.kFrameSize; i++) {
+        // TODO: should transmit at a controlled pace so USB buffers
+        // don't fill up, causing Serial.print() to have to wait,
+        // which can stall running the rest of loop()
+        uint8_t n = *capture_data++;
+        if (n < 16) Serial.print("0");
+        Serial.print(n);
+      }
+      Serial.println();
+      display::frame_buffer.capture_retire();
+    }
+
   }
 }
 
