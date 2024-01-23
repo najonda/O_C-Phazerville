@@ -240,20 +240,28 @@ void FASTRUN loop() {
       do { Serial.read(); } while (Serial.available() > 0);
       display::frame_buffer.capture_request();
     }
+
+    static size_t cap_idx = 0;
     // check for frame buffer to have capture data ready
     const uint8_t *capture_data = display::frame_buffer.captured();
-    if (capture_data) {
-      for (size_t i=0; i < display::frame_buffer.kFrameSize; i++) {
-        // TODO: should transmit at a controlled pace so USB buffers
-        // don't fill up, causing Serial.print() to have to wait,
-        // which can stall running the rest of loop()
+    if (capture_data && MENU_REDRAW) {
+      capture_data += cap_idx; // start where we left off
+
+      // limit to 64 bytes every 1ms
+      for (size_t i=0; i < 64; i++) {
         uint8_t n = *capture_data++;
         if (n < 16) Serial.print("0");
         Serial.print(n, HEX);
+
+        if (++cap_idx >= display::frame_buffer.kFrameSize) {
+          // we're done sending this one
+          cap_idx = 0;
+          display::frame_buffer.capture_retire();
+          Serial.println();
+          Serial.flush();
+          break;
+        }
       }
-      Serial.println();
-      Serial.flush();
-      display::frame_buffer.capture_retire();
     }
 
   }
