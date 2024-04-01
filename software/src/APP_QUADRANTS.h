@@ -1048,7 +1048,7 @@ void QUADRANTS_handleAppEvent(OC::AppEvent event) {
 void QUADRANTS_loop() {} // Essentially deprecated in favor of ISR
 
 void QUADRANTS_menu() {
-    quad_manager.View();
+    quad_manager.BaseView();
 }
 
 void QUADRANTS_screensaver() {

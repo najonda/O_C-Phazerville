@@ -1031,7 +1031,7 @@ void HEMISPHERE_handleAppEvent(OC::AppEvent event) {
 void HEMISPHERE_loop() {} // Essentially deprecated in favor of ISR
 
 void HEMISPHERE_menu() {
-    manager.View();
+    manager.BaseView();
 }
 
 void HEMISPHERE_screensaver() {

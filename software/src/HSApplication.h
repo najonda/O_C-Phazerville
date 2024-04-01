@@ -58,6 +58,43 @@ public:
     virtual void View() = 0;
     virtual void Resume() = 0;
 
+#ifdef PEWPEWPEW
+    struct {
+      bool go=0; int idx=0;
+      struct{
+        uint8_t x,y;
+        int x_v,y_v;
+      } pewpews[8];
+
+      void PEWPEW(uint8_t mask)
+      {
+        uint32_t t=OC::CORE::ticks;
+        for(int i=0;i<8;++i)
+        {
+          auto &p=pewpews[i];
+          if(mask>>i&0x01){
+            auto &pp=pewpews[idx++];
+            pp.x=0+40*i;
+            pp.y=55;
+            pp.x_v=(6+random(3))*(i>1?-1:1);
+            pp.y_v=-9;
+            idx%=8;
+          }
+          if(t%500==0){
+            p.x+=p.x_v;
+            p.y+=p.y_v;
+            if(p.y>=55&&p.y_v>0)p.y_v=-p.y_v;
+            else ++p.y_v;
+          }
+          if(t%10000==0){
+            p.x_v=p.x_v*100/101;
+            p.y_v=p.y_v*10/11;
+          }
+        }
+      }
+    } PewPewTime;
+#endif
+
     void BaseController() {
         // Load the IO frame from CV inputs
         HS::frame.Load();
@@ -66,6 +103,10 @@ public:
         if (--cursor_countdown < -HSAPPLICATION_CURSOR_TICKS) cursor_countdown = HSAPPLICATION_CURSOR_TICKS;
 
         Controller();
+
+#ifdef PEWPEWPEW
+        PewPewTime.PEWPEW(Clock(3)<<3|Clock(2)<<2|Clock(1)<<1|Clock(0));
+#endif
 
         // set outputs from IO frame
         HS::frame.Send();
@@ -88,7 +129,12 @@ public:
 
     void BaseView() {
         View();
-        last_view_tick = OC::CORE::ticks;
+#ifdef PEWPEWPEW
+      for(int i=0;i<8;++i){
+        auto &p=PewPewTime.pewpews[i];
+        gfxIcon(p.x%128,p.y%64,ZAP_ICON);
+      }
+#endif
     }
 
     // general screensaver view, visualizing inputs and outputs
@@ -216,7 +262,6 @@ protected:
 
 private:
     int cursor_countdown; // Timer for cursor blinkin'
-    uint32_t last_view_tick; // Time since the last view, for activating screen blanking
 };
 
 // --- Phazerville Screensaver Library ---

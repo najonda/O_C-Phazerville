@@ -35,13 +35,14 @@ public:
 
     void Controller() {
     #ifdef PEWPEWPEW
-        HS::frame.Load();PewPewTime.PEWPEW(Clock(3)<<1|Clock(0));}
-        struct{bool go=0;int idx=0;struct{uint8_t x,y;int x_v,y_v;}pewpews[8];
-        void PEWPEW(uint8_t mask){uint32_t t=OC::CORE::ticks;for(int i=0;i<8;++i){auto &p=pewpews[i];
-          if(mask>>i&0x01){auto &pp=pewpews[idx++];pp.x=0+120*i;pp.y=55;pp.x_v=(6+random(3))*(i?-1:1);pp.y_v=-9;idx%=8;}
-          if(t%500==0){p.x+=p.x_v;p.y+=p.y_v;if(p.y>=55&&p.y_v>0)p.y_v=-p.y_v;else ++p.y_v;}
-          if(t%10000==0){p.x_v=p.x_v*100/101;p.y_v=p.y_v*10/11;}}}}PewPewTime;
-        void PEWPEW(){for(int i=0;i<8;++i){auto &p=PewPewTime.pewpews[i];gfxIcon(p.x%128,p.y%64,ZAP_ICON);}
+        HS::frame.Load();
+        PewPewTime.PEWPEW(Clock(3)<<3|Clock(2)<<2|Clock(1)<<1|Clock(0));
+    }
+    void PEWPEW() {
+      for(int i=0;i<8;++i){
+        auto &p=PewPewTime.pewpews[i];
+        gfxIcon(p.x%128,p.y%64,ZAP_ICON);
+      }
     #endif
     }
 
