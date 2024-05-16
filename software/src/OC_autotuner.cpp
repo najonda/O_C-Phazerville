@@ -24,6 +24,7 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 
+#include "OC_core.h"
 #include "OC_autotuner.h"
 
 namespace OC {
