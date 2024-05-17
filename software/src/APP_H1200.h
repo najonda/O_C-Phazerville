@@ -33,7 +33,7 @@
 #include "util/util_settings.h"
 #include "util/util_ringbuffer.h"
 #include "util/util_semitone_quantizer.h"
-#include "bjorklund.h"
+#include "src/extern/bjorklund.h"
 
 extern uint_fast8_t MENU_REDRAW;
 
