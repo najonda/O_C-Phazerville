@@ -228,6 +228,7 @@ static AppDataStorage app_data_storage;
 // triage all code (minus any dangling static parts). (Yeah, this still relies
 // on the fugly .ino compilation method, don't @ me).
 static AppContainer<void // this space intentionally left blank
+  , AppHemisphere
   , AppASR
   , AppH1200
   , AppAutomatonnetz

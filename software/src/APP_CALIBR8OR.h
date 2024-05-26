@@ -178,27 +178,27 @@ public:
 
 Calibr8orPreset cal8_presets[NR_OF_PRESETS];
 
-class Calibr8or : public HSApplication {
+OC_APP_TRAITS(Calibr8or, TWOCCS("C8"), "Calibr8or", "Calibrator");
+class OC_APP_CLASS(Calibr8or), public HSApplication {
 public:
-    Calibr8or() {
-        for (int i = DAC_CHANNEL_A; i < DAC_CHANNEL_LAST; ++i) {
-            channel[i].chan_ = DAC_CHANNEL(i);
-        }
-    }
+  OC_APP_INTERFACE_DECLARE(Calibr8or);
+  OC_APP_STORAGE_SIZE( Calibr8orPreset::storageSize() * NR_OF_PRESETS );
 
   OC::Autotuner<Cal8ChannelConfig> autotuner;
 
-
 	void Start() {
-        segment.Init(SegmentSize::BIG_SEGMENTS);
+    for (int i = DAC_CHANNEL_A; i < DAC_CHANNEL_LAST; ++i) {
+      channel[i].chan_ = DAC_CHANNEL(i);
+    }
+    segment.Init(SegmentSize::BIG_SEGMENTS);
 
-        // make sure to turn this off, just in case
-        FreqMeasure.end();
-        OC::DigitalInputs::reInit();
+    // make sure to turn this off, just in case
+    FreqMeasure.end();
+    OC::DigitalInputs::reInit();
 
-        ClearPreset();
+    ClearPreset();
 
-        autotuner.Init();
+    autotuner.Init();
 	}
 	
     void ClearPreset() {
@@ -666,44 +666,40 @@ SETTINGS_DECLARE(Calibr8orPreset, CAL8_SETTING_LAST) {
 };
 
 
-Calibr8or Calibr8or_instance;
-
 // App stubs
-void Calibr8or_init() { Calibr8or_instance.BaseStart(); }
+void Calibr8or::Init() { BaseStart(); }
 
 static constexpr size_t Calibr8or_storageSize() {
     return Calibr8orPreset::storageSize() * NR_OF_PRESETS;
 }
 
-static size_t Calibr8or_save(void *storage) {
-    size_t used = 0;
+size_t Calibr8or::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
     for (int i = 0; i < NR_OF_PRESETS; ++i) {
-        used += cal8_presets[i].Save(static_cast<char*>(storage) + used);
+        cal8_presets[i].Save(stream_buffer);
     }
-    return used;
+  return stream_buffer.written();
 }
 
-static size_t Calibr8or_restore(const void *storage) {
-    size_t used = 0;
+size_t Calibr8or::RestoreAppData(util::StreamBufferReader &stream_buffer) {
     for (int i = 0; i < NR_OF_PRESETS; ++i) {
-        used += cal8_presets[i].Restore(static_cast<const char*>(storage) + used);
+        cal8_presets[i].Restore(stream_buffer);
     }
-    Calibr8or_instance.LoadPreset();
-    return used;
+    LoadPreset();
+  return stream_buffer.read();
 }
 
-void Calibr8or_process(OC::IOFrame *) {
-    if (Calibr8or_instance.autotuner.active()) {
-      Calibr8or_instance.autotuner.ISR();
+void Calibr8or::Process(OC::IOFrame *ioframe) {
+    if (autotuner.active()) {
+      autotuner.ISR();
       return;
     }
-    Calibr8or_instance.BaseController();
+    BaseController(ioframe);
 }
 
-void Calibr8or_handleAppEvent(OC::AppEvent event) {
+void Calibr8or::HandleAppEvent(OC::AppEvent event) {
     switch (event) {
     case OC::APP_EVENT_RESUME:
-        Calibr8or_instance.Resume();
+        Resume();
         break;
 
     // The idea is to auto-save when the screen times out...
@@ -715,17 +711,17 @@ void Calibr8or_handleAppEvent(OC::AppEvent event) {
     }
 }
 
-void Calibr8or_loop() {} // Deprecated
+void Calibr8or::Loop() {} // Deprecated
 
-void Calibr8or_menu() { Calibr8or_instance.BaseView(); }
+void Calibr8or::DrawMenu() { BaseView(); }
 
-void Calibr8or_screensaver() {
-    Calibr8or_instance.BaseScreensaver(true);
+void Calibr8or::DrawScreensaver() {
+    BaseScreensaver(true);
 }
 
-void Calibr8or_handleButtonEvent(const UI::Event &event) {
-  if (Calibr8or_instance.autotuner.active()) {
-    Calibr8or_instance.autotuner.HandleButtonEvent(event);
+void Calibr8or::HandleButtonEvent(const UI::Event &event) {
+  if (autotuner.active()) {
+    autotuner.HandleButtonEvent(event);
     return;
   }
   
@@ -738,30 +734,30 @@ void Calibr8or_handleButtonEvent(const UI::Event &event) {
 #ifdef VOR
         if (event.control != OC::CONTROL_BUTTON_M)
 #endif
-        Calibr8or_instance.OnButtonDown(event);
+        OnButtonDown(event);
 
         break;
     case UI::EVENT_BUTTON_PRESS: {
         switch (event.control) {
         case OC::CONTROL_BUTTON_L:
-            Calibr8or_instance.OnLeftButtonPress();
+            OnLeftButtonPress();
             break;
         case OC::CONTROL_BUTTON_R:
-            Calibr8or_instance.OnRightButtonPress();
+            OnRightButtonPress();
             break;
         case OC::CONTROL_BUTTON_DOWN:
         case OC::CONTROL_BUTTON_UP:
-            Calibr8or_instance.SwitchChannel(event.control == OC::CONTROL_BUTTON_UP);
+            SwitchChannel(event.control == OC::CONTROL_BUTTON_UP);
             break;
         default: break;
         }
     } break;
     case UI::EVENT_BUTTON_LONG_PRESS:
         if (event.control == OC::CONTROL_BUTTON_L) {
-            Calibr8or_instance.OnLeftButtonLongPress();
+            OnLeftButtonLongPress();
         }
         if (event.control == OC::CONTROL_BUTTON_DOWN) {
-            Calibr8or_instance.OnDownButtonLongPress();
+            OnDownButtonLongPress();
         }
         break;
 
@@ -769,17 +765,17 @@ void Calibr8or_handleButtonEvent(const UI::Event &event) {
     }
 }
 
-void Calibr8or_handleEncoderEvent(const UI::Event &event) {
-  if (Calibr8or_instance.autotuner.active()) {
-    Calibr8or_instance.autotuner.HandleEncoderEvent(event);
+void Calibr8or::HandleEncoderEvent(const UI::Event &event) {
+  if (autotuner.active()) {
+    autotuner.HandleEncoderEvent(event);
     return;
   }
 
     // Left encoder turned
-    if (event.control == OC::CONTROL_ENCODER_L) Calibr8or_instance.OnLeftEncoderMove(event.value);
+    if (event.control == OC::CONTROL_ENCODER_L) OnLeftEncoderMove(event.value);
 
     // Right encoder turned
-    if (event.control == OC::CONTROL_ENCODER_R) Calibr8or_instance.OnRightEncoderMove(event.value);
+    if (event.control == OC::CONTROL_ENCODER_R) OnRightEncoderMove(event.value);
 }
 
 #endif // ENABLE_APP_CALIBR8OR
