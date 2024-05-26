@@ -28,38 +28,42 @@
 #include <array>
 #include "OC_io.h"
 #include "OC_menus.h"
-#include "src/UI/ui_event_queue.h"
+#include "OC_ui.h"
+#include "OC_visualfx.h"
 
 namespace OC {
 
-struct App;
+class AppBase;
 
 class IOSettingsMenu {
 public:
 
-  void Init();
-
-  void Edit(App *app);
+  void Edit(AppBase *app);
+  void Close();
 
   inline bool active() const {
-    return (io_settings_ != nullptr);
+    return io_settings_ != nullptr;
   }
 
+  void Update();
+
   void Draw() const;
-  void DispatchEvent(const UI::Event &event);
+  UiMode DispatchEvent(const UI::Event &event);
 
 private:
-  //bool enabled_ = false;
-
   menu::ScreenCursor<menu::kScreenLines> cursor_;
-  int selected_channel_;
+  int selected_channel_ = 0;
 
-  IOSettings *io_settings_;
+  IOSettings *io_settings_ = nullptr;
   IOConfig io_config_;
 
-  void DrawInputSettingsPage() const;
-  void DrawOutputPage() const;
-  void DrawTodoPage() const;
+  vfx::Marquee<11> marquee_;
+
+  // Cached labels
+  char labels_[IOSettings::kSettingsPerChannel][kMaxIOLabelLength + 1];
+
+  bool autotune_available() const;
+  void SetChannel(int channel);
 };
 
 } // namespace OC
