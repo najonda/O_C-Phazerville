@@ -34,7 +34,6 @@
 
 #include "OC_calibration.h"
 #include "OC_patterns.h"
-#include "enigma/TuringMachine.h"
 #include "src/drivers/FreqMeasure/OC_FreqMeasure.h"
 #include "util/util_pagestorage.h"
 #include "src/drivers/EEPROMStorage.h"

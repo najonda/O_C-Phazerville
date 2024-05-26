@@ -21,8 +21,6 @@
 #include <Arduino.h>
 #include "OC_apps.h"
 #include "OC_ui.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
 #include "OC_scales.h"
 #include "HSApplication.h"
 #include "HSMIDI.h"

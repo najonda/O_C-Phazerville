@@ -41,19 +41,15 @@ public:
 
   void Edit(App *app);
 
-  void enable(bool enabled) {
-    enabled_ = true;
-  }
-
-  inline bool enabled() const {
-    return enabled_;
+  inline bool active() const {
+    return (io_settings_ != nullptr);
   }
 
   void Draw() const;
   void DispatchEvent(const UI::Event &event);
 
 private:
-  bool enabled_ = false;
+  //bool enabled_ = false;
 
   menu::ScreenCursor<menu::kScreenLines> cursor_;
   int selected_channel_;

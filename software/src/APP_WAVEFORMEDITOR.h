@@ -22,7 +22,6 @@
 #include "OC_apps.h"
 #include "OC_strings.h"
 #include "OC_ui.h"
-#include "UI/ui_events.h"
 
 #include "HSApplication.h"
 #include "HSMIDI.h"

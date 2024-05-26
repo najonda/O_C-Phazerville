@@ -31,7 +31,6 @@
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
-#include "src/extern/braids_quantizer.h"
 #include "OC_menus.h"
 #include "OC_visualfx.h"
 #include "OC_scales.h"
@@ -39,7 +38,7 @@
 #include "OC_strings.h"
 #include "OC_digital_inputs.h"
 #include "OC_ADC.h"
-#include "extern/dspinst.h"
+#include "src/extern/dspinst.h"
 
 extern uint_fast8_t MENU_REDRAW;
 

@@ -29,8 +29,6 @@
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
 #include "OC_menus.h"
 #include "OC_scales.h"
 #include "OC_scale_edit.h"

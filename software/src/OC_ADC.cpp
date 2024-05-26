@@ -131,6 +131,8 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
 }
+
+#ifdef OC_ADC_ENABLE_DMA_INTERRUPT
 /*static*/ void ADC::DMA_ISR() {
 
   ADC::ready_ = true;
@@ -138,6 +140,8 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
   dma0->clearInterrupt();
   /* restart DMA in ADC::Scan_DMA() */
 }
+#endif
+
 #endif // __IMXRT1062__
 
 /*
@@ -468,15 +472,9 @@ static void Init_Teensy41_ADC33131D_chip() {
 /*static*/
 void ADC::Read(IOFrame *ioframe)
 {
-  if (dma0->complete()) {
-    // On Teensy 3.2, this runs every 180us (every 3rd call from 60us timer)
-    dma0->clearComplete();
-    dma0->TCD->DADDR = &adcbuffer_0[0];
-  }
-
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
     ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
-    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = value_to_pitch( ioframe->cv.values[channel] );
   }
 } 
 
@@ -614,9 +612,15 @@ void ADC::Read(IOFrame *ioframe)
 /*static*/
 void ADC::Read(IOFrame *ioframe)
 {
+  if (dma0->complete()) {
+    // On Teensy 3.2, this runs every 180us (every 3rd call from 60us timer)
+    dma0->clearComplete();
+    dma0->TCD->DADDR = &adcbuffer_0[0];
+  }
+
   for (int channel = ADC_CHANNEL_1; channel < ADC_CHANNEL_LAST; ++channel) {
     ioframe->cv.values[channel] = value(static_cast<ADC_CHANNEL>(channel));
-    ioframe->cv.pitch_values[channel] = pitch_value(static_cast<ADC_CHANNEL>(channel));
+    ioframe->cv.pitch_values[channel] = value_to_pitch( ioframe->cv.values[channel] );
   }
 }
 

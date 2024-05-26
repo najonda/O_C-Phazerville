@@ -28,8 +28,6 @@
 #include "HSMIDI.h"
 #include "HSClockManager.h"
 #include "util/util_settings.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
 #include "OC_scales.h"
 #include "OC_autotuner.h"
 #include "SegmentDisplay.h"

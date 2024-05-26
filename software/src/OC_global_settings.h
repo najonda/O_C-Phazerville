@@ -31,6 +31,8 @@
 #include "OC_scales.h"
 #include "OC_patterns.h"
 #include "util/util_misc.h"
+#include "enigma/TuringMachine.h"
+#include "vector_osc/HSVectorOscillator.h"
 
 namespace OC {
 

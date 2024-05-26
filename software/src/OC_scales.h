@@ -25,12 +25,10 @@ public:
     SCALE_NONE = SCALE_USER_LAST,
   };
 
-  static constexpr int NUM_SCALES = SCALE_USER_LAST + braids::kNumScales;
-
   static void Init();
   static void Validate();
   static const Scale &GetScale(int index);
-  static constexpr int NUM_SCALES = SCALE_USER_LAST + sizeof(braids::scales) / sizeof(braids::scales[0]);
+  static constexpr int NUM_SCALES = SCALE_USER_LAST + braids::kNumScales;
 };
 
 extern const char *const scale_names[];

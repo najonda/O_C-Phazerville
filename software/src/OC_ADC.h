@@ -36,6 +36,8 @@ enum ADC_CHANNEL {
 
 namespace OC {
 
+struct IOFrame;
+
 class ADC {
 public:
 
@@ -78,6 +80,7 @@ public:
   #endif
   static void Init_DMA();
   static void DMA_ISR();
+  static void Read(IOFrame *ioframe);
   static void Scan_DMA();
 
   template <ADC_CHANNEL channel>

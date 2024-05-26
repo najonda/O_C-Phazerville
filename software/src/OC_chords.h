@@ -47,10 +47,6 @@ public:
     CHORDS_USER_LAST
   };
 
-  static constexpr int NUM_CHORD_PROGRESSIONS = 4;
-  static constexpr int NUM_CHORDS_TOTAL = CHORDS_USER_LAST;
-  static constexpr int NUM_CHORDS = NUM_CHORDS_TOTAL / NUM_CHORD_PROGRESSIONS;
-
   enum QUALITY 
   {
     CHORDS_FIFTH,

@@ -39,8 +39,6 @@
 #include "HemisphereApplet.h"
 #include "util/util_settings.h"
 #include "OC_DAC.h"
-#include "braids_quantizer.h"
-#include "braids_quantizer_scales.h"
 #include "OC_scales.h"
 #include "HSApplication.h"
 #include "HSMIDI.h"
