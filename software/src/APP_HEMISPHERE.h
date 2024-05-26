@@ -194,7 +194,28 @@ public:
         }
     }
 
+  // TOTAL EEPROM SIZE: 8 presets * 32 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    {0, 0, 255, "Applet ID L", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Applet ID R", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 65535, "Data L block 1", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 1", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 2", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 2", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 3", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 3", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data L block 4", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Data R block 4", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Clock data 1", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Clock data 2", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Clock data 3", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Clock data 4", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Trig Input Map", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Input Map", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "Misc Globals", NULL, settings::STORAGE_TYPE_U16}
+  }};
 };
+SETTINGS_ARRAY_DEFINE(HemispherePreset);
 
 // HemispherePreset hem_config; // special place for Clock data and Config data, 64 bits each
 
@@ -874,27 +895,6 @@ private:
             y += 10;
         }
     }
-};
-
-// TOTAL EEPROM SIZE: 8 presets * 32 bytes
-SETTINGS_DECLARE(HemispherePreset, HEMISPHERE_SETTING_LAST) {
-    {0, 0, 255, "Applet ID L", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Applet ID R", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 65535, "Data L block 1", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R block 1", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data L block 2", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R block 2", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data L block 3", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R block 3", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data L block 4", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Data R block 4", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Clock data 1", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Clock data 2", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Clock data 3", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Clock data 4", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Trig Input Map", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Input Map", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "Misc Globals", NULL, settings::STORAGE_TYPE_U16}
 };
 
 void ReceiveManagerSysEx() {

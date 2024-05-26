@@ -134,23 +134,23 @@ struct MACRO_CONCAT(clazz, Traits) { \
 }
 
 #define OC_APP_CLASS(clazz) \
-clazz : public AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>
+clazz : public OC::AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>
 
 #define OC_APP_INTERFACE_DECLARE(clazz) \
 public: \
-  clazz() : AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>() { } \
+  clazz() : OC::AppBaseImpl<clazz, MACRO_CONCAT(clazz, Traits)>() { } \
   virtual void Init() final; \
   virtual size_t appdata_storage_size() const final { return kAppDataStorageSize; } \
   virtual size_t SaveAppData(util::StreamBufferWriter &) const final; \
   virtual size_t RestoreAppData(util::StreamBufferReader &) final; \
-  virtual void HandleAppEvent(AppEvent) final; \
+  virtual void HandleAppEvent(OC::AppEvent) final; \
   virtual void Loop() final; \
   virtual void DrawMenu() const final; \
   virtual void DrawScreensaver() const final; \
   virtual void HandleButtonEvent(const UI::Event &) final; \
   virtual void HandleEncoderEvent(const UI::Event &) final; \
-  virtual void Process(IOFrame *ioframe) final; \
-  virtual void GetIOConfig(IOConfig &) const final; \
+  virtual void Process(OC::IOFrame *ioframe) final; \
+  virtual void GetIOConfig(OC::IOConfig &) const final; \
   virtual void DrawDebugInfo() const final
 
 #define OC_APP_STORAGE_SIZE(s) \
