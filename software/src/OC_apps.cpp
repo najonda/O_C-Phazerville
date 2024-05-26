@@ -79,55 +79,7 @@ namespace menu = OC::menu;
 #include "APP_Backup.h"
 #include "APP_SETTINGS.h"
 
-#define DECLARE_APP(id, name, prefix) \
-{ TWOCCS(id), \
-  name, \
-  {}, \
-  prefix ## _init, prefix ## _storageSize, prefix ## _save, prefix ## _restore, \
-  prefix ## _handleAppEvent, \
-  prefix ## _loop, prefix ## _menu, prefix ## _screensaver, \
-  prefix ## _handleButtonEvent, \
-  prefix ## _handleEncoderEvent, \
-  prefix ## _process, \
-  prefix ## _getIOConfig \
-}
-
 /*
-#ifdef BORING_APP_NAMES
-OC::App app_container[] = {
-  DECLARE_APP("AS", "ASR", ASR),
-  DECLARE_APP("HA", "Triads", H1200),
-  DECLARE_APP("AT", "Vectors", Automatonnetz),
-  DECLARE_APP("QQ", "4x Quantizer", QQ),
-  DECLARE_APP("DQ", "2x Quantizer", DQ),
-  DECLARE_APP("PL", "Quadrature LFO", POLYLFO),
-  DECLARE_APP("LR", "Lorenz", LORENZ),
-  DECLARE_APP("EG", "4x EG", ENVGEN),
-  DECLARE_APP("SQ", "2x Sequencer", SEQ),
-  DECLARE_APP("BB", "Balls", BBGEN),
-  DECLARE_APP("BY", "Bytebeats", BYTEBEATGEN),
-  DECLARE_APP("CQ", "Chords", CHORDS),
-  DECLARE_APP("RF", "Voltages", REFS)
-};
-#else 
-OC::App app_container[] = {
-  DECLARE_APP("AS", "CopierMaschine", ASR),
-  DECLARE_APP("HA", "Harrington 1200", H1200),
-  DECLARE_APP("AT", "Automatonnetz", Automatonnetz),
-  DECLARE_APP("QQ", "Quantermain", QQ),
-  DECLARE_APP("DQ", "Meta-Q", DQ),
-  DECLARE_APP("PL", "Quadraturia", POLYLFO),
-  DECLARE_APP("LR", "Low-rents", LORENZ),
-  DECLARE_APP("EG", "Piqued", ENVGEN),
-  DECLARE_APP("SQ", "Sequins", SEQ),
-  DECLARE_APP("BB", "Dialectic Ping Pong", BBGEN),
-  DECLARE_APP("BY", "Viznutcracker sweet", BYTEBEATGEN),
-  DECLARE_APP("CQ", "Acid Curds", CHORDS),
-  DECLARE_APP("RF", "References", REFS)
-};
-#endif
-*/
-
 static constexpr OC::App app_container[] = {
 
   #ifdef ENABLE_APP_CALIBR8OR
@@ -211,6 +163,7 @@ static constexpr OC::App app_container[] = {
   DECLARE_APP("BR", "Backup / Restore", Backup),
   DECLARE_APP("SE", "Setup / About", Settings),
 };
+*/
 
 namespace OC {
 
@@ -228,7 +181,9 @@ static AppDataStorage app_data_storage;
 // triage all code (minus any dangling static parts). (Yeah, this still relies
 // on the fugly .ino compilation method, don't @ me).
 static AppContainer<void // this space intentionally left blank
+#ifndef NO_HEMISPHERE
   , AppHemisphere
+#endif
   , AppASR
   , AppH1200
   , AppAutomatonnetz
@@ -262,6 +217,7 @@ static void SaveGlobalSettings() {
   APPS_SERIAL_PRINTLN("Saved global settings: page_index %d", global_settings_storage.page_index());
 }
 
+/* old eeprom space checking logic
 static constexpr size_t total_storage_size() {
     size_t used = 0;
     for (size_t i = 0; i < app_container.num_apps(); ++i) {
@@ -270,9 +226,9 @@ static constexpr size_t total_storage_size() {
     }
     return used;
 }
-
 static constexpr size_t totalsize = total_storage_size();
 static_assert(totalsize < OC::AppData::kAppDataSize, "EEPROM Allocation Exceeded");
+*/
 
 static void SaveAppData() {
   APPS_SERIAL_PRINTLN("Save app data... (%u bytes available)", OC::AppData::kAppDataSize);
