@@ -18,9 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _HEM_APP_HEMISPHERE_H_
-#define _HEM_APP_HEMISPHERE_H_
-
 #include "OC_DAC.h"
 #include "OC_digital_inputs.h"
 #include "OC_visualfx.h"
@@ -990,5 +987,3 @@ void AppHemisphere::HandleButtonEvent(const UI::Event &event) {
 void AppHemisphere::HandleEncoderEvent(const UI::Event &event) {
     DelegateEncoderMovement(event);
 }
-
-#endif

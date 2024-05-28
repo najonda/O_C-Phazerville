@@ -24,8 +24,6 @@
 // Quadrrature LFO app, based on the Mutable Instruments Frames Easter egg 
 // quadrature wavetable LFO by Olivier Gillet (see frames_poly_lfo_.h/cpp)
 
-#ifdef ENABLE_APP_POLYLFO
-
 #include "OC_apps.h"
 #include "OC_digital_inputs.h"
 #include "OC_menus.h"
@@ -552,5 +550,3 @@ void AppPolyLfo::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_POLYLFO

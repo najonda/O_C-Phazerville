@@ -23,8 +23,6 @@
 // Quad enevelope generator app, based on the multistage envelope implementation
 // from Peaks by Emilie Gillet (see peaks_multistage_envelope.h/cpp)
 
-#ifdef ENABLE_APP_PIQUED
-
 #include "OC_apps.h"
 #include "OC_bitmaps.h"
 #include "OC_digital_inputs.h"
@@ -856,10 +854,10 @@ void AppQuadEnvelopeGenerator::Process(OC::IOFrame *ioframe) {
       envelopes_[2].internal_trigger_mask() << 16 |
       envelopes_[3].internal_trigger_mask() << 24;
 
-  envelopes_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, internal_trigger_mask, cvs);
-  envelopes_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, internal_trigger_mask, cvs);
-  envelopes_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, internal_trigger_mask, cvs);
-  envelopes_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, internal_trigger_mask, cvs);
+  envelopes_[0].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_A);
+  envelopes_[1].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_B);
+  envelopes_[2].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_C);
+  envelopes_[3].Update(ioframe, triggers, internal_trigger_mask, cvs, DAC_CHANNEL_D);
 }
 
 size_t AppQuadEnvelopeGenerator::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
@@ -1268,5 +1266,3 @@ void AppQuadEnvelopeGenerator::GetIOConfig(OC::IOConfig &ioconfig) const
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_PIQUED

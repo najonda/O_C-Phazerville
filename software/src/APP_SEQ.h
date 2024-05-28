@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef ENABLE_APP_SEQUINS
-
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
 #include "OC_apps.h"
@@ -38,16 +36,16 @@
 #include "util/util_arp.h"
 #include "src/extern/peaks_multistage_envelope.h"
 
-const uint8_t NUM_CHANNELS = 2;
-const uint8_t MULT_MAX = 26;    // max multiplier
-const uint8_t MULT_BY_ONE = 19; // default multiplication
-const uint8_t PULSEW_MAX = 255; // max pulse width [ms]
+static constexpr uint8_t NUM_CHANNELS = 2;
+static constexpr uint8_t MULT_MAX = 26;    // max multiplier
+static constexpr uint8_t MULT_BY_ONE = 19; // default multiplication
+static constexpr uint8_t PULSEW_MAX = 255; // max pulse width [ms]
 
-const uint32_t SCALE_PULSEWIDTH = 58982; // 0.9 for signed_multiply_32x16b
-const uint32_t TICKS_TO_MS = 43691; // 0.6667f : fraction, if TU_CORE_TIMER_RATE = 60 us : 65536U * ((1000 / TU_CORE_TIMER_RATE) - 16)
-const uint32_t TICK_JITTER = 0xFFFFFFF;  // 1/16 : threshold/double triggers reject -> ext_frequency_in_ticks_
-const uint32_t TICK_SCALE  = 0xC0000000; // 0.75 for signed_multiply_32x32
-const uint32_t COPYTIMEOUT = 200000; // in ticks
+static constexpr uint32_t SCALE_PULSEWIDTH = 58982; // 0.9 for signed_multiply_32x16b
+static constexpr uint32_t TICKS_TO_MS = 43691; // 0.6667f : fraction, if TU_CORE_TIMER_RATE = 60 us : 65536U * ((1000 / TU_CORE_TIMER_RATE) - 16)
+static constexpr uint32_t TICK_JITTER = 0xFFFFFFF;  // 1/16 : threshold/double triggers reject -> ext_frequency_in_ticks_
+static constexpr uint32_t TICK_SCALE  = 0xC0000000; // 0.75 for signed_multiply_32x32
+static constexpr uint32_t COPYTIMEOUT = 200000; // in ticks
 
 void SEQ_leftButton();
 void SEQ_leftButtonLong();
@@ -2650,5 +2648,3 @@ void SEQ_Channel::RenderScreensaver() const {
         }
     }
 }
-
-#endif // ENABLE_APP_SEQUINS

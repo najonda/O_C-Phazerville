@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef ENABLE_APP_ASR
-
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
 #include "util/util_turing.h"
@@ -1112,5 +1110,3 @@ void AppASR::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_ASR

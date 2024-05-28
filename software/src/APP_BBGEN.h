@@ -24,8 +24,6 @@
 
 // Bouncing balls app
 
-#ifdef ENABLE_APP_BBGEN
-
 #include "OC_apps.h"
 #include "OC_bitmaps.h"
 #include "OC_digital_inputs.h"
@@ -285,10 +283,10 @@ void FASTRUN AppQuadBouncingBalls::Process(OC::IOFrame *ioframe) {
   const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
   uint32_t triggers = ioframe->digital_inputs.triggered();
 
-  balls_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, cvs);
-  balls_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
-  balls_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
-  balls_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
+  balls_[0].Update(ioframe, triggers, cvs, DAC_CHANNEL_A);
+  balls_[1].Update(ioframe, triggers, cvs, DAC_CHANNEL_B);
+  balls_[2].Update(ioframe, triggers, cvs, DAC_CHANNEL_C);
+  balls_[3].Update(ioframe, triggers, cvs, DAC_CHANNEL_D);
 }
 
 size_t AppQuadBouncingBalls::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
@@ -445,5 +443,3 @@ void AppQuadBouncingBalls::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_BBGEN

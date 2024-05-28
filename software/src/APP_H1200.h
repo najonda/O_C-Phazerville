@@ -23,8 +23,6 @@
 //
 // Trigger-driven Neo-Riemannian Tonnetz transformations to generate chords
 
-#ifdef ENABLE_APP_H1200
-
 #include "OC_bitmaps.h"
 #include "OC_pitch_utils.h"
 #include "OC_strings.h"
@@ -1177,5 +1175,3 @@ void AppH1200::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_H1200

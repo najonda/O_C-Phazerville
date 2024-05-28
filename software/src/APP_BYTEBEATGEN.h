@@ -24,8 +24,6 @@
 
 // Byte beats app
 
-#ifdef ENABLE_APP_BYTEBEATGEN
-
 #include "OC_apps.h"
 #include "OC_bitmaps.h"
 #include "OC_digital_inputs.h"
@@ -450,10 +448,10 @@ void FASTRUN AppQuadByteBeats::Process(OC::IOFrame *ioframe) {
   const int32_t cvs[ADC_CHANNEL_LAST] = { cv1.value(), cv2.value(), cv3.value(), cv4.value() };
   uint32_t triggers = ioframe->digital_inputs.triggered();
 
-  bytebeats_[0].Update<DAC_CHANNEL_A>(ioframe, triggers, cvs);
-  bytebeats_[1].Update<DAC_CHANNEL_B>(ioframe, triggers, cvs);
-  bytebeats_[2].Update<DAC_CHANNEL_C>(ioframe, triggers, cvs);
-  bytebeats_[3].Update<DAC_CHANNEL_D>(ioframe, triggers, cvs);
+  bytebeats_[0].Update(ioframe, triggers, cvs, DAC_CHANNEL_A);
+  bytebeats_[1].Update(ioframe, triggers, cvs, DAC_CHANNEL_B);
+  bytebeats_[2].Update(ioframe, triggers, cvs, DAC_CHANNEL_C);
+  bytebeats_[3].Update(ioframe, triggers, cvs, DAC_CHANNEL_D);
 }
 
 size_t AppQuadByteBeats::SaveAppData(util::StreamBufferWriter &stream_buffer) const {
@@ -642,5 +640,3 @@ void AppQuadByteBeats::GetIOConfig(IOConfig &ioconfig) const
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_BYTEBEATGEN

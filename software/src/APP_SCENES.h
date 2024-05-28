@@ -23,8 +23,6 @@
  * Also similar to Mutable Instruments Frames
  */
 
-#ifdef ENABLE_APP_SCENES
-
 #include "OC_apps.h"
 #include "HSApplication.h"
 #include "HSMIDI.h"
@@ -601,5 +599,3 @@ void ScenesApp_handleEncoderEvent(const UI::Event &event) {
     // Right encoder turned
     if (event.control == OC::CONTROL_ENCODER_R) ScenesApp_instance.OnRightEncoderMove(event.value);
 }
-
-#endif // ENABLE_APP_SCENES

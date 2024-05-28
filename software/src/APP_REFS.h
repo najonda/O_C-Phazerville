@@ -23,8 +23,6 @@
 //
 // Very simple "reference" voltage app (not so simple any more...)
 
-#ifdef ENABLE_APP_REFERENCES
-
 #include <numeric>
 #include "OC_options.h"
 #include "OC_apps.h"
@@ -1005,4 +1003,3 @@ void ReferenceChannel::RenderScreensaver(weegfx::coord_t start_x, uint8_t chan, 
       print_voltage(-volts, 0);
   }
 }
-#endif // ENABLE_APP_REFERENCES

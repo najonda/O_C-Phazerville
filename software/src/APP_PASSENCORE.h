@@ -22,8 +22,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef ENABLE_APP_PASSENCORE
-
 #include <algorithm>
 
 #include "OC_apps.h"
@@ -210,8 +208,6 @@ struct PassenChord {
     }
   }
 };
-
-using OC::DUMMY;
 
 class PASSENCORE : public settings::SettingsBase<PASSENCORE, PASSENCORE_SETTING_LAST> {
   public:
@@ -1124,5 +1120,3 @@ static size_t PASSENCORE_restore(const void *storage) {
   passencore_instance.set_scale(passencore_state.left_encoder_value);
   return storage_size;
 }
-
-#endif // ENABLE_APP_PASSENCORE

@@ -22,8 +22,6 @@
 
 // See https://www.pjrc.com/teensy/td_midi.html
 
-#ifdef ENABLE_APP_MIDI
-
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <stdint.h>
@@ -918,6 +916,3 @@ void MIDI_handleEncoderEvent(const UI::Event &event) {
         captain_midi_instance.SwitchScreenOrLogView(event.value);
     }
 }
-
-
-#endif

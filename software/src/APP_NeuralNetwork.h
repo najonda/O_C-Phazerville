@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef ENABLE_APP_NEURAL_NETWORK
-
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <stdint.h>
@@ -660,5 +658,3 @@ void NeuralNetwork_handleEncoderEvent(const UI::Event &event) {
     // Right encoder turned
     if (event.control == OC::CONTROL_ENCODER_R) NeuralNetwork_instance.OnRightEncoderMove(event.value);
 }
-
-#endif

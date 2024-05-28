@@ -26,8 +26,6 @@
 // from Braids by Olivier Gillet (see braids_quantizer.h/cc et al.). It has since
 // grown a little bit...
 
-#ifdef ENABLE_APP_METAQ
-
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
@@ -52,8 +50,6 @@ extern uint_fast8_t MENU_REDRAW;
 
 const uint8_t NUMCHANNELS = 2;
 const uint8_t NUM_SCALE_SLOTS = 4;
-// const uint8_t PULSEW_MAX = 255;
-// const uint32_t TICKS_TO_MS = 43691;
 
 enum DQ_ChannelSetting {
   DQ_CHANNEL_SETTING_SCALE1,
@@ -168,6 +164,9 @@ class DQ_QuantizerChannel
 : public settings::SettingsBase<DQ_QuantizerChannel, DQ_CHANNEL_SETTING_LAST>
 , public OC::ScaleEditorEventHandler {
 public:
+
+  static constexpr uint8_t PULSEW_MAX = 255;
+  static constexpr uint32_t TICKS_TO_MS = 43691;
 
   // ScaleEditorEventHandler
   int get_scale(int slot_index) const final {
@@ -457,15 +456,6 @@ public:
       ticks_ = 0x0;
       update_asr_ = true;
       aux_sample_ = ON;
-    }
-
-    if (scale_reset_) {
-      // manual change?
-      scale_reset_ = false;
-      scale_sequence_cnt_ = 0x0;
-      scale_advance_state_ = 0x1;
-      active_scale_slot_ = get_scale_select();
-      prev_scale_slot_ = display_scale_slot_ = active_scale_slot_;
     }
 
     if (get_scale_seq_mode()) {
@@ -1514,5 +1504,3 @@ void DQ_QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
   int32_t octave = dq_render_pitch(OC::IO::pitch_rel_to_abs(dq_history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 58, dq_kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
 }
-
-#endif // ENABLE_APP_METAQ

@@ -55,8 +55,6 @@
 //
 // TODO With fast clocking, trigger out mode might not provide a rising edge
 
-#ifdef ENABLE_APP_AUTOMATONNETZ
-
 #include "util/util_grid.h"
 #include "util/util_ringbuffer.h"
 #include "util/util_settings.h"
@@ -191,14 +189,7 @@ enum UserAction {
   USER_ACTION_CLOCK,
 };
 
-// needed for Automatonnetz to work with or without Harrington 1200 compiled in the build
-#ifdef ENABLE_APP_H1200
 extern const char * const mode_names[];
-#else
-const char * const mode_names[] = {
-  "Maj", "Min"
-};
-#endif
 
 const char * const outputa_mode_names[] = {
   "root",
@@ -781,5 +772,3 @@ void AppAutomatonnetz::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_AUTOMATONNETZ

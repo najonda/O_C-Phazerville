@@ -26,8 +26,6 @@
 // from Braids by Olivier Gillet (see braids_quantizer.h/cc et al.). It has since
 // grown a little bit...
 
-#ifdef ENABLE_APP_CHORDS
-
 #include "OC_apps.h"
 #include "util/util_settings.h"
 #include "util/util_trigger_delay.h"
@@ -141,7 +139,6 @@ enum CHORDS_DIRECTIONS {
 };
 
 extern uint_fast8_t MENU_REDRAW;
-using OC::DUMMY;
 
 const char* const chords_advance_trigger_sources[] = {
   "TR1", "TR2"
@@ -1397,5 +1394,3 @@ void ChordQuantizer::RenderScreensaver(weegfx::coord_t start_x) const {
       OC::menu::DrawChord(x + (j << 4) + 2, y, 4, j, _num_progression);
   }
 }
-
-#endif // ENABLE_APP_CHORDS

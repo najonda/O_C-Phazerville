@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifdef ENABLE_APP_ENIGMA
-
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <stdint.h>
@@ -1245,6 +1243,3 @@ void EnigmaTMWS_handleEncoderEvent(const UI::Event &event) {
     // Right encoder turned
     if (event.control == OC::CONTROL_ENCODER_R) EnigmaTMWS_instance.OnRightEncoderMove(event.value);
 }
-
-
-#endif

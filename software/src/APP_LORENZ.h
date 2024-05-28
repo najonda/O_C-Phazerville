@@ -24,8 +24,6 @@
 
 // Lorenz and Rössler generator app
 
-#ifdef ENABLE_APP_LORENZ
-
 #include "src/extern/streams_lorenz_generator.h"
 #include "util/util_math.h"
 #include "OC_digital_inputs.h"
@@ -402,5 +400,3 @@ void AppLorenzGenerator::DrawDebugInfo() const {
 }
 
 } // namespace OC
-
-#endif // ENABLE_APP_LORENZ

@@ -25,8 +25,6 @@
 // from Braids by Olivier Gillet (see braids_quantizer.h/cc et al.). It has since
 // grown a little bit...
 
-#ifdef ENABLE_APP_QUANTERMAIN
-
 #include "OC_apps.h"
 #include "util/util_logistic_map.h"
 #include "util/util_settings.h"
@@ -141,8 +139,6 @@ enum QQ_CV_DEST {
   QQ_DEST_MASK,
   QQ_DEST_LAST
 };
-
-using OC::DUMMY;
 
 const char* const channel_input_sources[CHANNEL_SOURCE_LAST] = {
   "CV1", "CV2", "CV3", "CV4", "AAA", "BBB", "CCC", "Turing", "Lgstc", "ByteB", "IntSq"
@@ -1598,5 +1594,3 @@ void QuantizerChannel::RenderScreensaver(weegfx::coord_t start_x) const {
   int32_t octave = render_pitch(OC::IO::pitch_rel_to_abs(history[4]), x, 6 - scroll_pos);
   graphics.drawBitmap8(start_x + 28, kBottom - octave * 4 - 1, OC::kBitmapLoopMarkerW, OC::bitmap_loop_markers_8 + OC::kBitmapLoopMarkerW);
 }
-
-#endif // ENABLE_APP_QUANTERMAIN
