@@ -237,6 +237,7 @@ public:
   OC_APP_STORAGE_SIZE( HemispherePreset::storageSize() * HEM_NR_OF_PRESETS );
 
     enum PopupType {
+      POPUP_NONE,
       MENU_POPUP,
       CLOCK_POPUP, PRESET_POPUP,
     };
@@ -430,7 +431,10 @@ public:
 
     inline void PokePopup(PopupType pop) {
       popup_type = pop;
-      popup_tick = OC::CORE::ticks;
+      if (pop)
+        popup_tick = OC::CORE::ticks;
+      else
+        popup_tick = 0;
     }
 
     void DrawPopup() {
@@ -480,7 +484,7 @@ public:
       }
     }
 
-    void View() {
+    void View() const {
         bool draw_applets = true;
 
         if (preset_cursor) {
@@ -497,7 +501,7 @@ public:
             // but still draw the applets
           }
 
-          if (!draw_applets && popup_type == MENU_POPUP) popup_tick = 0; // cancel popup
+          if (!draw_applets && popup_type == MENU_POPUP) PokePopup(POPUP_NONE); // cancel popup
         }
 
         if (draw_applets) {
@@ -710,36 +714,6 @@ public:
         help_hemisphere = hemisphere;
     }
 
-    void HandleButtonEvent(const UI::Event &event) {
-        switch (event.type) {
-        case UI::EVENT_BUTTON_DOWN:
-            if (event.control == OC::CONTROL_BUTTON_M) {
-                ToggleClockRun();
-                OC::ui.SetButtonIgnoreMask(); // ignore release and long-press
-                break;
-            }
-        case UI::EVENT_BUTTON_PRESS:
-            if (event.control == OC::CONTROL_BUTTON_UP || event.control == OC::CONTROL_BUTTON_DOWN) {
-                DelegateSelectButtonPush(event);
-            } else if (event.control == OC::CONTROL_BUTTON_L || event.control == OC::CONTROL_BUTTON_R) {
-                DelegateEncoderPush(event);
-            }
-#ifdef ARDUINO_TEENSY41
-            else // new buttons
-                ExtraButtonPush(event);
-#endif
-
-            break;
-
-        case UI::EVENT_BUTTON_LONG_PRESS:
-            if (event.control == OC::CONTROL_BUTTON_DOWN) ToggleConfigMenu();
-            if (event.control == OC::CONTROL_BUTTON_L) ToggleClockRun();
-            break;
-
-        default: break;
-        }
-    }
-
 private:
     int preset_id = 0;
     int preset_cursor = 0;
@@ -928,8 +902,9 @@ size_t AppHemisphere::RestoreAppData(util::StreamBufferReader &stream_buffer) {
 void AppHemisphere::Process(OC::IOFrame *ioframe) {
   BaseController(ioframe);
 }
-void AppHemisphere::GetIOConfig(IOConfig &ioconfig) const
+void AppHemisphere::GetIOConfig(OC::IOConfig &ioconfig) const
 {
+  using namespace OC;
   ioconfig.digital_inputs[DIGITAL_INPUT_1].set("TR1");
   ioconfig.digital_inputs[DIGITAL_INPUT_2].set("TR2");
   ioconfig.digital_inputs[DIGITAL_INPUT_3].set("TR3");
@@ -982,11 +957,35 @@ void AppHemisphere::DrawScreensaver() const {
     }
 }
 
-/*
 void AppHemisphere::HandleButtonEvent(const UI::Event &event) {
-    HandleButtonEvent(event);
+    switch (event.type) {
+      case UI::EVENT_BUTTON_DOWN:
+        if (event.control == OC::CONTROL_BUTTON_M) {
+            ToggleClockRun();
+            OC::ui.SetButtonIgnoreMask(); // ignore release and long-press
+            break;
+        }
+      case UI::EVENT_BUTTON_PRESS:
+        if (event.control == OC::CONTROL_BUTTON_UP || event.control == OC::CONTROL_BUTTON_DOWN) {
+            DelegateSelectButtonPush(event);
+        } else if (event.control == OC::CONTROL_BUTTON_L || event.control == OC::CONTROL_BUTTON_R) {
+            DelegateEncoderPush(event);
+        }
+#ifdef ARDUINO_TEENSY41
+        else // new buttons
+            ExtraButtonPush(event);
+#endif
+
+        break;
+
+      case UI::EVENT_BUTTON_LONG_PRESS:
+        if (event.control == OC::CONTROL_BUTTON_DOWN) ToggleConfigMenu();
+        if (event.control == OC::CONTROL_BUTTON_L) ToggleClockRun();
+        break;
+
+      default: break;
+    }
 }
-*/
 
 void AppHemisphere::HandleEncoderEvent(const UI::Event &event) {
     DelegateEncoderMovement(event);

@@ -127,7 +127,7 @@ void FASTRUN Ui::Poll() {
   button_state_ = button_state;
 }
 
-UiMode Ui::DispatchEvents(const AppBase *app) {
+UiMode Ui::DispatchEvents(AppBase *app) {
 
   while (event_queue_.available()) {
     const UI::Event event = event_queue_.PullEvent();

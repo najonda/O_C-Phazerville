@@ -183,6 +183,7 @@ static AppDataStorage app_data_storage;
 static AppContainer<void // this space intentionally left blank
 #ifndef NO_HEMISPHERE
   , AppHemisphere
+  , Calibr8or
 #endif
   , AppASR
   , AppH1200

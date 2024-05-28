@@ -174,7 +174,62 @@ public:
         }
     }
 
+  // TOTAL EEPROM SIZE: 4 * 29 bytes
+  SETTINGS_ARRAY_DECLARE() {{
+    {0, 0, 1, "validity flag", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale A", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor A", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias A", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose A", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode A", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale B", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor B", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias B", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose B", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode B", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale C", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor C", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias C", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose C", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode C", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale D", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor D", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias D", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose D", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode D", NULL, settings::STORAGE_TYPE_U8},
+
+#ifdef ARDUINO_TEENSY41
+    {0, 0, 65535, "Scale E", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor E", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias E", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose E", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode E", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale F", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor F", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias F", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose F", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode F", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale G", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor G", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias G", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose G", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode G", NULL, settings::STORAGE_TYPE_U8},
+
+    {0, 0, 65535, "Scale H", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 65535, "CV Scaling Factor H", NULL, settings::STORAGE_TYPE_U16},
+    {0, 0, 255, "Offset Bias H", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Transpose H", NULL, settings::STORAGE_TYPE_U8},
+    {0, 0, 255, "Root Key + Mode H", NULL, settings::STORAGE_TYPE_U8},
+#endif
+  }};
 };
+SETTINGS_ARRAY_DEFINE(Calibr8orPreset);
 
 Calibr8orPreset cal8_presets[NR_OF_PRESETS];
 
@@ -287,7 +342,7 @@ public:
             }
 
             int output_cv = c.last_note;
-            if ( OC::DAC::calibration_data_used( DAC_CHANNEL(sel_chan) ) != 0x01 ) // not autotuned
+            if ( !io_settings().autotune_data_enabled(sel_chan) )
                 output_cv = output_cv * (CAL8OR_PRECISION + c.scale_factor) / CAL8OR_PRECISION;
             output_cv += c.offset;
 
@@ -299,7 +354,7 @@ public:
         }
     }
 
-    void View() {
+    void View() const {
         if (clock_setup) {
             ClockSetup_instance.View();
             return;
@@ -459,7 +514,7 @@ public:
             while (channel[sel_chan].transpose > CAL8_MAX_TRANSPOSE) channel[sel_chan].transpose -= s;
             while (channel[sel_chan].transpose < -CAL8_MAX_TRANSPOSE) channel[sel_chan].transpose += s;
         }
-        else if ( OC::DAC::calibration_data_used( DAC_CHANNEL(sel_chan) ) != 0x01 ) // not autotuned
+        else if ( !io_settings().autotune_data_enabled(sel_chan) )
         {
             // Tracking compensation
             channel[sel_chan].scale_factor = constrain(channel[sel_chan].scale_factor + direction, -500, 500);
@@ -590,7 +645,7 @@ public:
         y += 22;
         gfxIcon(9, y, ZAP_ICON);
 
-        if ( OC::DAC::calibration_data_used( DAC_CHANNEL(sel_chan) ) == 0x01 ) {
+        if ( io_settings().autotune_data_enabled(sel_chan) ) {
             gfxPrint(20, y, "(auto) ");
         } else {
             int whole = (channel[sel_chan].scale_factor + CAL8OR_PRECISION) / 100;
@@ -608,61 +663,6 @@ public:
         if (!scale_edit)
             gfxIcon(0, 32 + edit_mode*22, RIGHT_ICON);
     }
-};
-
-// TOTAL EEPROM SIZE: 4 * 29 bytes
-SETTINGS_DECLARE(Calibr8orPreset, CAL8_SETTING_LAST) {
-    {0, 0, 1, "validity flag", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale A", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor A", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias A", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose A", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode A", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale B", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor B", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias B", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose B", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode B", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale C", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor C", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias C", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose C", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode C", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale D", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor D", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias D", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose D", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode D", NULL, settings::STORAGE_TYPE_U8},
-
-#ifdef ARDUINO_TEENSY41
-    {0, 0, 65535, "Scale E", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor E", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias E", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose E", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode E", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale F", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor F", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias F", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose F", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode F", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale G", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor G", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias G", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose G", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode G", NULL, settings::STORAGE_TYPE_U8},
-
-    {0, 0, 65535, "Scale H", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 65535, "CV Scaling Factor H", NULL, settings::STORAGE_TYPE_U16},
-    {0, 0, 255, "Offset Bias H", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Transpose H", NULL, settings::STORAGE_TYPE_U8},
-    {0, 0, 255, "Root Key + Mode H", NULL, settings::STORAGE_TYPE_U8},
-#endif
 };
 
 
@@ -690,7 +690,8 @@ size_t Calibr8or::RestoreAppData(util::StreamBufferReader &stream_buffer) {
 
 void Calibr8or::Process(OC::IOFrame *ioframe) {
     if (autotuner.active()) {
-      autotuner.ISR();
+      //autotuner.ISR();
+      autotuner.Tick();
       return;
     }
     BaseController(ioframe);
@@ -713,9 +714,9 @@ void Calibr8or::HandleAppEvent(OC::AppEvent event) {
 
 void Calibr8or::Loop() {} // Deprecated
 
-void Calibr8or::DrawMenu() { BaseView(); }
+void Calibr8or::DrawMenu() const { BaseView(); }
 
-void Calibr8or::DrawScreensaver() {
+void Calibr8or::DrawScreensaver() const {
     BaseScreensaver(true);
 }
 

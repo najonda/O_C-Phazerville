@@ -55,7 +55,7 @@ class HSApplication {
 public:
     virtual void Start() = 0;
     virtual void Controller() = 0;
-    virtual void View() = 0;
+    virtual void View() const = 0;
     virtual void Resume() = 0;
 
     void BaseController(OC::IOFrame *ioframe) {
@@ -86,13 +86,12 @@ public:
         Start();
     }
 
-    void BaseView() {
+    void BaseView() const {
         View();
-        last_view_tick = OC::CORE::ticks;
     }
 
     // general screensaver view, visualizing inputs and outputs
-    void BaseScreensaver(bool notenames = 0) {
+    void BaseScreensaver(bool notenames = 0) const {
         gfxDottedLine(0, 32, 127, 32, 3); // horizontal baseline
         const size_t w = 128 / DAC_CHANNEL_LAST;
         for (int ch = 0; ch < DAC_CHANNEL_LAST; ++ch)
@@ -218,7 +217,6 @@ protected:
 
 private:
     int cursor_countdown; // Timer for cursor blinkin'
-    uint32_t last_view_tick; // Time since the last view, for activating screen blanking
 };
 
 // --- Phazerville Screensaver Library ---
