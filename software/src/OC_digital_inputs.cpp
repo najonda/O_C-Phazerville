@@ -14,19 +14,19 @@ uint32_t OC::DigitalInputs::raised_mask_;
 /*static*/
 volatile uint32_t OC::DigitalInputs::captures_[DIGITAL_INPUT_LAST];
 
-void FASTRUN tr1_ISR() {
+void FASTRUN OC::tr1_ISR() {
   OC::DigitalInputs::capture<OC::DIGITAL_INPUT_1>();
 }  // main clock
 
-void FASTRUN tr2_ISR() {
+void FASTRUN OC::tr2_ISR() {
   OC::DigitalInputs::capture<OC::DIGITAL_INPUT_2>();
 }
 
-void FASTRUN tr3_ISR() {
+void FASTRUN OC::tr3_ISR() {
   OC::DigitalInputs::capture<OC::DIGITAL_INPUT_3>();
 }
 
-void FASTRUN tr4_ISR() {
+void FASTRUN OC::tr4_ISR() {
   OC::DigitalInputs::capture<OC::DIGITAL_INPUT_4>();
 }
 

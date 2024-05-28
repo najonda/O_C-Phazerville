@@ -39,7 +39,9 @@
 namespace OC {
 
 void draw_save_message(uint8_t c);
-void save_app_data();
+void SaveAppData();
+
+static inline void save_app_data() { SaveAppData(); }
 
 enum AppEvent {
   APP_EVENT_SUSPEND,

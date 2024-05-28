@@ -54,7 +54,7 @@ struct TuringMachine {
     }
 };
 
-TuringMachine user_turing_machines[TURING_MACHINE_COUNT];
+extern TuringMachine user_turing_machines[TURING_MACHINE_COUNT];
 
 }; // namespace HS
 

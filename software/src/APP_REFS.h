@@ -580,6 +580,8 @@ public:
   void RenderScreensaver(weegfx::coord_t start_x, uint8_t chan, const OC::IOSettings &io_settings) const;
 
 private:
+  static constexpr size_t kHistoryDepth = 10;
+
   DAC_CHANNEL dac_channel_;
   const uint16_t *calibration_data_;
   OC::DAC::AutotuneChannelCalibrationData *autotune_calibration_data_;

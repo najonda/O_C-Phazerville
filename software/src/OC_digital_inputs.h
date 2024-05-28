@@ -32,10 +32,10 @@ template <> struct InputPinDesc<DIGITAL_INPUT_2> { static constexpr int PIN = TR
 template <> struct InputPinDesc<DIGITAL_INPUT_3> { static constexpr int PIN = TR3; };
 template <> struct InputPinDesc<DIGITAL_INPUT_4> { static constexpr int PIN = TR4; };
 
-void tr1_ISR();
-void tr2_ISR();
-void tr3_ISR();
-void tr4_ISR();
+void FASTRUN tr1_ISR();
+void FASTRUN tr2_ISR();
+void FASTRUN tr3_ISR();
+void FASTRUN tr4_ISR();
 
 class DigitalInputs {
 public:

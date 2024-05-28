@@ -53,31 +53,31 @@ namespace menu = OC::menu;
 
 #endif
 
-#include "APP_CALIBR8OR.h"
-#include "APP_SCENES.h"
+// #include "APP_CALIBR8OR.h"
+// #include "APP_SCENES.h"
 #include "APP_ASR.h"
 #include "APP_H1200.h"
 #include "APP_AUTOMATONNETZ.h"
+#include "APP_SEQ.h"
 #include "APP_QQ.h"
 #include "APP_DQ.h"
 #include "APP_POLYLFO.h"
 #include "APP_LORENZ.h"
 #include "APP_ENVGEN.h"
-#include "APP_SEQ.h"
 #include "APP_BBGEN.h"
 #include "APP_BYTEBEATGEN.h"
 #include "APP_CHORDS.h"
 #include "APP_REFS.h"
-#include "APP_PASSENCORE.h"
-#include "APP_MIDI.h"
-#include "APP_THEDARKESTTIMELINE.h"
-#include "APP_ENIGMA.h"
-#include "APP_NeuralNetwork.h"
-#include "APP_SCALEEDITOR.h"
-#include "APP_WAVEFORMEDITOR.h"
-#include "APP_PONGGAME.h"
-#include "APP_Backup.h"
-#include "APP_SETTINGS.h"
+// #include "APP_PASSENCORE.h"
+// #include "APP_MIDI.h"
+// #include "APP_THEDARKESTTIMELINE.h"
+// #include "APP_ENIGMA.h"
+// #include "APP_NeuralNetwork.h"
+// #include "APP_SCALEEDITOR.h"
+// #include "APP_WAVEFORMEDITOR.h"
+// #include "APP_PONGGAME.h"
+// #include "APP_Backup.h"
+// #include "APP_SETTINGS.h"
 
 /*
 static constexpr OC::App app_container[] = {
@@ -240,7 +240,7 @@ static void SaveGlobalSettings() {
   memcpy(global_settings.user_scales, OC::user_scales, sizeof(OC::user_scales));
   memcpy(global_settings.user_patterns, OC::user_patterns, sizeof(OC::user_patterns));
   memcpy(global_settings.user_chords, OC::user_chords, sizeof(OC::user_chords));
-  memcpy(global_settings.user_turing_machines, HS::user_turing_machines, sizeof(HS::user_turing_machines));
+  //memcpy(global_settings.user_turing_machines, HS::user_turing_machines, sizeof(HS::user_turing_machines));
   memcpy(global_settings.user_waveforms, HS::user_waveforms, sizeof(HS::user_waveforms));
   
   global_settings_storage.Save(global_settings);
@@ -412,7 +412,7 @@ void AppSwitcher::Init(bool reset_settings) {
       memcpy(user_scales, global_settings.user_scales, sizeof(user_scales));
       memcpy(user_patterns, global_settings.user_patterns, sizeof(user_patterns));
       memcpy(user_chords, global_settings.user_chords, sizeof(user_chords));
-      memcpy(HS::user_turing_machines, global_settings.user_turing_machines, sizeof(HS::user_turing_machines));
+      //memcpy(HS::user_turing_machines, global_settings.user_turing_machines, sizeof(HS::user_turing_machines));
       memcpy(HS::user_waveforms, global_settings.user_waveforms, sizeof(HS::user_waveforms));
       Scales::Validate();
     }

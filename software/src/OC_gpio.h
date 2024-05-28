@@ -107,7 +107,6 @@ namespace OC {
 
 void Pinout_Detect();
 
-void pinMode(uint8_t pin, uint8_t mode);
 }
 
 #endif // OC_GPIO_H_

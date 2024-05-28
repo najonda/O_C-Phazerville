@@ -1,8 +1,14 @@
 #include <Arduino.h>
 #include "OC_core.h"
 #include "HemisphereApplet.h"
+#include "enigma/TuringMachine.h"
+#include "vector_osc/HSVectorOscillator.h"
 
 namespace HS {
+
+// All of the HS:: globals should be instantiated here
+TuringMachine user_turing_machines[TURING_MACHINE_COUNT];
+VOSegment user_waveforms[VO_SEGMENT_COUNT];
 
 braids::Quantizer quantizer[DAC_CHANNEL_LAST]; // global shared quantizers
 int quant_scale[DAC_CHANNEL_LAST];

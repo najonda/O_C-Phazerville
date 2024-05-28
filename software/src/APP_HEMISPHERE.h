@@ -953,6 +953,9 @@ void AppHemisphere::DrawScreensaver() const {
     default: break; // blank screen
     }
 }
+void AppHemisphere::DrawDebugInfo() const {
+  // TODO:
+}
 
 void AppHemisphere::HandleButtonEvent(const UI::Event &event) {
     switch (event.type) {
