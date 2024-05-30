@@ -181,23 +181,51 @@ static AppDataStorage app_data_storage;
 // triage all code (minus any dangling static parts). (Yeah, this still relies
 // on the fugly .ino compilation method, don't @ me).
 static AppContainer<void // this space intentionally left blank
-#ifndef NO_HEMISPHERE
-  , AppHemisphere
+#if 0
   , Calibr8or
 #endif
+#ifndef NO_HEMISPHERE
+  , AppHemisphere
+#endif
+#ifdef ENABLE_APP_ASR
   , AppASR
+#endif
+#ifdef ENABLE_APP_H1200
   , AppH1200
+#endif
+#ifdef ENABLE_APP_AUTOMATONNETZ
   , AppAutomatonnetz
+#endif
+#ifdef ENABLE_APP_QUANTERMAIN
   , AppQuadQuantizer
+#endif
+#ifdef ENABLE_APP_METAQ
   , AppDualQuantizer
+#endif
+#ifdef ENABLE_APP_POLYLFO
   , AppPolyLfo
+#endif
+#ifdef ENABLE_APP_LORENZ
   , AppLorenzGenerator
+#endif
+#ifdef ENABLE_APP_PIQUED
   , AppQuadEnvelopeGenerator
+#endif
+#ifdef ENABLE_APP_SEQUINS
   , AppDualSequencer
+#endif
+#ifdef ENABLE_APP_BBGEN
   , AppQuadBouncingBalls
+#endif
+#ifdef ENABLE_APP_BYTEBEATGEN
   , AppQuadByteBeats
+#endif
+#ifdef ENABLE_APP_CHORDS
   , AppChordQuantizer
+#endif
+#ifdef ENABLE_APP_REFERENCES
   , AppReferences
+#endif
 > app_container;
 static_assert(decltype(app_container)::TotalAppDataStorageSize() < AppData::kAppDataSize,
               "Apps use too much EEPROM space!");
