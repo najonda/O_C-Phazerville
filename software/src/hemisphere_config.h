@@ -89,6 +89,7 @@ class_name class_name ## _instance[2]
 #include "applets/Seq32.h"
 #include "applets/SeqPlay7.h"
 #include "applets/ShiftGate.h"
+#include "applets/ShiftReg.h"
 #include "applets/Shredder.h"
 #include "applets/Shuffle.h"
 #include "applets/Slew.h"
@@ -172,6 +173,7 @@ CREATE_APPLET(SequenceX);
 CREATE_APPLET(Seq32);
 CREATE_APPLET(SeqPlay7);
 CREATE_APPLET(ShiftGate);
+CREATE_APPLET(ShiftReg);
 CREATE_APPLET(Shredder);
 CREATE_APPLET(Shuffle);
 CREATE_APPLET(Slew);
@@ -244,6 +246,7 @@ CREATE_APPLET(VectorMorph);
     DECLARE_APPLET( 76, 0x02, SeqPlay7), \
     DECLARE_APPLET( 14, 0x02, SequenceX), \
     DECLARE_APPLET( 48, 0x45, ShiftGate), \
+    DECLARE_APPLET( 77, 0x45, ShiftReg), \
     DECLARE_APPLET( 58, 0x01, Shredder), \
     DECLARE_APPLET( 36, 0x04, Shuffle), \
     DECLARE_APPLET( 19, 0x01, Slew), \
