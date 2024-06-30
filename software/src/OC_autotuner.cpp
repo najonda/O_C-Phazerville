@@ -1,6 +1,7 @@
-// Copyright 2012 Émilie Gillet.
+// Copyright 2019 Patrick Dowling
 //
-// Author: Émilie Gillet (ol.gillet@gmail.com)
+// Author: Patrick Dowling (pld@gurkenkiste.com)
+// Adapted from code by Max Stadler
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,46 +23,36 @@
 // 
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
-// -----------------------------------------------------------------------------
-//
-// Fast 16-bit pseudo random number generator.
 
-#ifndef STMLIB_UTILS_RANDOM_H_
-#define STMLIB_UTILS_RANDOM_H_
+#include "OC_core.h"
+#include "OC_autotuner.h"
 
-// #include "stmlib/stmlib.h"
-#include <stdint.h>
-#include "util/util_macros.h"
+namespace OC {
 
-namespace stmlib {
+SETTINGS_ARRAY_DEFINE(AutotunerSettings);
 
-class Random {
- public:
-  static inline uint32_t state() { return rng_state_; }
-
-  static inline void Seed(uint32_t seed) {
-    rng_state_ = seed;
-  }
-
-  static inline uint32_t GetWord() {
-    rng_state_ = rng_state_ * 1664525L + 1013904223L;
-    return state();
-  }
-  
-  static inline int16_t GetSample() {
-    return static_cast<int16_t>(GetWord() >> 16);
-  }
-
-  static inline float GetFloat() {
-    return static_cast<float>(GetWord()) / 4294967296.0f;
-  }
-
- private:
-  static uint32_t rng_state_;
-
-  DISALLOW_COPY_AND_ASSIGN(Random);
+#if defined(BUCHLA_4U) && !defined(IO_10V)
+const char* const AT_steps[] = {
+  "0.0V", "1.2V", "2.4V", "3.6V", "4.8V", "6.0V", "7.2V", "8.4V", "9.6V", "10.8V", " " 
 };
 
-}  // namespace stmlib
+#elif defined(IO_10V)
+const char* const AT_steps[] = {
+  "0.0V", "1.0V", "2.0V", "3.0V", "4.0V", "5.0V", "6.0V", "7.0V", "8.0V", "9.0V", " " 
+};
 
-#endif  // STMLIB_UTILS_RANDOM_H_
+#else
+const char* const AT_steps[] = {
+  "-3V", "-2V", "-1V", " 0V", "+1V", "+2V", "+3V", "+4V", "+5V", "+6V", " " 
+};
+#endif
+
+const char *const reset_action_strings[] = {
+  ">RESET", ">  USE"
+};
+
+const char *const status_action_strings[] = {
+  ">  ARM", ">  RUN", "> STOP", ">   OK"
+};
+
+} // namespace OC

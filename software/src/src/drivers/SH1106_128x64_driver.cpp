@@ -135,10 +135,10 @@ void SH1106_128x64_Driver::Reinit() {
 
 /*static*/
 void SH1106_128x64_Driver::Init() {
-  OC::pinMode(OLED_CS, OUTPUT);
-  OC::pinMode(OLED_RST, OUTPUT);
-  OC::pinMode(OLED_DC, OUTPUT);
-  //SPI_init();
+  pinMode(OLED_CS, OUTPUT);
+  pinMode(OLED_RST, OUTPUT);
+  pinMode(OLED_DC, OUTPUT);
+  //SPI_init(); 
 
   // u8g_teensy::U8G_COM_MSG_INIT
   digitalWriteFast(OLED_RST, HIGH);
