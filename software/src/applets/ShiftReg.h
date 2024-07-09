@@ -75,7 +75,7 @@ static constexpr int MAX_LENGTH = 16;
         int32_t note = Proportion(reg & 0x1f, 0x1f, quant_range);
         Out(0, quantizer.Lookup(note + 64));
 
-        switch (cv2) {
+        switch (out_b) {
         case 0:
           // Send 8-bit proportioned CV
           Out(1, Proportion(reg & 0x00ff, 255, HEMISPHERE_MAX_CV) );
@@ -109,33 +109,30 @@ static constexpr int MAX_LENGTH = 16;
     }
 
     void OnEncoderMove(int direction) {
-        if (!isEditing) {
-            cursor += direction;
-            if (cursor < 0) cursor = 4;
-            if (cursor > 4) cursor = 0;
+        if (!EditMode()) {
+            MoveCursor(cursor, direction, 4);
+            return;
+        }
 
-            ResetCursor();  // Reset blink so it's immediately visible when moved
-        } else {
-            switch (cursor) {
-            case 0:
-                length = constrain(length + direction, MIN_LENGTH, MAX_LENGTH);
-                break;
-            case 1:
-                p = constrain(p + direction, 0, 100);
-                break;
-            case 2:
-                scale += direction;
-                if (scale >= MAX_SCALE) scale = 0;
-                if (scale < 0) scale = MAX_SCALE - 1;
-                quantizer.Configure(OC::Scales::GetScale(scale), 0xffff);
-                break;
-            case 3:
-                quant_range = constrain(quant_range + direction, 1, 32);
-                break;
-            case 4:
-                cv2 = constrain(cv2 + direction, 0, 4);
-                break;
-            }
+        switch (cursor) {
+        case 0:
+            length = constrain(length + direction, MIN_LENGTH, MAX_LENGTH);
+            break;
+        case 1:
+            p = constrain(p + direction, 0, 100);
+            break;
+        case 2:
+            scale += direction;
+            if (scale >= MAX_SCALE) scale = 0;
+            if (scale < 0) scale = MAX_SCALE - 1;
+            quantizer.Configure(OC::Scales::GetScale(scale), 0xffff);
+            break;
+        case 3:
+            quant_range = constrain(quant_range + direction, 1, 32);
+            break;
+        case 4:
+            out_b = constrain(out_b + direction, 0, 4);
+            break;
         }
     }
         
@@ -145,7 +142,7 @@ static constexpr int MAX_LENGTH = 16;
         Pack(data, PackLocation {16,7}, p);
         Pack(data, PackLocation {23,4}, length - 1);
         Pack(data, PackLocation {27,5}, quant_range - 1);
-        Pack(data, PackLocation {32,4}, cv2);
+        Pack(data, PackLocation {32,4}, out_b);
         Pack(data, PackLocation {36,8}, constrain(scale, 0, 255));
 
         return data;
@@ -156,7 +153,7 @@ static constexpr int MAX_LENGTH = 16;
         p = Unpack(data, PackLocation {16,7});
         length = Unpack(data, PackLocation {23,4}) + 1;
         quant_range = Unpack(data, PackLocation{27,5}) + 1;
-        cv2 = Unpack(data, PackLocation {32,4});
+        out_b = Unpack(data, PackLocation {32,4});
         scale = Unpack(data, PackLocation {36,8});
         quantizer.Configure(OC::Scales::GetScale(scale), 0xffff);
     }
@@ -164,9 +161,9 @@ static constexpr int MAX_LENGTH = 16;
 protected:
     void SetHelp() {
         //                               "------------------" <-- Size Guide
-        help[HEMISPHERE_HELP_DIGITALS] = "1=Clock 2=p Gate";
+        help[HEMISPHERE_HELP_DIGITALS] = "1=Clock  2=p Gate";
         help[HEMISPHERE_HELP_CVS]      = "1=Length 2=p Mod";
-        help[HEMISPHERE_HELP_OUTS]     = "A=Quant5-bit B=CV2";
+        help[HEMISPHERE_HELP_OUTS]     = "A=Quant5-bit B=aux";
         help[HEMISPHERE_HELP_ENCODER]  = "Len/Prob/Scl/Range";
         //                               "------------------" <-- Size Guide
     }
@@ -180,10 +177,10 @@ private:
     uint16_t reg; // 16-bit sequence register
     int p; // Probability of bit 15 changing on each cycle
 
+    // Scale used for quantized output
     int scale;  // Logarhythm: hold larger values
-
     uint8_t quant_range;  // APD
-    uint8_t cv2 = 0; // 2nd output mode: 0=mod; 1=trig; 2=trig-on-msb; 3=duplicate of A; 4=alternate pitch
+    uint8_t out_b = 0; // 2nd output mode: 0=mod; 1=trig; 2=trig-on-msb; 3=duplicate of A; 4=alternate pitch
 
     void DrawSelector() {
         gfxBitmap(1, 14, 8, LOOP_ICON);
@@ -200,8 +197,8 @@ private:
         gfxPrint(12, 25, OC::scale_names_short[scale]);
         gfxBitmap(41, 24, 8, NOTE4_ICON);
         gfxPrint(49, 25, quant_range); // APD
-        gfxPrint(1, 35, "CV2:");
-        switch (cv2) {
+        gfxPrint(1, 35, hemisphere ? "B:":"D:");
+        switch (out_b) {
         case 0: // modulation output
             gfxBitmap(28, 35, 8, WAVEFORM_ICON);
             break;
@@ -223,16 +220,7 @@ private:
             case 1: gfxCursor(45, 23, 18); break; // Probability Cursor
             case 2: gfxCursor(12, 33, 25); break; // Scale Cursor
             case 3: gfxCursor(49, 33, 14); break; // Quant Range Cursor // APD
-            case 4: gfxCursor(27, 43, (cv2 == 2) ? 18 : 10); // cv2 mode
-        }
-        if (isEditing) {
-            switch (cursor) {
-                case 0: gfxInvert(13, 14, 12, 9); break;
-                case 1: gfxInvert(45, 14, 18, 9); break;
-                case 2: gfxInvert(12, 24, 25, 9); break;
-                case 3: gfxInvert(49, 24, 14, 9); break;
-                case 4: gfxInvert(27, 34, (cv2 == 2) ? 18 : 10, 9); // cv2 mode
-            }
+            case 4: gfxCursor(27, 43, (out_b == 2) ? 18 : 10); // out_b mode
         }
     }
 
@@ -256,4 +244,3 @@ private:
     }
 
 };
-
