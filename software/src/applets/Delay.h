@@ -28,7 +28,8 @@ public:
     float f = 0.01f * feedback / taps;
     for (int tap = 0; tap < taps; tap++) {
       CONSTRAIN(d, 0.0f, MAX_DELAY_SECS);
-      delay.delay(tap, d * (tap + 1) / taps);
+      // delay.delay(tap, d * (tap + 1) / taps);
+      delay.cf_delay(tap, d * (tap + 1) / taps);
       delay.feedback(tap, f);
     }
     for (int tap = taps; tap < 8; tap++) {
