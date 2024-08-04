@@ -5,14 +5,14 @@
 #include "dsputils.h"
 #include "stmlib_utils_dsp.h"
 #include <Audio.h>
-#include <optional>
 
 template <size_t BufferLength = static_cast<size_t>(AUDIO_SAMPLE_RATE),
           size_t Taps = 1>
 class AudioDelayExt : public AudioStream {
 public:
   AudioDelayExt() : AudioStream(1, input_queue_array) {
-    delay_secs.fill(AudioParam(0.0f, 0.0002f));
+    delay_secs.fill(OnePole(Interpolated(0.0f, AUDIO_BLOCK_SAMPLES), 0.0002f));
+    fb.fill(Interpolated(0.0f, AUDIO_BLOCK_SAMPLES));
   }
 
   void delay(size_t tap, float secs) {
@@ -22,8 +22,8 @@ public:
   }
 
   void cf_delay(size_t tap, float secs) {
-    auto& t = target_delay[tap];
-    if (t.phase == 0.0f) {
+    auto &t = target_delay[tap];
+    if (t.phase == 0.0f && t.target != secs) {
       t.phase = crossfade_dt;
       t.target = secs;
     }
@@ -59,7 +59,7 @@ public:
 
   int16_t ReadNext(size_t tap) {
     float d = delay_secs[tap].ReadNext();
-    auto& target = target_delay[tap];
+    auto &target = target_delay[tap];
     if (target.phase > 0.0f) {
       int16_t target_val = buffer.ReadSample(target.target * AUDIO_SAMPLE_RATE);
       int16_t source_val = buffer.ReadSample(d * AUDIO_SAMPLE_RATE);
@@ -78,7 +78,11 @@ public:
   }
 
 private:
-  static constexpr float crossfade_dt = 100.0f / AUDIO_SAMPLE_RATE;
+  // 20 hz to be just below human hearing frequency.
+  // Empirically most stuff sounds pretty good at this, but high pitched sine
+  // waves will crackle a bit with modulation
+  // TODO: Make this auto-adjust to delay time to better support karplus-strong
+  static constexpr float crossfade_dt = 20.0f / AUDIO_SAMPLE_RATE;
   struct CrossfadeTarget {
     float target;
     float phase;
@@ -86,7 +90,7 @@ private:
 
   audio_block_t *input_queue_array[1];
   std::array<CrossfadeTarget, Taps> target_delay;
-  std::array<AudioParam<float>, Taps> delay_secs;
-  std::array<AudioParam<float>, Taps> fb;
+  std::array<OnePole<Interpolated>, Taps> delay_secs;
+  std::array<Interpolated, Taps> fb;
   ExtAudioBuffer<BufferLength> buffer;
 };
