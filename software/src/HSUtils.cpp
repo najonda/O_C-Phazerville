@@ -284,6 +284,7 @@ namespace HS {
 
 #ifdef ARDUINO_TEENSY41
 void OC::AudioDSP::DrawAudioSetup() {
+  gfxDottedLine(63, 10, 63, 63); // vert separator
   for (int ch = 0; ch < 2; ++ch)
   {
     const int x = 8 + 64*ch;
