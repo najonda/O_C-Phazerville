@@ -127,6 +127,9 @@ public:
      * hemispheres.
      */
     uint16_t GetTempo() {return tempo;}
+    float GetTempoFloat() {
+      return 1000000.0f / ticks_per_beat;
+    }
 
     void BeatSync(void (*func)()) {
       sync_func = func;

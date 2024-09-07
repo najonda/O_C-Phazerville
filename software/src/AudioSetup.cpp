@@ -270,7 +270,7 @@ namespace OC {
       return (uint16_t)wavplayer[ch].getBPM();
     }
     void FileMatchTempo(int ch) {
-      wavplayer[ch].matchTempo(HS::clock_m.GetTempo());
+      wavplayer[ch].matchTempo(HS::clock_m.GetTempoFloat());
     }
     void FileLevel(int ch, int cv) {
       wavlevel[ch] = (float)cv / MAX_CV + bias[ch][WAV_LEVEL];
