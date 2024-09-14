@@ -108,6 +108,9 @@ class AudioPlayResmp : public AudioStream
         void stop() {
             reader->stop();
         }
+        void reset() {
+            reader->reset();
+        }
 
         void update()
         {

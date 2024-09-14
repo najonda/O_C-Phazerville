@@ -32,6 +32,7 @@ namespace OC {
       VCF_MODE,
       WAVEFOLDER,
       WAV_PLAYER,
+      LOOP_LENGTH,
       WAV_PLAYER_VCA,
       WAV_PLAYER_RATE,
 
@@ -48,6 +49,7 @@ namespace OC {
     extern ChannelSetting audio_cursor[2];
     extern bool isEditing[2];
     extern bool filter_enabled[2];
+    extern uint8_t loop_length[2];
 
     void Init();
     void Process(const int *values);

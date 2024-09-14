@@ -100,7 +100,7 @@ namespace OC {
   namespace AudioDSP {
 
     const char * const mode_names[MODE_COUNT] = {
-      "Off", "Osc", "VCA", "VCF", "FOLD", "File", "FileVCA", "Speed"
+      "Off", "Osc", "VCA", "VCF", "FOLD", "File", "Loop", "FileVCA", "Speed"
     };
 
     /* Mod Targets:
@@ -128,6 +128,8 @@ namespace OC {
     bool wavplayer_available = false;
     uint8_t wavplayer_select[2] = { 1, 2 };
     float wavlevel[2] = { 1.0, 1.0 };
+    uint8_t loop_length[2] = { 0, 0 };
+    int8_t loop_count[2] = { 0, 0 };
 
     void SetOscPitch(int ch, int cv) {
       float freq = 220.0 * powf(2.0, (cv - (9*128)) / (12.0 * 128));
@@ -207,6 +209,7 @@ namespace OC {
       filename[1] += wavplayer_select[ch] / 10;
       filename[2] += wavplayer_select[ch] % 10;
       wavplayer[ch].playWav(filename);
+      loop_count[ch] = -1;
     }
     bool FileIsPlaying(int ch = 0) {
       return wavplayer[ch].isPlaying();
@@ -216,6 +219,12 @@ namespace OC {
         wavplayer[ch].stop();
       } else if (wavplayer_available) {
         StartPlaying(ch);
+      }
+    }
+    void FileHotCue(int ch) {
+      if (wavplayer[ch].isPlaying()) {
+        wavplayer[ch].reset();
+        loop_count[ch] = 0;
       }
     }
 
@@ -339,6 +348,10 @@ namespace OC {
         else
           FileMatchTempo(i);
 
+        if (loop_length[i] && HS::clock_m.EndOfBeat()) {
+          if (++loop_count[i] >= loop_length[i])
+            FileHotCue(i);
+        }
       }
     }
 
@@ -377,6 +390,9 @@ namespace OC {
 
           return; // no other mapping to change
           break;
+        case LOOP_LENGTH:
+          loop_length[ch] = constrain(loop_length[ch] + direction, 0, 128);
+          return; break;
         default: break;
       }
 
@@ -406,6 +422,8 @@ namespace OC {
           case WAV_PLAYER_RATE:
             FileRate(ch, 0);
             break;
+
+          default: break;
         }
       }
     }
@@ -423,6 +441,10 @@ namespace OC {
             HS::clock_m.BeatSync( ch ? &FileToggle2 : &FileToggle1 );
           } else
             ToggleFilePlayer(ch);
+          break;
+
+        case LOOP_LENGTH:
+          // TODO: set loop start point, using clock_m.BeatSync()
           break;
 
         case VCF_MODE:

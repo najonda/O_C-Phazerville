@@ -330,6 +330,9 @@ void OC::AudioDSP::DrawAudioSetup() {
         graphics.printf("%02lu:%02lu.%03lu", tmin, tsec, tmilli);
       } else
         gfxIcon(x, 45, STOP_ICON);
+    } else if (LOOP_LENGTH == audio_cursor[ch]) {
+      gfxPrint(x, 35, "Beats");
+      gfxPrint(x, 45, loop_length[ch] );
     } else {
       // Modulation assignment
       gfxPrint(x, 35, "Map");
