@@ -130,6 +130,7 @@ namespace OC {
     float wavlevel[2] = { 1.0, 1.0 };
     uint8_t loop_length[2] = { 0, 0 };
     int8_t loop_count[2] = { 0, 0 };
+    bool loop_on[2] = { false, false };
 
     void SetOscPitch(int ch, int cv) {
       float freq = 220.0 * powf(2.0, (cv - (9*128)) / (12.0 * 128));
@@ -227,12 +228,28 @@ namespace OC {
         loop_count[ch] = 0;
       }
     }
+    void ToggleLoop(int ch) {
+      if (loop_length[ch] && !loop_on[ch]) {
+        const uint32_t start = wavplayer[ch].isPlaying() ?
+                      wavplayer[ch].getBufferPosition1() : 0;
+        wavplayer[ch].setLoopStart( start );
+        wavplayer[ch].setPlayStart(play_start_loop);
+        wavplayer[ch].reset();
+        loop_on[ch] = true;
+        loop_count[ch] = -1;
+      } else {
+        wavplayer[ch].setPlayStart(play_start_sample);
+        loop_on[ch] = false;
+      }
+    }
 
     // simple hooks for beat-sync callbacks
     void FileToggle1() { ToggleFilePlayer(0); }
     void FileToggle2() { ToggleFilePlayer(1); }
     void FilePlay1() { StartPlaying(0); }
     void FilePlay2() { StartPlaying(1); }
+    void FileLoopToggle1() { ToggleLoop(0); }
+    void FileLoopToggle2() { ToggleLoop(1); }
 
     void ChangeToFile(int ch, int select) {
       wavplayer_select[ch] = (uint8_t)constrain(select, 0, 99);
@@ -348,7 +365,7 @@ namespace OC {
         else
           FileMatchTempo(i);
 
-        if (loop_length[i] && HS::clock_m.EndOfBeat()) {
+        if (loop_length[i] && loop_on[i] && HS::clock_m.EndOfBeat()) {
           if (++loop_count[i] >= loop_length[i])
             FileHotCue(i);
         }
@@ -444,7 +461,10 @@ namespace OC {
           break;
 
         case LOOP_LENGTH:
-          // TODO: set loop start point, using clock_m.BeatSync()
+          if (HS::clock_m.IsRunning()) {
+            HS::clock_m.BeatSync( ch ? &FileLoopToggle2 : &FileLoopToggle1 );
+          } else
+            ToggleLoop(ch);
           break;
 
         case VCF_MODE:

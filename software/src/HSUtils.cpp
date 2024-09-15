@@ -331,6 +331,7 @@ void OC::AudioDSP::DrawAudioSetup() {
       } else
         gfxIcon(x, 45, STOP_ICON);
     } else if (LOOP_LENGTH == audio_cursor[ch]) {
+      gfxIcon(x + 28, 25, loop_on[ch] ? CHECK_ON_ICON : CHECK_OFF_ICON);
       gfxPrint(x, 35, "Beats");
       gfxPrint(x, 45, loop_length[ch] );
     } else {

@@ -50,6 +50,7 @@ namespace OC {
     extern bool isEditing[2];
     extern bool filter_enabled[2];
     extern uint8_t loop_length[2];
+    extern bool loop_on[2];
 
     void Init();
     void Process(const int *values);
