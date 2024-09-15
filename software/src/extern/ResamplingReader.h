@@ -616,7 +616,8 @@ public:
     }
 
     void setLoopStart(uint32_t loop_start) {
-        _loop_start = _header_offset + (loop_start * _numChannels);
+        //_loop_start = _header_offset + (loop_start * _numChannels);
+        _loop_start = loop_start;
     }
 
     void setLoopFinish(uint32_t loop_finish) {
