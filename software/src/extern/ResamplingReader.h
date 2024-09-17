@@ -709,7 +709,7 @@ public:
 protected:
     volatile bool _playing = false;
 
-    int32_t _file_size;
+    uint32_t _file_size;
     int32_t _header_offset = 0; // == (header size in bytes ) / 2
 
     float _tempo_bpm = 0.0;

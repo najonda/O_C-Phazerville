@@ -31,6 +31,7 @@
 #include "utility/dspinst.h"
 #include "utility/sqrt_integer.h"
 
+/*
 static float analyse_rms(int16_t *data) {
 	
 	uint32_t *p = (uint32_t *)data;
@@ -69,6 +70,7 @@ static void applyGain(int16_t *data, int32_t mult1, int32_t mult2) {
 		*p++ = pack_16b_16b(val2, val1);
 	} while (p < end);
 }
+*/
 
 /* ----------------------------------------------------------------------
 * https://community.arm.com/tools/f/discussions/4292/cmsis-dsp-new-functionality-proposal/22621#22621
