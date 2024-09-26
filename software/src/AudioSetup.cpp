@@ -1,9 +1,9 @@
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
 
 #include "extern/dspinst.h"
-#include "extern/TeensyVariablePlayback.h"
 
 #include "AudioSetup.h"
+#include <TeensyVariablePlayback.h>
 #include "OC_ADC.h"
 #include "OC_DAC.h"
 #include "HSUtils.h"
@@ -224,17 +224,17 @@ namespace OC {
     }
     void FileHotCue(int ch) {
       if (wavplayer[ch].isPlaying()) {
-        wavplayer[ch].reset();
+        wavplayer[ch].retrigger();
         loop_count[ch] = 0;
       }
     }
     void ToggleLoop(int ch) {
       if (loop_length[ch] && !loop_on[ch]) {
         const uint32_t start = wavplayer[ch].isPlaying() ?
-                      wavplayer[ch].getBufferPosition1() : 0;
+                      wavplayer[ch].getPosition() : 0;
         wavplayer[ch].setLoopStart( start );
         wavplayer[ch].setPlayStart(play_start_loop);
-        wavplayer[ch].reset();
+        wavplayer[ch].retrigger();
         loop_on[ch] = true;
         loop_count[ch] = -1;
       } else {
@@ -317,6 +317,8 @@ namespace OC {
       else {
         wavplayer[0].enableInterpolation(true);
         wavplayer[1].enableInterpolation(true);
+        wavplayer[0].setBufferInPSRAM(true);
+        wavplayer[1].setBufferInPSRAM(true);
       }
 
       // --Reverbs
