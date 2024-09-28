@@ -434,6 +434,7 @@ public:
             active_applet[h]->BaseController();
         }
         HS::clock_m.auto_reset = false;
+        audio_app.Controller();
     }
 
     void View() {
