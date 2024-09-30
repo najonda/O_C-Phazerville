@@ -126,7 +126,8 @@ namespace OC {
 
     bool filter_enabled[2];
     bool wavplayer_available = false;
-    bool wavplayer_reload[2] = {false};
+    bool wavplayer_reload[2] = {true, true};
+    bool wavplayer_playtrig[2] = {false};
     uint8_t wavplayer_select[2] = { 1, 2 };
     float wavlevel[2] = { 1.0, 1.0 };
     uint8_t loop_length[2] = { 0, 0 };
@@ -213,8 +214,7 @@ namespace OC {
       wavplayer[ch].playWav(filename);
     }
     void StartPlaying(int ch) {
-      if (wavplayer[ch].available())
-        wavplayer[ch].play();
+      wavplayer_playtrig[ch] = true;
       loop_count[ch] = -1;
     }
     bool FileIsPlaying(int ch = 0) {
@@ -355,6 +355,11 @@ namespace OC {
           if (wavplayer_reload[ch]) {
             FileLoad(ch);
             wavplayer_reload[ch] = false;
+          }
+
+          if (wavplayer_playtrig[ch]) {
+            wavplayer[ch].play();
+            wavplayer_playtrig[ch] = false;
           }
         }
       }
