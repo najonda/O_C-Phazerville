@@ -126,6 +126,7 @@ namespace OC {
 
     bool filter_enabled[2];
     bool wavplayer_available = false;
+    bool wavplayer_reload[2] = {false};
     uint8_t wavplayer_select[2] = { 1, 2 };
     float wavlevel[2] = { 1.0, 1.0 };
     uint8_t loop_length[2] = { 0, 0 };
@@ -205,11 +206,15 @@ namespace OC {
     }
 
     // SD file player functions
-    void StartPlaying(int ch) {
+    void FileLoad(int ch) {
       char filename[] = "000.WAV";
       filename[1] += wavplayer_select[ch] / 10;
       filename[2] += wavplayer_select[ch] % 10;
       wavplayer[ch].playWav(filename);
+    }
+    void StartPlaying(int ch) {
+      if (wavplayer[ch].available())
+        wavplayer[ch].play();
       loop_count[ch] = -1;
     }
     bool FileIsPlaying(int ch = 0) {
@@ -223,7 +228,7 @@ namespace OC {
       }
     }
     void FileHotCue(int ch) {
-      if (wavplayer[ch].isPlaying()) {
+      if (wavplayer[ch].available()) {
         wavplayer[ch].retrigger();
         loop_count[ch] = 0;
       }
@@ -253,6 +258,7 @@ namespace OC {
 
     void ChangeToFile(int ch, int select) {
       wavplayer_select[ch] = (uint8_t)constrain(select, 0, 99);
+      wavplayer_reload[ch] = true;
       if (wavplayer[ch].isPlaying()) {
         if (HS::clock_m.IsRunning()) {
           HS::clock_m.BeatSync( ch ? &FilePlay2 : &FilePlay1 );
@@ -340,6 +346,17 @@ namespace OC {
         complimiter[ch].limit(-3.0f);
         complimiter[ch].makeupGain(0.0);
         // default gate() settings
+      }
+    }
+
+    void mainloop() {
+      if (wavplayer_available) {
+        for (int ch = 0; ch < 2; ++ch) {
+          if (wavplayer_reload[ch]) {
+            FileLoad(ch);
+            wavplayer_reload[ch] = false;
+          }
+        }
       }
     }
 

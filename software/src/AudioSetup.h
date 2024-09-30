@@ -53,6 +53,7 @@ namespace OC {
     extern bool loop_on[2];
 
     void Init();
+    void mainloop();
     void Process(const int *values);
     void AudioMenuAdjust(int ch, int direction);
     void DrawAudioSetup();
