@@ -299,7 +299,8 @@ public:
 
         // initiate actual EEPROM save - ONLY if necessary!
         if (doSave && !skip_eeprom) {
-          Calibr8or_instance.SavePreset();
+          // TODO: how to do this now?!
+          //Calibr8or_instance.SavePreset();
         }
 
     }
