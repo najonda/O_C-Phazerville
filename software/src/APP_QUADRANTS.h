@@ -597,10 +597,8 @@ public:
         if (event.mask & (OC::CONTROL_BUTTON_X | OC::CONTROL_BUTTON_Y)) {
           if (AUDIO_SETUP == view_state) {
             const int h = (OC::CONTROL_BUTTON_Y == event.control);
-            if (OC::AudioDSP::isEditing[h]) {
-              OC::AudioDSP::AudioSetupAuxButton(h);
-              return true;
-            }
+            OC::AudioDSP::AudioSetupAuxButton(h);
+            return true;
           }
         }
 
