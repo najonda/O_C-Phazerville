@@ -270,9 +270,18 @@ void FASTRUN loop() {
     static size_t cap_idx = 0;
     // check for request from PC to capture the screen
     if (Serial && Serial.available() > 0) {
-      do { Serial.read(); } while (Serial.available() > 0);
-      display::frame_buffer.capture_request();
-      cap_idx = 0;
+      bool capreq = true;
+      do {
+        if (Serial.read() == 'z') {
+          // TODO: secret menu stuff
+          Serial.println("PEW PEW NERDS");
+          capreq = false;
+        }
+      } while (Serial.available() > 0);
+      if (capreq) {
+        display::frame_buffer.capture_request();
+        cap_idx = 0;
+      }
     }
 
     // check for frame buffer to have capture data ready
