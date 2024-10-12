@@ -239,7 +239,8 @@ namespace OC {
                       wavplayer[ch].getPosition() : 0;
         wavplayer[ch].setLoopStart( start );
         wavplayer[ch].setPlayStart(play_start_loop);
-        wavplayer[ch].retrigger();
+        if (wavplayer[ch].available())
+          wavplayer[ch].retrigger();
         loop_on[ch] = true;
         loop_count[ch] = -1;
       } else {
@@ -389,9 +390,13 @@ namespace OC {
         else
           FileMatchTempo(i);
 
-        if (loop_length[i] && loop_on[i] && HS::clock_m.EndOfBeat()) {
-          if (++loop_count[i] >= loop_length[i])
-            FileHotCue(i);
+        if (HS::clock_m.EndOfBeat()) {
+          if (loop_length[i] && loop_on[i]) {
+            if (++loop_count[i] >= loop_length[i])
+              FileHotCue(i);
+          }
+
+          wavplayer[i].syncTrig();
         }
       }
     }
