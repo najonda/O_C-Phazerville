@@ -11,14 +11,6 @@
 
 #include "HSMIDI.h"
 
-#ifdef ARDUINO_TEENSY41
-namespace OC {
-  namespace AudioDSP {
-    extern void Process(const int *values);
-  }
-}
-#endif
-
 namespace HS {
 
 static constexpr int GATE_THRESHOLD = 15 << 7; // 1.25 volts
@@ -407,11 +399,6 @@ typedef struct IOFrame {
         OC::DAC::set_pitch_scaled(DAC_CHANNEL(i), outputs[i], 0);
       }
       if (autoMIDIOut) MIDIState.Send(outputs);
-
-#ifdef ARDUINO_TEENSY41
-      // this relies on the inputs and outputs arrays being contiguous...
-      OC::AudioDSP::Process(inputs);
-#endif
     }
 
 } IOFrame;
