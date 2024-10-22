@@ -18,6 +18,7 @@ namespace OC {
       WAVEFOLD_MOD,
       WAV_LEVEL,
       WAV_RATE,
+      WAV_HPF,
       REVERB_LEVEL,
       REVERB_SIZE,
       REVERB_DAMP,
@@ -33,6 +34,7 @@ namespace OC {
       WAVEFOLDER,
       WAV_PLAYER,
       LOOP_LENGTH,
+      WAV_PLAYER_HPF,
       WAV_PLAYER_VCA,
       WAV_PLAYER_RATE,
 
@@ -51,6 +53,7 @@ namespace OC {
     extern bool filter_enabled[2];
     extern uint8_t loop_length[2];
     extern bool loop_on[2];
+    extern bool lowcut[2];
 
     void Init();
     void mainloop();

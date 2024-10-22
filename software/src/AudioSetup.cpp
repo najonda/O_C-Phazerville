@@ -27,18 +27,24 @@ AudioMixer4              mixer4;         //xy=743.000244140625,311.77783203125
 AudioMixer4              mixer3;         //xy=750.4443359375,181.3333282470703
 AudioAmplifier           amp1;           //xy=818,81
 AudioAmplifier           amp2;           //xy=884,357
-AudioFilterStateVariable svfilter1;        //xy=964,248
-AudioFilterLadder        ladder1;        //xy=970,96.88888549804688
+AudioFilterStateVariable svfilter[2];        //xy=964,248
+//AudioFilterLadder        ladder1;        //xy=970,96.88888549804688
+AudioFilterStateVariable hpfilter[2][2];        //xy=964,248
 AudioMixer4              mixer5;         //xy=1113,156
 AudioMixer4              mixer6;         //xy=1106,310
 AudioMixer4              finalmixer[2];         //xy=1106,310
 AudioEffectDynamics      complimiter[2];
 AudioOutputI2S2          i2s2;           //xy=1270.2222900390625,227.88890075683594
 
-AudioConnection          patchCordWav1L(wavplayer[0], 0, finalmixer[0], 1);
-AudioConnection          patchCordWav1R(wavplayer[0], 1, finalmixer[1], 1);
-AudioConnection          patchCordWav2L(wavplayer[1], 0, finalmixer[0], 2);
-AudioConnection          patchCordWav2R(wavplayer[1], 1, finalmixer[1], 2);
+AudioConnection          patchCordWav1L(wavplayer[0], 0, hpfilter[0][0], 0);
+AudioConnection          patchCordWav1R(wavplayer[0], 1, hpfilter[0][1], 0);
+AudioConnection          patchCordWav2L(wavplayer[1], 0, hpfilter[1][0], 0);
+AudioConnection          patchCordWav2R(wavplayer[1], 1, hpfilter[1][1], 0);
+AudioConnection          patchCordWavHPF1L(hpfilter[0][0], 2, finalmixer[0], 1);
+AudioConnection          patchCordWavHPF1R(hpfilter[0][1], 2, finalmixer[1], 1);
+AudioConnection          patchCordWavHPF2L(hpfilter[1][0], 2, finalmixer[0], 2);
+AudioConnection          patchCordWavHPF2R(hpfilter[1][1], 2, finalmixer[1], 2);
+
 AudioConnection          patchCord3(waveform[1], 0, mixer2, 1);
 AudioConnection          patchCord4(waveform[0], 0, mixer1, 1);
 AudioConnection          patchCord5(i2s1, 0, mixer1, 0);
@@ -55,12 +61,12 @@ AudioConnection          patchCord15(mixer4, 0, mixer6, 3);
 AudioConnection          patchCord16(mixer4, amp2);
 AudioConnection          patchCord17(mixer3, 0, mixer5, 3);
 AudioConnection          patchCord18(mixer3, amp1);
-AudioConnection          patchCord19(amp1, 0, ladder1, 0);
-AudioConnection          patchCord20(amp2, 0, svfilter1, 0);
-AudioConnection          patchCord21(svfilter1, 0, mixer6, 0);
-AudioConnection          patchCord22(svfilter1, 0, mixer5, 1);
-AudioConnection          patchCord23(ladder1, 0, mixer5, 0);
-AudioConnection          patchCord24(ladder1, 0, mixer6, 1);
+AudioConnection          patchCord19(amp1, 0, svfilter[0], 0);
+AudioConnection          patchCord20(amp2, 0, svfilter[1], 0);
+AudioConnection          patchCord21(svfilter[1], 0, mixer6, 0);
+AudioConnection          patchCord22(svfilter[1], 0, mixer5, 1);
+AudioConnection          patchCord23(svfilter[0], 0, mixer5, 0);
+AudioConnection          patchCord24(svfilter[0], 0, mixer6, 1);
 
 AudioConnection          patchCord25(mixer5, 0, finalmixer[0], 0);
 AudioConnection          patchCord26(mixer6, 0, finalmixer[1], 0);
@@ -100,22 +106,12 @@ namespace OC {
   namespace AudioDSP {
 
     const char * const mode_names[MODE_COUNT] = {
-      "Off", "Osc", "VCA", "VCF", "FOLD", "File", "Loop", "FileVCA", "Speed"
+      "Off", "Osc", "VCA", "VCF", "FOLD", "File", "Loop", "FileHPF", "FileVCA", "Speed"
     };
 
-    /* Mod Targets:
-      AMP_LEVEL,
-      FILTER_CUTOFF,
-      FILTER_RESONANCE,
-      WAVEFOLD_MOD,
-      WAV_LEVEL,
-      REVERB_LEVEL,
-      REVERB_SIZE,
-      REVERB_DAMP,
-     */
     int mod_map[2][TARGET_COUNT] = {
-      { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
-      { -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+      { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+      { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
     };
     float bias[2][TARGET_COUNT];
     ChannelSetting audio_cursor[2] = { PASSTHRU, PASSTHRU };
@@ -133,6 +129,7 @@ namespace OC {
     uint8_t loop_length[2] = { 0, 0 };
     int8_t loop_count[2] = { 0, 0 };
     bool loop_on[2] = { false, false };
+    bool lowcut[2] = { false, false };
 
     void SetOscPitch(int ch, int cv) {
       float freq = 220.0 * powf(2.0, (cv - (9*128)) / (12.0 * 128));
@@ -179,11 +176,17 @@ namespace OC {
       freq *= freq;
 
       if (ch == 0)
-        ladder1.frequency(freq);
+        svfilter[0].frequency(freq);
       else
-        svfilter1.frequency(freq);
+        svfilter[1].frequency(freq);
     }
+    void FileHPF(int ch, int cv) {
+      float freq = abs(cv) / 64;
+      freq *= freq;
 
+      hpfilter[ch][0].frequency(freq);
+      hpfilter[ch][1].frequency(freq);
+    }
 
     void Wavefold(int ch, int cv) {
       foldamt[ch] = (float)cv / MAX_CV + bias[ch][WAVEFOLD_MOD];
@@ -248,6 +251,10 @@ namespace OC {
         loop_on[ch] = false;
       }
     }
+    void ToggleLowCut(int ch) {
+      lowcut[ch] = !lowcut[ch];
+      FileHPF(ch, lowcut[ch] * 1000);
+    }
 
     // simple hooks for beat-sync callbacks
     void FileToggle1() { ToggleFilePlayer(0); }
@@ -305,12 +312,21 @@ namespace OC {
       mixer4.gain(3, 0.9);
 
       // --Filters
-      amp1.gain(0.85); // attenuate before ladder filter
-      amp2.gain(0.85); // attenuate before svfilter1
-      svfilter1.resonance(1.05);
-      ladder1.resonance(0.65);
+      amp1.gain(0.85); // attenuate before svfilter[0]
+      amp2.gain(0.85); // attenuate before svfilter[1]
+      svfilter[0].resonance(1.0);
+      svfilter[1].resonance(1.0);
       BypassFilter(0);
       BypassFilter(1);
+      ModFilter(0, MAX_CV);
+      ModFilter(1, MAX_CV);
+
+      hpfilter[0][0].resonance(0.7);
+      hpfilter[0][1].resonance(0.7);
+      hpfilter[1][0].resonance(0.7);
+      hpfilter[1][1].resonance(0.7);
+      FileHPF(0, 0);
+      FileHPF(1, 0);
 
       // -- SD card WAV players
       finalmixer[0].gain(1, 0.9);
@@ -385,6 +401,9 @@ namespace OC {
         if (mod_map[i][WAV_LEVEL] >= 0)
           FileLevel(i, values[mod_map[i][WAV_LEVEL]]);
 
+        if (mod_map[i][WAV_HPF] >= 0)
+          FileHPF(i, values[mod_map[i][WAV_HPF]]);
+
         if (mod_map[i][WAV_RATE] >= 0)
           FileRate(i, values[mod_map[i][WAV_RATE]]);
         else
@@ -425,6 +444,9 @@ namespace OC {
         case WAVEFOLDER:
           mod_target = WAVEFOLD_MOD;
           break;
+        case WAV_PLAYER_HPF:
+          mod_target = WAV_HPF;
+          break;
         case WAV_PLAYER_VCA:
           mod_target = WAV_LEVEL;
           break;
@@ -461,6 +483,10 @@ namespace OC {
             AmpLevel(ch, MAX_CV);
             break;
 
+          case WAV_PLAYER_HPF:
+            FileHPF(ch, 0);
+            break;
+
           case WAV_PLAYER_VCA:
             FileLevel(ch, MAX_CV);
             break;
@@ -487,6 +513,10 @@ namespace OC {
             HS::clock_m.BeatSync( ch ? &FileToggle2 : &FileToggle1 );
           } else
             ToggleFilePlayer(ch);
+          break;
+
+        case WAV_PLAYER_HPF:
+          ToggleLowCut(ch);
           break;
 
         case LOOP_LENGTH:

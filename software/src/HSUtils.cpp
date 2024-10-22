@@ -305,6 +305,10 @@ void OC::AudioDSP::DrawAudioSetup() {
       case WAVEFOLDER:
         mod_target = WAVEFOLD_MOD;
         break;
+      case WAV_PLAYER_HPF:
+        mod_target = WAV_HPF;
+        gfxIcon(x + 44, 25, lowcut[ch] ? CHECK_ON_ICON : CHECK_OFF_ICON);
+        break;
       case WAV_PLAYER_VCA:
         mod_target = WAV_LEVEL;
         break;
