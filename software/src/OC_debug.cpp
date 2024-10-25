@@ -12,6 +12,8 @@
 
 #ifdef ARDUINO_TEENSY41
 #include <Audio.h>
+
+extern "C" uint8_t external_psram_size;
 #endif
 
 #ifdef POLYLFO_DEBUG  
@@ -186,12 +188,15 @@ static void debug_menu_audio() {
   float whole = AudioProcessorUsage();
   int part = int(whole * 100) % 100;
   graphics.setPrintPos(2, 12);
-  graphics.printf("Total CPU %2d.%2d%%", int(whole), part);
+  graphics.printf("Total CPU %2d.%02d%%", int(whole), part);
 
   whole = AudioProcessorUsageMax();
   part = int(whole * 100) % 100;
   graphics.setPrintPos(2, 22);
-  graphics.printf("Max CPU %2d.%2d%%", int(whole), part);
+  graphics.printf("Max CPU %2d.%02d%%", int(whole), part);
+
+  graphics.setPrintPos(2, 42);
+  graphics.printf("PSRAM: %2u MB", external_psram_size);
 }
 #endif
 
