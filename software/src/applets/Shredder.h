@@ -99,6 +99,13 @@ public:
     }
 
     void OnButtonPress() {
+      if (cursor < 2) {
+        if (OC::CORE::ticks - click_tick < HS::HEMISPHERE_DOUBLE_CLICK_TIME)
+          Shred(cursor);
+        else
+          click_tick = OC::CORE::ticks;
+      }
+
       if (cursor == 3)
         HS::QuantizerEdit(io_offset);
       else
@@ -178,6 +185,7 @@ protected:
 
 private:
     int cursor;
+    uint32_t click_tick = 0;
 
     // Sequencer state
     uint8_t step; // Current step number
