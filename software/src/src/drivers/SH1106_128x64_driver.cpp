@@ -98,14 +98,18 @@ void SH1106_128x64_Driver::Init() {
 
   // u8g_dev_ssd1306_128x64_adafruit3_init_seq
   digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0),
+#if defined(__MK20DX256__)
   ChangeSpeed(SPICLOCK_30MHz);
+#endif
   digitalWriteFast(OLED_DC, LOW); // U8G_ESC_ADR(0),           /* instruction mode */
 
   digitalWriteFast(OLED_RST, LOW); // U8G_ESC_RST(1),           /* do reset low pulse with (1*16)+2 milliseconds */
   delay(20);
   digitalWriteFast(OLED_RST, HIGH);
   delay(20);
+#if defined(__MK20DX256__)
   ChangeSpeed(SPI_CLOCK_8MHz);
+#endif
   digitalWriteFast(OLED_CS, OLED_CS_ACTIVE); // U8G_ESC_CS(1),             /* enable chip */
 
   // assumes OC::DAC:Init already initialized SPI, called SPI.begin() if Teensy 4.x
@@ -115,8 +119,10 @@ void SH1106_128x64_Driver::Init() {
   SPI_send(SH1106_init_seq, sizeof(SH1106_init_seq));
 
   digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0),             /* disable chip */
-  //delayMicroseconds(1);
+  delayMicroseconds(1);
+#if defined(__MK20DX256__)
   ChangeSpeed(SPICLOCK_30MHz);
+#endif
 
 #if defined(__MK20DX256__)
 #ifdef DMA_PAGE_TRANSFER
@@ -200,7 +206,9 @@ void SH1106_128x64_Driver::Clear() {
 
   SH1106_data_start_seq[2] = 0xb0 | 0;
   digitalWriteFast(OLED_DC, LOW);
+#if defined(__MK20DX256__)
   ChangeSpeed(SPI_CLOCK_8MHz);
+#endif
   digitalWriteFast(OLED_CS, OLED_CS_ACTIVE);
   SPI_send(SH1106_data_start_seq, sizeof(SH1106_data_start_seq));
   digitalWriteFast(OLED_DC, HIGH);
@@ -247,11 +255,16 @@ void SH1106_128x64_Driver::SendPage(uint_fast8_t index, uint_fast8_t subpage, co
 
 #elif defined(__IMXRT1062__)
 /*static*/
-void SH1106_128x64_Driver::SendPage(uint_fast8_t index, const uint8_t *data) {
+void SH1106_128x64_Driver::SendPage(uint_fast8_t index, uint_fast8_t subpage, const uint8_t *data) {
+  int startCol = subpage * kSubpageSize;
+  const uint8_t* startData = data + startCol;
+
+  SH1106_data_start_seq[0] = 0x10 + (startCol >> 4);
+  SH1106_data_start_seq[1] = 0x00 + (startCol & 0x0F);
   SH1106_data_start_seq[2] = 0xb0 | index;
   sendpage_state = 1;
-  sendpage_src = (const uint32_t *)data; // frame buffer is 32 bit aligned
-  sendpage_count = kPageSize >> 2; // number of 32 bit words to write into FIFO
+  sendpage_src = (const uint32_t *)startData; // frame buffer is 32 bit aligned
+  sendpage_count = kSubpageSize >> 2; // number of 32 bit words to write into FIFO
   #if defined(ARDUINO_TEENSY41)
   if (OLED_Uses_SPI1) {
     // DAC does not use SPI1, so we must forcibly trigger first interrupt
@@ -377,13 +390,13 @@ void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
 void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
   #if defined(ARDUINO_TEENSY41)
     if (OLED_Uses_SPI1) {
-      SPI1.beginTransaction(SPISettings(24000000, MSBFIRST, SPI_MODE0));
+      SPI1.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
       SPI1.transfer(bufr, NULL, n);
       SPI1.endTransaction();
       return;
     }
   #endif
-  SPI.beginTransaction(SPISettings(24000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   LPSPI4_TCR |= LPSPI_TCR_PCS(3); // do not interfere with DAC's CS pin
   SPI.transfer(bufr, NULL, n);
   SPI.endTransaction();
@@ -394,6 +407,7 @@ void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
 void SH1106_128x64_Driver::AdjustOffset(uint8_t offset) {
 }
 
+#if defined(__MK20DX256__)
 /*static*/
 void SH1106_128x64_Driver::ChangeSpeed(uint32_t speed) {
 	uint32_t ctar = speed;
@@ -402,3 +416,4 @@ void SH1106_128x64_Driver::ChangeSpeed(uint32_t speed) {
 	KINETISK_SPI0.CTAR0 = ctar | SPI_CTAR_FMSZ(7);
 	KINETISK_SPI0.CTAR1 = ctar | SPI_CTAR_FMSZ(15);
 }
+#endif
