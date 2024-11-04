@@ -62,20 +62,37 @@ static uint8_t SH1106_data_start_seq[] = {
 
 static uint8_t SH1106_init_seq[] = {
 // u8g_dev_ssd1306_128x64_adafruit3_init_seq
-	0xae,			/*Set Display Off */
-	0xd5,0x80,		/*set Display Clock Divide Ratio/Oscillator Frequency */
-	0xa8,0x3f,      /* multiplex ratio, duty = 1/32 */
-	0x40,		    /*Set Multiplex Ratio */
-	0x20,0x02,    	/*Set Display Offset*/
-	0xa1,			/*Set Segment Re-Map*/
-	0xc8,			/*Set COM Output Scan Direction*/
-	0xda,0x12,		/*Set COM Pins Hardware Configuration*/
-	0x81,0x6f,		/*Set Current Control */
-	0xd9,0xd3,		/*Set Pre-Charge Period */
-	0xdb,0x20,		/*Set VCOMH Deselect Level */
-	0x2e,           /* 2012-05-27: Deactivate scroll */
-	0xa4,			/*Set Entire Display On/Off */
-	0xa6,			/*Set Normal/Inverse Display*/
+  0x0ae,          /* display off, sleep mode */
+  0x0d5, 0x080,   /* clock divide ratio (0x00=1) and oscillator frequency (0x8) */
+  0x0a8, 0x03f,   /* multiplex ratio, duty = 1/32 */
+
+  0x0d3, 0x000,   /* set display offset */
+  0x040,          /* start line */
+
+  // Charge pump setting - only for SSD1306
+  //0x8d, 0x14,   /* [2] charge pump setting (p62): 0x014 enable, 0x010 disable */
+
+  0x020, 0x002,   /* Memory addressing mode: 0x00 horiz, 0x01 vert, 0x02 page */
+#ifdef FLIP_180
+  0x0a0,          /* segment remap a0/a1*/
+  0x0c0,          /* c0: scan dir normal, c8: reverse */
+#else
+  0x0a1,          /* segment remap a0/a1*/
+  0x0c8,          /* c0: scan dir normal, c8: reverse */
+#endif
+  0x0da, 0x012,   /* com pin HW config, sequential com pin config (bit 4), disable left/right remap (bit 5) */
+  0x081, 0x0cf,   /* [2] set contrast control */
+  0x0d9, 0x0f1,   /* [2] pre-charge period 0x022/f1*/
+  0x0db, 0x040,   /* vcomh deselect level */
+
+  0x02e,        /* 2012-05-27: Deactivate scroll */
+  0x0a4,        /* output ram to display */
+#ifdef INVERT_DISPLAY
+  0x0a7,        /* inverted display mode */
+#else
+  0x0a6,        /* none inverted normal display mode */
+#endif
+  //0x0af,      /* display on */
 };
 
 static uint8_t SH1106_display_on_seq[] = {
@@ -184,7 +201,7 @@ void SH1106_128x64_Driver::Flush() {
     page_dma_active = false;
 
     digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0)
-    //ChangeSpeed(SPICLOCK_30MHz);
+    ChangeSpeed(SPICLOCK_30MHz);
     page_dma.clearComplete();
     page_dma.disable();
     // DmaSpi.h::post_finishCurrentTransfer_impl
@@ -256,15 +273,17 @@ void SH1106_128x64_Driver::SendPage(uint_fast8_t index, uint_fast8_t subpage, co
 #elif defined(__IMXRT1062__)
 /*static*/
 void SH1106_128x64_Driver::SendPage(uint_fast8_t index, uint_fast8_t subpage, const uint8_t *data) {
+  /*
   int startCol = subpage * kSubpageSize;
   const uint8_t* startData = data + startCol;
 
   SH1106_data_start_seq[0] = 0x10 + (startCol >> 4);
   SH1106_data_start_seq[1] = 0x00 + (startCol & 0x0F);
+  */
   SH1106_data_start_seq[2] = 0xb0 | index;
   sendpage_state = 1;
-  sendpage_src = (const uint32_t *)startData; // frame buffer is 32 bit aligned
-  sendpage_count = kSubpageSize >> 2; // number of 32 bit words to write into FIFO
+  sendpage_src = (const uint32_t *)data; // frame buffer is 32 bit aligned
+  sendpage_count = kPageSize >> 2; // number of 32 bit words to write into FIFO
   #if defined(ARDUINO_TEENSY41)
   if (OLED_Uses_SPI1) {
     // DAC does not use SPI1, so we must forcibly trigger first interrupt
@@ -405,6 +424,7 @@ void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
 
 /*static*/
 void SH1106_128x64_Driver::AdjustOffset(uint8_t offset) {
+  //SH1106_data_start_seq[1] = offset; // lower 4 bits of col adr
 }
 
 #if defined(__MK20DX256__)
