@@ -35,17 +35,16 @@ public:
       const uint8_t *data = current_page_data_;
       display_driver::SendPage(page, subpage, data);
       current_subpage_index_ = subpage + 1;
+      if (current_subpage_index_ >= display_driver::kNumSubpages) {
+        current_subpage_index_ = 0;
+        current_page_index_ += 1;
+        current_page_data_ = data + display_driver::kPageSize;
+      }
     }
   }
 
   bool Flush() {
     display_driver::Flush();
-    if (current_subpage_index_ >= display_driver::kNumSubpages) {
-      current_subpage_index_ = 0;
-      current_page_index_ += 1;
-      const uint8_t *data = current_page_data_;
-      current_page_data_ = data + display_driver::kPageSize;
-    }
     if (current_page_index_ < display_driver::kNumPages) {
       return false;
     } else {
