@@ -301,6 +301,7 @@ static void spi_sendpage_isr() {
     lpspi->TCR = (lpspi->TCR & 0xF8000000) | LPSPI_TCR_FRAMESZ(nbits-1)
       | LPSPI_TCR_PCS(3) | LPSPI_TCR_RXMSK | LPSPI_TCR_BYSW;
     sendpage_state = 3;
+    return;
   }
   if (sendpage_state == 3) {
     // feed display data into the FIFO
