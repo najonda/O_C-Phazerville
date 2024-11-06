@@ -175,7 +175,11 @@ void setup() {
   OC::DAC::Init(&OC::calibration_data.dac);
 
   display::AdjustOffset(OC::calibration_data.display_offset);
-  display::SetFlipMode(OC::calibration_data.flipscreen());
+#ifdef FLIP_180
+  display::SetFlipMode( !OC::calibration_data.flipscreen() );
+#else
+  display::SetFlipMode( OC::calibration_data.flipscreen() );
+#endif
   display::Init();
 
   GRAPHICS_BEGIN_FRAME(true);

@@ -13,6 +13,10 @@ public:
 
   PagedDisplayDriver() { }
 
+  void Reinit() {
+    display_driver::Reinit();
+  }
+
   void Init() {
 
     display_driver::Init();

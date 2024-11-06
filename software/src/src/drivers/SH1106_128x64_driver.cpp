@@ -106,6 +106,34 @@ static uint8_t SH1106_display_on_seq[] = {
 };
 
 /*static*/
+void SH1106_128x64_Driver::Reinit() {
+  // u8g_dev_ssd1306_128x64_adafruit3_init_seq
+  digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0),
+#if defined(__MK20DX256__)
+  ChangeSpeed(SPICLOCK_30MHz);
+#endif
+  digitalWriteFast(OLED_DC, LOW); // U8G_ESC_ADR(0),           /* instruction mode */
+
+  digitalWriteFast(OLED_RST, LOW); // U8G_ESC_RST(1),           /* do reset low pulse with (1*16)+2 milliseconds */
+  delay(20);
+  digitalWriteFast(OLED_RST, HIGH);
+  delay(20);
+#if defined(__MK20DX256__)
+  ChangeSpeed(SPI_CLOCK_8MHz);
+#endif
+  digitalWriteFast(OLED_CS, OLED_CS_ACTIVE); // U8G_ESC_CS(1),             /* enable chip */
+
+  // assumes SPI bus is already initialized !!
+  SPI_send(SH1106_init_seq, sizeof(SH1106_init_seq));
+
+  digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0),             /* disable chip */
+  delayMicroseconds(1);
+#if defined(__MK20DX256__)
+  ChangeSpeed(SPICLOCK_30MHz);
+#endif
+}
+
+/*static*/
 void SH1106_128x64_Driver::Init() {
   OC::pinMode(OLED_CS, OUTPUT);
   OC::pinMode(OLED_RST, OUTPUT);
@@ -357,7 +385,6 @@ static void spi_sendpage_isr() {
   } else {
     // finished
     digitalWriteFast(OLED_CS, OLED_CS_INACTIVE);
-    delayMicroseconds(1);
     lpspi->IER = 0;
     sendpage_state = 0;
   }

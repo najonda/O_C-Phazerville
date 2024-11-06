@@ -35,6 +35,7 @@ struct SH1106_128x64_Driver {
   static constexpr uint8_t kDefaultOffset = 2;
 
   static void Init();
+  static void Reinit();
   static void Clear();
   static void Flush();
   static void SendPage(uint_fast8_t index, uint_fast8_t subpage, const uint8_t *data);
