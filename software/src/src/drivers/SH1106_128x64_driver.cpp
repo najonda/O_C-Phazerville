@@ -130,10 +130,7 @@ void SH1106_128x64_Driver::Init() {
 #endif
   digitalWriteFast(OLED_CS, OLED_CS_ACTIVE); // U8G_ESC_CS(1),             /* enable chip */
 
-  // assumes OC::DAC:Init already initialized SPI, called SPI.begin() if Teensy 4.x
-  #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
-  if (OLED_Uses_SPI1) SPI1.begin();
-  #endif
+  // assumes SPI bus is already initialized !!
   SPI_send(SH1106_init_seq, sizeof(SH1106_init_seq));
 
   digitalWriteFast(OLED_CS, OLED_CS_INACTIVE); // U8G_ESC_CS(0),             /* disable chip */
@@ -155,7 +152,6 @@ void SH1106_128x64_Driver::Init() {
 #elif defined(__IMXRT1062__)
   #if defined(ARDUINO_TEENSY41)
     if (OLED_Uses_SPI1) {
-      SPI1.begin();
       LPSPI3_IER = 0;
       LPSPI3_SR = 0x3F00; // clear any prior pending interrupt flags
       LPSPI3_FCR = LPSPI_FCR_RXWATER(0) | LPSPI_FCR_TXWATER(3);

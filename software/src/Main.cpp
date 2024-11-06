@@ -166,6 +166,9 @@ void setup() {
   OC::ADC::Init_DMA();
   OC::DAC::Init(&OC::calibration_data.dac);
 
+  if (OLED_Uses_SPI1) {
+    SPI1.begin();
+  }
   display::Init();
 
   GRAPHICS_BEGIN_FRAME(true);
