@@ -96,6 +96,11 @@ static uint8_t SH1106_init_seq[] = {
   //0x0af,      /* display on */
 };
 
+// indexes to above sequence
+static constexpr int CONTRAST_VALUE = 15;
+static constexpr int FLIP_CMD_A = 10;
+static constexpr int FLIP_CMD_B = 11;
+
 static uint8_t SH1106_display_on_seq[] = {
   0xaf
 };
@@ -423,6 +428,17 @@ void SH1106_128x64_Driver::SPI_send(void *bufr, size_t n) {
 /*static*/
 void SH1106_128x64_Driver::AdjustOffset(uint8_t offset) {
   disp_offset = offset;
+}
+
+/*static*/
+void SH1106_128x64_Driver::SetFlipMode(bool flip180) {
+  // TODO: swap bytes for flip screen
+  SH1106_init_seq[FLIP_CMD_A] = flip180 ? 0xa0 : 0xa1;
+  SH1106_init_seq[FLIP_CMD_B] = flip180 ? 0xc0 : 0xc8;
+}
+/*static*/
+void SH1106_128x64_Driver::SetContrast(uint8_t contrast) {
+  SH1106_init_seq[CONTRAST_VALUE] = contrast;
 }
 
 #if defined(__MK20DX256__)

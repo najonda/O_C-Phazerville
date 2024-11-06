@@ -223,6 +223,13 @@ public:
             Calibration();
         }
         if (event.control == OC::CONTROL_BUTTON_R && event.type == UI::EVENT_BUTTON_PRESS) FactoryReset();
+
+        // dual-press UP + DOWN to flip screen
+        if ( event.type == UI::EVENT_BUTTON_DOWN &&
+            (event.mask == (OC::CONTROL_BUTTON_A | OC::CONTROL_BUTTON_B)) ) {
+          FlipScreen();
+        }
+
         return;
       }
 
@@ -358,6 +365,12 @@ public:
 
       // special teensy_reboot command
       _reboot_Teensyduino_();
+    }
+    void FlipScreen() {
+        noInterrupts();
+        display::SetFlipMode( OC::calibration_data.toggle_flip180() );
+        display::Init();
+        interrupts();
     }
 
     void FactoryReset() {

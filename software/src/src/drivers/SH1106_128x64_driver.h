@@ -45,6 +45,8 @@ struct SH1106_128x64_Driver {
   // configurable
   static void AdjustOffset(uint8_t offset);
   static void ChangeSpeed(uint32_t speed);
+  static void SetFlipMode(bool flip180);
+  static void SetContrast(uint8_t contrast);
 };
 
 #endif // SH1106_128X64_DRIVER_H_
