@@ -24,13 +24,18 @@
  * THE SOFTWARE.
  */
 
+// Modified by djphazer, 2024-11-07
+// Expanded buffer to tolerate up to 32-bit values from the ADC chip
+// Used this as an example:
+// https://github.com/hexeguitar/hexefx_audiolib_F32/blob/main/src/input_i2s2_F32.cpp
 
+#include "dsputils.h"
 #if defined(__IMXRT1062__)
 #include <Arduino.h>
 #include "input_i2s2.h"
 #include "output_i2s2.h"
 
-DMAMEM __attribute__((aligned(32))) static uint32_t i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint64_t i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
 audio_block_t * AudioInputI2S2::block_left = NULL;
 audio_block_t * AudioInputI2S2::block_right = NULL;
 uint16_t AudioInputI2S2::block_offset = 0;
@@ -51,16 +56,16 @@ void AudioInputI2S2::begin(void)
 	CORE_PIN5_CONFIG = 2;  //EMC_08, 2=SAI2_RX_DATA, page 434
 	IOMUXC_SAI2_RX_DATA0_SELECT_INPUT = 0; // 0=GPIO_EMC_08_ALT2, page 876
 
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S2_RDR0+2);
+	dma.TCD->SADDR = (void *)((uint32_t)&I2S2_RDR0);
 	dma.TCD->SOFF = 0;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
-	dma.TCD->NBYTES_MLNO = 2;
+	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(2) | DMA_TCD_ATTR_DSIZE(2);
+	dma.TCD->NBYTES_MLNO = 4;
 	dma.TCD->SLAST = 0;
 	dma.TCD->DADDR = i2s2_rx_buffer;
-	dma.TCD->DOFF = 2;
-	dma.TCD->CITER_ELINKNO = sizeof(i2s2_rx_buffer) / 2;
+	dma.TCD->DOFF = 4;
+	dma.TCD->CITER_ELINKNO = sizeof(i2s2_rx_buffer) / 4;
 	dma.TCD->DLASTSGA = -sizeof(i2s2_rx_buffer);
-	dma.TCD->BITER_ELINKNO = sizeof(i2s2_rx_buffer) / 2;
+	dma.TCD->BITER_ELINKNO = sizeof(i2s2_rx_buffer) / 4;
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI2_RX);
 	dma.enable();
@@ -75,7 +80,7 @@ void AudioInputI2S2::begin(void)
 void AudioInputI2S2::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src, *end;
+	const int32_t *src, *end;
 	int16_t *dest_left, *dest_right;
 	audio_block_t *left, *right;
 
@@ -85,14 +90,14 @@ void AudioInputI2S2::isr(void)
 	if (daddr < (uint32_t)i2s2_rx_buffer + sizeof(i2s2_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (AudioInputI2S2::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s2_rx_buffer[0];
-		end = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (int32_t *)&i2s2_rx_buffer[0];
+		end = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	left = AudioInputI2S2::block_left;
 	right = AudioInputI2S2::block_right;
@@ -106,8 +111,8 @@ void AudioInputI2S2::isr(void)
 			arm_dcache_delete((void*)src, sizeof(i2s2_rx_buffer) / 2);
 
 			do {
-				*dest_left++ = *src++;
-				*dest_right++ = *src++;
+				*dest_left++ = (int16_t) (*src++ >> 16);
+				*dest_right++ = (int16_t) (*src++ >> 16);
 			} while (src < end);
 		}
 	}
@@ -197,8 +202,8 @@ void AudioInputI2S2slave::begin(void)
 	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
 	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI2_RX);
 	dma.enable();
-	
-	
+
+
 	I2S2_RCSR = I2S_RCSR_RE | I2S_RCSR_BCE | I2S_RCSR_FRDE | I2S_RCSR_FR; // page 2099
 	I2S2_TCSR |= I2S_TCSR_TE | I2S_TCSR_BCE; // page 2087
 	update_responsibility = update_setup();
