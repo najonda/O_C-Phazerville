@@ -26,6 +26,7 @@
 #ifndef CLOCK_MANAGER_H
 #define CLOCK_MANAGER_H
 
+#include "OC_core.h"
 #include "HSMIDI.h"
 
 namespace HS {
@@ -126,6 +127,9 @@ public:
      * hemispheres.
      */
     uint16_t GetTempo() {return tempo;}
+    float GetTempoFloat() {
+      return 1000000.0f / ticks_per_beat;
+    }
 
     void BeatSync(void (*func)()) {
       sync_func = func;
