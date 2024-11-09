@@ -61,15 +61,22 @@ public:
 
   void mainloop() {
     if (HS::wavplayer_available) {
+      const bool go_time = (!HS::clock_m.IsRunning() || HS::clock_m.EndOfBeat());
+
       for (int ch = 0; ch < 2; ++ch) {
         if (wavplayer_reload[ch]) {
           FileLoad(ch);
           wavplayer_reload[ch] = false;
         }
 
-        if (wavplayer_playtrig[ch]) {
+        if (wavplayer_playtrig[ch] && go_time) {
           wavplayer[ch].play();
           wavplayer_playtrig[ch] = false;
+        }
+
+        if (syncloopstart && go_time) {
+          ToggleLoop();
+          syncloopstart = false;
         }
       }
     }
@@ -80,9 +87,9 @@ public:
     gfxPrintfn(1, 15, 0, "%03u", GetFileNum());
     gfxEndCursor(cursor == FILE_NUM);
 
-    gfxStartCursor();
     gfxIcon(25, 15, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
-    gfxEndCursor(cursor == PLAYSTOP_BUTTON);
+    if (cursor == PLAYSTOP_BUTTON)
+      gfxFrame(24, 14, 10, 10);
 
     if (FileIsPlaying()) {
       gfxPrint(34, 15, GetFileBPM());
@@ -113,12 +120,22 @@ public:
     gfxPrintIcon(playrate_cv.Icon());
     gfxEndCursor(cursor == PLAYRATE_CV);
 
-    // TODO: loop; HPF
+    gfxPrint(1, 55, "Loop:");
+    gfxStartCursor();
+    graphics.printf("%2u", loop_length[0]);
+    gfxEndCursor(cursor == LOOP_LENGTH);
+    gfxStartCursor();
+    gfxPrintIcon(loop_on[0] ? CHECK_ON_ICON : CHECK_OFF_ICON);
+    gfxEndCursor(cursor == LOOP_ENABLE);
+
+    // TODO: HPF
   }
 
   void OnButtonPress() {
     if (PLAYSTOP_BUTTON == cursor)
       ToggleFilePlayer();
+    else if (LOOP_ENABLE == cursor)
+      syncloopstart = true;
     else
       CursorToggle();
   };
@@ -147,6 +164,9 @@ public:
       case PLAYRATE_CV:
         playrate_cv.ChangeSource(direction);
         break;
+      case LOOP_LENGTH:
+        loop_length[0] = constrain(loop_length[0] + direction, 0, 128);
+        break;
     }
   }
 
@@ -173,6 +193,8 @@ private:
     LEVEL_CV,
     PLAYRATE,
     PLAYRATE_CV,
+    LOOP_LENGTH,
+    LOOP_ENABLE,
 
     NUM_PARAMS
   };
@@ -209,15 +231,16 @@ private:
   int8_t loop_count[2] = { 0, 0 };
   bool loop_on[2] = { false, false };
   bool lowcut[2] = { false, false };
+  bool syncloopstart = false;
 
   // SD file player functions
-  void FileLoad(int ch) {
+  void FileLoad(int ch = 0) {
     char filename[] = "000.WAV";
     filename[1] += wavplayer_select[ch] / 10;
     filename[2] += wavplayer_select[ch] % 10;
     wavplayer[ch].playWav(filename);
   }
-  void StartPlaying(int ch) {
+  void StartPlaying(int ch = 0) {
     wavplayer_playtrig[ch] = true;
     loop_count[ch] = -1;
   }
@@ -231,13 +254,13 @@ private:
       StartPlaying(ch);
     }
   }
-  void FileHotCue(int ch) {
+  void FileHotCue(int ch = 0) {
     if (wavplayer[ch].available()) {
       wavplayer[ch].retrigger();
       loop_count[ch] = 0;
     }
   }
-  void ToggleLoop(int ch) {
+  void ToggleLoop(int ch = 0) {
     if (loop_length[ch] && !loop_on[ch]) {
       const uint32_t start = wavplayer[ch].isPlaying() ?
                     wavplayer[ch].getPosition() : 0;
@@ -246,7 +269,7 @@ private:
       if (wavplayer[ch].available())
         wavplayer[ch].retrigger();
       loop_on[ch] = true;
-      loop_count[ch] = -1;
+      loop_count[ch] = 0;
     } else {
       wavplayer[ch].setPlayStart(play_start_sample);
       loop_on[ch] = false;
@@ -260,7 +283,7 @@ private:
     hpfilter[ch][0].frequency(freq);
     hpfilter[ch][1].frequency(freq);
   }
-  void ToggleLowCut(int ch) {
+  void ToggleLowCut(int ch = 0) {
     lowcut[ch] = !lowcut[ch];
     FileHPF(ch, lowcut[ch] * 1000);
   }
@@ -277,13 +300,7 @@ private:
     wavplayer_select[ch] = (uint8_t)constrain(select, 0, 99);
     wavplayer_reload[ch] = true;
     if (wavplayer[ch].isPlaying()) {
-      /* TODO:
-       *
-      if (HS::clock_m.IsRunning()) {
-        HS::clock_m.BeatSync( ch ? &FilePlay2 : &FilePlay1 );
-      } else
-      */
-        StartPlaying(ch);
+      StartPlaying(ch);
     }
   }
   uint8_t GetFileNum(int ch = 0) {
