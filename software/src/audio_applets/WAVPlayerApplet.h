@@ -83,16 +83,17 @@ public:
   }
 
   void View() {
-    gfxStartCursor(1, 15);
-    gfxPrintfn(1, 15, 0, "%03u", GetFileNum());
+    size_t y = 13;
+    gfxStartCursor(1, y);
+    gfxPrintfn(1, y, 0, "%03u", GetFileNum());
     gfxEndCursor(cursor == FILE_NUM);
 
-    gfxIcon(25, 15, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
+    gfxIcon(25, y, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
     if (cursor == PLAYSTOP_BUTTON)
-      gfxFrame(24, 14, 10, 10);
+      gfxFrame(24, y-1, 10, 10);
 
     if (FileIsPlaying()) {
-      gfxPrint(34, 15, GetFileBPM());
+      gfxPrint(34, y, GetFileBPM());
 
       uint32_t tmilli = GetFileTime(0);
       uint32_t tsec = tmilli / 1000;
@@ -100,11 +101,12 @@ public:
       tmilli %= 1000;
       tsec %= 60;
 
-      graphics.setPrintPos(1, 25);
+      gfxPos(1, y+10);
       graphics.printf("%02lu:%02lu.%03lu", tmin, tsec, tmilli);
     }
 
-    gfxPrint(1, 35, "Lvl: ");
+    y += 20;
+    gfxPrint(1, y, "Lvl: ");
     gfxStartCursor();
     graphics.printf("%3d%%", level);
     gfxEndCursor(cursor == LEVEL);
@@ -112,7 +114,8 @@ public:
     gfxPrintIcon(level_cv.Icon());
     gfxEndCursor(cursor == LEVEL_CV);
 
-    gfxPrint(1, 45, "Rate:");
+    y += 10;
+    gfxPrint(1, y, "Rate:");
     gfxStartCursor();
     graphics.printf("%3d%%", playrate);
     gfxEndCursor(cursor == PLAYRATE);
@@ -120,13 +123,15 @@ public:
     gfxPrintIcon(playrate_cv.Icon());
     gfxEndCursor(cursor == PLAYRATE_CV);
 
-    gfxPrint(1, 55, "Loop:");
+    y += 10;
+    gfxPrint(1, y, "Loop:");
     gfxStartCursor();
     graphics.printf("%2u", loop_length[0]);
     gfxEndCursor(cursor == LOOP_LENGTH);
-    gfxStartCursor();
-    gfxPrintIcon(loop_on[0] ? CHECK_ON_ICON : CHECK_OFF_ICON);
-    gfxEndCursor(cursor == LOOP_ENABLE);
+
+    gfxIcon(52, y, loop_on[0] ? CHECK_ON_ICON : CHECK_OFF_ICON);
+    if (cursor == LOOP_ENABLE)
+      gfxFrame(51, y-1, 10, 10);
 
     // TODO: HPF
   }
