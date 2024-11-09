@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "OC_core.h"
 #include "HemisphereApplet.h"
+#include "SD.h"
 #include "HSUtils.h"
 
 namespace HS {
@@ -35,6 +36,7 @@ namespace HS {
 #endif
   uint8_t trig_length = 10; // in ms, multiplier for HEMISPHERE_CLOCK_TICKS
   uint8_t screensaver_mode = 3; // 0 = blank, 1 = Meters, 2 = Scope/Zaps, 3 = Zips/Stars
+  bool wavplayer_available = false;
 
   void Init() {
     for (int i = 0; i < ADC_CHANNEL_LAST; ++i)
@@ -42,6 +44,8 @@ namespace HS {
 
     for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i)
       quantizer[i].Init();
+
+    wavplayer_available = SD.begin(BUILTIN_SDCARD);
   }
 
 
