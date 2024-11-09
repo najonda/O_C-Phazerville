@@ -37,14 +37,14 @@ public:
   void Controller() {
     float gain = 0.01f
       * (level * static_cast<float>(level_cv.In(HEMISPHERE_MAX_INPUT_CV))
-           / HEMISPHERE_MAX_INPUT_CV
-         + offset);
-    for (int i = 0; i < Channels; i++) {
-      mixer[i].gain(0, gain);
+           / HEMISPHERE_MAX_INPUT_CV);
 
+    // TODO: we probably don't need 2 in one applet
+    for (int i = 0; i < 2; i++) {
+      FileLevel(i, gain);
       const int speed_cv = 0; // TODO:
       if (speed_cv > 0)
-        FileRate(i, speed_cv);
+        FileRate(i, 0.01f * playrate);
       else
         FileMatchTempo(i);
 
@@ -59,7 +59,6 @@ public:
     }
   }
 
-  // TODO: call this from somewhere....
   void mainloop() {
     if (HS::wavplayer_available) {
       for (int ch = 0; ch < 2; ++ch) {
@@ -77,28 +76,76 @@ public:
   }
 
   void View() {
-    // TODO: play/stop button; file select; loop; HPF
+    gfxStartCursor(1, 15);
+    gfxPrintfn(1, 15, 0, "%03u", GetFileNum());
+    gfxEndCursor(cursor == FILE_NUM);
 
-    gfxPrint(1, 15, "Lvl:");
     gfxStartCursor();
-    graphics.printf("%4d%%", level);
-    gfxEndCursor(cursor == 0);
+    gfxIcon(25, 15, FileIsPlaying() ? PLAY_ICON : STOP_ICON);
+    gfxEndCursor(cursor == PLAYSTOP_BUTTON);
+
+    if (FileIsPlaying()) {
+      gfxPrint(34, 15, GetFileBPM());
+
+      uint32_t tmilli = GetFileTime(0);
+      uint32_t tsec = tmilli / 1000;
+      uint32_t tmin = tsec / 60;
+      tmilli %= 1000;
+      tsec %= 60;
+
+      graphics.setPrintPos(1, 25);
+      graphics.printf("%02lu:%02lu.%03lu", tmin, tsec, tmilli);
+    }
+
+    gfxPrint(1, 35, "Lvl: ");
+    gfxStartCursor();
+    graphics.printf("%3d%%", level);
+    gfxEndCursor(cursor == LEVEL);
     gfxStartCursor();
     gfxPrintIcon(level_cv.Icon());
-    gfxEndCursor(cursor == 1);
+    gfxEndCursor(cursor == LEVEL_CV);
+
+    gfxPrint(1, 45, "Rate:");
+    gfxStartCursor();
+    graphics.printf("%3d%%", playrate);
+    gfxEndCursor(cursor == PLAYRATE);
+    gfxStartCursor();
+    gfxPrintIcon(playrate_cv.Icon());
+    gfxEndCursor(cursor == PLAYRATE_CV);
+
+    // TODO: loop; HPF
   }
 
+  void OnButtonPress() {
+    if (PLAYSTOP_BUTTON == cursor)
+      ToggleFilePlayer();
+    else
+      CursorToggle();
+  };
   void OnEncoderMove(int direction) {
     if (!EditMode()) {
       MoveCursor(cursor, direction, NUM_PARAMS - 1);
       return;
     }
     switch (cursor) {
-      case 0:
-        level = constrain(level + direction, -200, 200);
+      case FILE_NUM:
+        ChangeToFile(0, GetFileNum() + direction);
         break;
-      case 1:
+      case PLAYSTOP_BUTTON:
+        // shouldn't happen
+        CursorToggle();
+        break;
+      case LEVEL:
+        level = constrain(level + direction, 0, 200);
+        break;
+      case LEVEL_CV:
         level_cv.ChangeSource(direction);
+        break;
+      case PLAYRATE:
+        playrate = constrain(playrate + direction, -200, 200);
+        break;
+      case PLAYRATE_CV:
+        playrate_cv.ChangeSource(direction);
         break;
     }
   }
@@ -119,13 +166,21 @@ protected:
   void SetHelp() override {}
 
 private:
-  const int NUM_PARAMS = 1;
+  enum WAVCursor {
+    FILE_NUM,
+    PLAYSTOP_BUTTON,
+    LEVEL,
+    LEVEL_CV,
+    PLAYRATE,
+    PLAYRATE_CV,
+
+    NUM_PARAMS
+  };
   int cursor = 0;
-  int level = 100;
+  int level = 90;
   CVInput level_cv;
-  int offset = 0;
-  int shape = 0;
-  CVInput shape_cv;
+  int playrate = 100;
+  CVInput playrate_cv;
 
   AudioPassthrough<Channels> input;
   AudioPlaySdResmp      wavplayer[2];
@@ -222,31 +277,34 @@ private:
     wavplayer_select[ch] = (uint8_t)constrain(select, 0, 99);
     wavplayer_reload[ch] = true;
     if (wavplayer[ch].isPlaying()) {
+      /* TODO:
+       *
       if (HS::clock_m.IsRunning()) {
         HS::clock_m.BeatSync( ch ? &FilePlay2 : &FilePlay1 );
       } else
+      */
         StartPlaying(ch);
     }
   }
-  uint8_t GetFileNum(int ch) {
+  uint8_t GetFileNum(int ch = 0) {
     return wavplayer_select[ch];
   }
-  uint32_t GetFileTime(int ch) {
+  uint32_t GetFileTime(int ch = 0) {
     return wavplayer[ch].positionMillis();
   }
-  uint16_t GetFileBPM(int ch) {
+  uint16_t GetFileBPM(int ch = 0) {
     return (uint16_t)wavplayer[ch].getBPM();
   }
-  void FileMatchTempo(int ch) {
-    wavplayer[ch].matchTempo(HS::clock_m.GetTempoFloat());
+  void FileMatchTempo(int ch = 0) {
+    wavplayer[ch].matchTempo(HS::clock_m.GetTempoFloat() * playrate * 0.01f);
   }
-  void FileLevel(int ch, int cv) {
-    wavlevel[ch] = (float)cv / HEMISPHERE_MAX_CV;
-    mixer[0].gain(1 + ch, 0.9 * wavlevel[ch]);
-    mixer[1].gain(1 + ch, 0.9 * wavlevel[ch]);
+  void FileLevel(int ch, float lvl) {
+    wavlevel[ch] = lvl;
+    mixer[0].gain(0 + ch, 0.9 * wavlevel[ch]);
+    mixer[1].gain(0 + ch, 0.9 * wavlevel[ch]);
   }
-  void FileRate(int ch, int cv) {
+  void FileRate(int ch, float rate) {
     // bipolar CV has +/- 50% pitch bend
-    wavplayer[ch].setPlaybackRate((float)cv / HEMISPHERE_MAX_CV * 0.5 + 1.0);
+    wavplayer[ch].setPlaybackRate(rate);
   }
 };
