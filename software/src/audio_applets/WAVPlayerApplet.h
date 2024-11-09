@@ -136,6 +136,9 @@ public:
     // TODO: HPF
   }
 
+  void AuxButton() {
+    ToggleFilePlayer();
+  }
   void OnButtonPress() {
     if (PLAYSTOP_BUTTON == cursor)
       ToggleFilePlayer();
