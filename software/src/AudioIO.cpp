@@ -2,6 +2,7 @@
 
 #include "AudioIO.h"
 // #include <Audio.h>
+#include "PhzConfig.h"
 
 namespace OC {
   namespace AudioIO {
@@ -20,7 +21,9 @@ namespace OC {
 
     void Init() {
       AudioMemory(AUDIO_MEMORY);
+      PhzConfig::setup();
     }
+
   }
 }
 #endif
