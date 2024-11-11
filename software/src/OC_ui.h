@@ -49,8 +49,14 @@ enum UiControl {
 #endif
 
   // Some aliases for new hardware
+#ifdef NLM_hOC
+  // hack to swap Hemisphere left/right just for hOC
+  CONTROL_BUTTON_A = CONTROL_BUTTON_DOWN,
+  CONTROL_BUTTON_B = CONTROL_BUTTON_UP,
+#else
   CONTROL_BUTTON_A = CONTROL_BUTTON_UP,
   CONTROL_BUTTON_B = CONTROL_BUTTON_DOWN,
+#endif
   CONTROL_BUTTON_X = CONTROL_BUTTON_UP2,
   CONTROL_BUTTON_Y = CONTROL_BUTTON_DOWN2,
   CONTROL_BUTTON_Z = CONTROL_BUTTON_M,

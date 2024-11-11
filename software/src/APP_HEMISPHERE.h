@@ -657,7 +657,7 @@ public:
 
     void DelegateSelectButtonPush(const UI::Event &event) {
         bool down = (event.type == UI::EVENT_BUTTON_DOWN);
-        const int hemisphere = (event.control == OC::CONTROL_BUTTON_UP) ? LEFT_HEMISPHERE : RIGHT_HEMISPHERE;
+        const int hemisphere = (event.control == OC::CONTROL_BUTTON_A) ? LEFT_HEMISPHERE : RIGHT_HEMISPHERE;
 
         if (!down && (preset_cursor || view_state != APPLETS)) {
             // cancel preset select, or config screen on select button release
@@ -675,7 +675,7 @@ public:
         // -- button down
         if (down) {
             // dual press for Clock Setup... check first_click, so we only process the 2nd button event
-            if (event.mask == (OC::CONTROL_BUTTON_UP | OC::CONTROL_BUTTON_DOWN) && hemisphere != first_click) {
+            if (event.mask == (OC::CONTROL_BUTTON_A | OC::CONTROL_BUTTON_B) && hemisphere != first_click) {
                 clock_setup = 1;
                 SetHelpScreen(-1);
                 select_mode = -1;
@@ -784,9 +784,9 @@ public:
                 break;
             }
             if (HS::q_edit) {
-              if (event.control == OC::CONTROL_BUTTON_UP)
+              if (event.control == OC::CONTROL_BUTTON_A)
                 HS::NudgeOctave(HS::qview, 1);
-              else if (event.control == OC::CONTROL_BUTTON_DOWN)
+              else if (event.control == OC::CONTROL_BUTTON_B)
                 HS::NudgeOctave(HS::qview, -1);
               else
                 HS::q_edit = false;
@@ -797,7 +797,7 @@ public:
             // most button-down events fall through here
         case UI::EVENT_BUTTON_PRESS:
 
-            if (event.control == OC::CONTROL_BUTTON_UP || event.control == OC::CONTROL_BUTTON_DOWN) {
+            if (event.control == OC::CONTROL_BUTTON_A || event.control == OC::CONTROL_BUTTON_B) {
                 DelegateSelectButtonPush(event);
             } else if (event.control == OC::CONTROL_BUTTON_L || event.control == OC::CONTROL_BUTTON_R) {
                 DelegateEncoderPush(event);
@@ -810,7 +810,7 @@ public:
             break;
 
         case UI::EVENT_BUTTON_LONG_PRESS:
-            if (event.control == OC::CONTROL_BUTTON_DOWN) ToggleConfigMenu();
+            if (event.control == OC::CONTROL_BUTTON_B) ToggleConfigMenu();
             if (event.control == OC::CONTROL_BUTTON_L) ToggleClockRun();
             break;
 
