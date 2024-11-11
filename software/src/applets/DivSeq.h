@@ -45,6 +45,9 @@ public:
       uint8_t muted = 0x0; // bitmask
       uint32_t last_clock = 0;
 
+      int Get(int s) {
+        return divmult[s].steps;
+      }
       void Set(int s, int div) {
         divmult[s].Set(div);
       }
@@ -111,6 +114,18 @@ public:
     }
 
     void Start() {
+      ForEachChannel(ch) {
+        int total = 16 + ch*16;
+        for (int i = 0; i < NUM_STEPS - 1; ++i) {
+          int val = random(total);
+          if (1 == val)
+            div_seq[ch].Set(i, -random(7)-1);
+          else
+            div_seq[ch].Set(i, val);
+          total -= val;
+        }
+        div_seq[ch].Set(NUM_STEPS - 1, total);
+      }
       Reset();
     }
 
@@ -191,7 +206,7 @@ public:
         if (ch > 1) // mutes
             div_seq[ch-2].ToggleStep(s);
         else {
-            const int div = div_seq[ch].divmult[s].steps + direction;
+            const int div = div_seq[ch].Get(s) + direction;
             div_seq[ch].Set(s, div);
         }
     }
