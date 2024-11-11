@@ -14,6 +14,7 @@ namespace OC {
     OC_BUILD_TAG
 #endif
     ;
+  const char * const BUILD_TAG = OC_BUILD_TAG;
 #ifdef NORTHERNLIGHT
   const char * const NAME = "NLM cOC/hOC/2OC";
   const char * const SHORT_NAME = "xOC";
