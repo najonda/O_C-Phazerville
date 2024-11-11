@@ -35,7 +35,8 @@ public:
         STEP1B, STEP2B, STEP3B, STEP4B, STEP5B,
         MUTE1A, MUTE2A, MUTE3A, MUTE4A, MUTE5A,
         MUTE1B, MUTE2B, MUTE3B, MUTE4B, MUTE5B,
-        LAST_SETTING = MUTE5B
+        RE_ZAP,
+        LAST_SETTING = RE_ZAP
     };
 
     struct DivSequence {
@@ -181,6 +182,12 @@ public:
     }
 
     void OnButtonPress() {
+        if (RE_ZAP == cursor) {
+          Start();
+          cursor = 0;
+          return;
+        }
+
         if (cursor >= MUTE1A && !EditMode()) {
             const int ch = (cursor - MUTE1A) / NUM_STEPS;
             const int s = (cursor - MUTE1A) % NUM_STEPS;
@@ -271,6 +278,15 @@ private:
     ProbLoopLinker *loop_linker = loop_linker->get();
 
     void DrawInterface() {
+      if (RE_ZAP == cursor) {
+        gfxIcon(28, 22, DOWN_ICON);
+        gfxIcon(18, 32, RIGHT_ICON);
+        gfxIcon(28, 32, ZAP_ICON);
+        gfxIcon(38, 32, LEFT_ICON);
+        gfxIcon(28, 42, UP_ICON);
+        return;
+      }
+
       // divisions
       ForEachChannel(ch) {
         const size_t x = 31*ch;
