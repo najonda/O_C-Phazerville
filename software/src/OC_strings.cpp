@@ -9,11 +9,12 @@ namespace OC {
 #ifdef OC_VERSION_EXTRA
     OC_VERSION_EXTRA
 #endif
-#ifdef OC_BUILD_TAG
-    "-"
-    OC_BUILD_TAG
-#endif
     ;
+#ifdef OC_BUILD_TAG
+  const char * const BUILD_TAG = OC_BUILD_TAG;
+#else
+  const char * const BUILD_TAG = "";
+#endif
 #ifdef NORTHERNLIGHT
   const char * const NAME = "NLM cOC/hOC/2OC";
   const char * const SHORT_NAME = "xOC";

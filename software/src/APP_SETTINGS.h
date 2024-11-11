@@ -205,7 +205,8 @@ public:
         gfxPrint(12, 15, "Phazerville Suite");
         #endif
         gfxPrint(0, 25, OC::Strings::VERSION);
-        gfxPrint(0, 35, "github.com/djphazer");
+        gfxPrint(0, 35, OC::Strings::BUILD_TAG);
+        gfxPrint(0, 45, "github.com/djphazer");
         gfxPrint(0, 55, reflash ? "[Reflash]" : "[CALIBRATE]   [RESET]");
     }
 

@@ -90,16 +90,15 @@ static void debug_menu_version()
   graphics.print(Strings::NAME);
   graphics.setPrintPos(2, 22);
   graphics.print(Strings::VERSION);
-
-  weegfx::coord_t y = 32;
-  graphics.setPrintPos(2, y); y += 10;
+  graphics.setPrintPos(2, 32);
+  graphics.print(Strings::BUILD_TAG);
 #ifdef OC_DEV
-  graphics.print("DEV");
+  graphics.print(" DEV");
 #else
-  graphics.print("PROD");
+  graphics.print(" PROD");
 #endif
 #ifdef USB_SERIAL
-  graphics.setPrintPos(2, y); y += 10;
+  graphics.setPrintPos(2, 42);
   graphics.print("USB_SERIAL");
 #endif
 }
