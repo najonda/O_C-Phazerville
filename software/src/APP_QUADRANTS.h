@@ -543,21 +543,14 @@ public:
     }
 
     const HEM_SIDE ButtonToSlot(const UI::Event &event) {
-        switch (event.control) {
-        default:
-        case OC::CONTROL_BUTTON_A:
-          return LEFT_HEMISPHERE;
-          break;
-        case OC::CONTROL_BUTTON_X:
-          return LEFT2_HEMISPHERE;
-          break;
-        case OC::CONTROL_BUTTON_B:
-          return RIGHT_HEMISPHERE;
-          break;
-        case OC::CONTROL_BUTTON_Y:
-          return RIGHT2_HEMISPHERE;
-          break;
-        }
+      if (event.control == OC::CONTROL_BUTTON_A)
+        return LEFT_HEMISPHERE;
+      if (event.control == OC::CONTROL_BUTTON_X)
+        return LEFT2_HEMISPHERE;
+      if (event.control == OC::CONTROL_BUTTON_B)
+        return RIGHT_HEMISPHERE;
+      if (event.control == OC::CONTROL_BUTTON_Y)
+        return RIGHT2_HEMISPHERE;
     }
 
     // returns true if combo detected and button release should be ignored
