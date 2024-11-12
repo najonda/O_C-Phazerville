@@ -42,6 +42,7 @@ typedef struct IOFrame {
     int output_diff[DAC_CHANNEL_LAST];
     int outputs_smooth[DAC_CHANNEL_LAST];
     int clock_countdown[DAC_CHANNEL_LAST];
+    uint8_t clockskip[DAC_CHANNEL_LAST] = {0};
     bool clockout_q[DAC_CHANNEL_LAST]; // for loopback
     int adc_lag_countdown[ADC_CHANNEL_LAST]; // Time between a clock event and an ADC read event
     uint32_t last_clock[ADC_CHANNEL_LAST]; // Tick number of the last clock observed by the child class
@@ -366,9 +367,15 @@ typedef struct IOFrame {
         outputs[channel] = value;
     }
     void ClockOut(DAC_CHANNEL ch, const int pulselength = HEMISPHERE_CLOCK_TICKS * HS::trig_length) {
+      // short circuit if skip probability is zero to avoid consuming random numbers
+      if (0 == clockskip[ch] || random(100) >= clockskip[ch]) {
         clock_countdown[ch] = pulselength;
         outputs[ch] = PULSE_VOLTAGE * (12 << 7);
         clockout_q[ch] = true;
+      }
+    }
+    void NudgeSkip(int ch, int dir) {
+        clockskip[ch] = constrain(clockskip[ch] + dir, 0, 100);
     }
 
     // TODO: Hardware IO should be extracted

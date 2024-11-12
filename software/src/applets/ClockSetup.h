@@ -37,11 +37,15 @@ public:
         TRIG2,
         TRIG3,
         TRIG4,
+        OUTSKIP1,
+        OUTSKIP2,
+        OUTSKIP3,
+        OUTSKIP4,
         BOOP1,
         BOOP2,
         BOOP3,
         BOOP4,
-        LAST_SETTING = BOOP4
+        LAST_SETTING = OUTSKIP4
     };
 
     const char* applet_name() {
@@ -145,6 +149,13 @@ public:
         case TRIG3:
         case TRIG4:
             HS::trigger_mapping[cursor-TRIG1] = constrain( HS::trigger_mapping[cursor-TRIG1] + direction, 0, TRIGMAP_MAX);
+            break;
+
+        case OUTSKIP1:
+        case OUTSKIP2:
+        case OUTSKIP3:
+        case OUTSKIP4:
+            HS::frame.NudgeSkip(cursor-OUTSKIP1, direction);
             break;
 
         case BOOP1:
@@ -316,12 +327,17 @@ private:
             // Physical trigger input mappings
             gfxPrint(1 + x, y + 13, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
 
-            // Manual trigger buttons
-            gfxIcon(4 + x, 47, (button_ticker && ch == cursor-BOOP1)?BTN_ON_ICON:BTN_OFF_ICON);
+            if (cursor < BOOP1) {
+                gfxPrint(1 + x, y + 23, HS::frame.clockskip[ch]);
+                gfxPrint("%");
+            } else {
+                // Manual trigger buttons
+                gfxIcon(4 + x, 47, (button_ticker && ch == cursor-BOOP1)?BTN_ON_ICON:BTN_OFF_ICON);
 
-            // Trigger indicators
-            gfxIcon(4 + x, 54, DOWN_BTN_ICON);
-            if (flash_ticker[ch]) gfxInvert(3 + x, 56, 9, 8);
+                // Trigger indicators
+                gfxIcon(4 + x, 54, DOWN_BTN_ICON);
+                if (flash_ticker[ch]) gfxInvert(3 + x, 56, 9, 8);
+            }
         }
 
         y += 10;
@@ -363,6 +379,12 @@ private:
                 gfxIcon(12 + 32*(cursor-BOOP1), 49, LEFT_ICON);
             break;
 
+        case OUTSKIP1:
+        case OUTSKIP2:
+        case OUTSKIP3:
+        case OUTSKIP4:
+            gfxCursor(1 + 32*(cursor-OUTSKIP1), 55, 19);
+            break;
         default: break;
         }
     }

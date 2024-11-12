@@ -45,7 +45,15 @@ public:
         TRIG6,
         TRIG7,
         TRIG8,
-        LAST_SETTING = TRIG8
+        OUTSKIP1,
+        OUTSKIP2,
+        OUTSKIP3,
+        OUTSKIP4,
+        OUTSKIP5,
+        OUTSKIP6,
+        OUTSKIP7,
+        OUTSKIP8,
+        LAST_SETTING = OUTSKIP8
     };
 
     const char* applet_name() {
@@ -165,6 +173,17 @@ public:
             button_ticker = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
             break;
         */
+
+        case OUTSKIP1:
+        case OUTSKIP2:
+        case OUTSKIP3:
+        case OUTSKIP4:
+        case OUTSKIP5:
+        case OUTSKIP6:
+        case OUTSKIP7:
+        case OUTSKIP8:
+            HS::frame.NudgeSkip(cursor-OUTSKIP1, direction);
+            break;
 
         case EXT_PPQN:
             HS::clock_m.SetClockPPQN(HS::clock_m.GetClockPPQN() + direction);
@@ -316,12 +335,17 @@ private:
                 gfxPrint( (mult >= 0) ? mult : 1 - mult );
             }
 
-            // Physical trigger input mappings
-            gfxPrint(1 + x, y + 21, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
+            if (cursor > TRIG8) {
+                gfxPrint(1 + x, y + 21, HS::frame.clockskip[ch] );
+                gfxPrint(23 + x, y + 21, "%");
+            } else {
+                // Physical trigger input mappings
+                gfxPrint(1 + x, y + 21, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
 
-            // Trigger indicators
-            gfxIcon(23 + x, y + 20, DOWN_BTN_ICON);
-            if (flash_ticker[ch]) gfxInvert(22 + x, y + 22, 9, 8);
+                // Trigger indicators
+                gfxIcon(23 + x, y + 20, DOWN_BTN_ICON);
+                if (flash_ticker[ch]) gfxInvert(22 + x, y + 22, 9, 8);
+            }
         }
 
         y += 9;
@@ -367,6 +391,21 @@ private:
         {
           const int x_ = 1 + 32 * ((cursor-TRIG1) % 4);
           const int y_ = 53 + ((cursor-TRIG1) / 4 * 10);
+          gfxCursor(x_, y_, 19);
+          break;
+        }
+
+        case OUTSKIP1:
+        case OUTSKIP2:
+        case OUTSKIP3:
+        case OUTSKIP4:
+        case OUTSKIP5:
+        case OUTSKIP6:
+        case OUTSKIP7:
+        case OUTSKIP8:
+        {
+          const int x_ = 1 + 32 * ((cursor-OUTSKIP1) % 4);
+          const int y_ = 53 + ((cursor-OUTSKIP1) / 4 * 10);
           gfxCursor(x_, y_, 19);
           break;
         }
