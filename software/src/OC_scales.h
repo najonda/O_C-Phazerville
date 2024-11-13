@@ -35,7 +35,7 @@ public:
 // They still need some hysteresis though
 class SemitoneQuantizer {
 public:
-  static constexpr int32_t kHysteresis = 16;
+  static constexpr int32_t kHysteresis = 32;
 
   SemitoneQuantizer() { }
   ~SemitoneQuantizer() { }
