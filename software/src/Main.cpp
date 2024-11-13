@@ -146,7 +146,8 @@ void setup() {
 
   OC::DEBUG::Init();
   OC::DigitalInputs::Init();
-  #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   if (DAC8568_Uses_SPI) {
     // DAC8568 Vref does not turn on by default like DAC8565
     // best to turn on Vref as early as possible for analog
@@ -157,23 +158,32 @@ void setup() {
     // ADC33131D wants calibration for Vref, takes ~1150 ms
     OC::ADC::ADC33131D_Vref_calibrate();
   } else {
-  #endif
+#endif
     delay(400);
-  #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   }
-  #endif
+
+  if (OLED_Uses_SPI1) {
+    SPI1.begin();
+  }
+#endif
+
+  OC::calibration_load();
+
   OC::ADC::Init(&OC::calibration_data.adc); // Yes, it's using the calibration_data before it's loaded...
   OC::ADC::Init_DMA();
   OC::DAC::Init(&OC::calibration_data.dac);
 
+  display::AdjustOffset(OC::calibration_data.display_offset);
+#ifdef FLIP_180
+  display::SetFlipMode( !OC::calibration_data.flipscreen() );
+#else
+  display::SetFlipMode( OC::calibration_data.flipscreen() );
+#endif
   display::Init();
 
   GRAPHICS_BEGIN_FRAME(true);
   GRAPHICS_END_FRAME();
-
-  OC::calibration_load();
-  
-  display::AdjustOffset(OC::calibration_data.display_offset);
 
   OC::menu::Init();
   OC::ui.Init();

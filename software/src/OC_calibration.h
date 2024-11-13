@@ -132,7 +132,8 @@ enum EncoderConfig : uint32_t {
 };
 
 enum CalibrationFlags : uint32_t {
-  CALIBRATION_FLAG_ENCODER_MASK = 0x3
+  CALIBRATION_FLAG_ENCODER_MASK = 0x3,
+  CALIBRATION_FLAG_FLIP180 = 0x4
 };
 
 struct CalibrationData {
@@ -152,6 +153,13 @@ struct CalibrationData {
   uint32_t reserved1;
 #endif
 
+  bool flipscreen() const {
+    return (flags & CALIBRATION_FLAG_FLIP180);
+  }
+  bool toggle_flip180() {
+    flags = (flags & ~CALIBRATION_FLAG_FLIP180) | ((1-flipscreen()) * CALIBRATION_FLAG_FLIP180);
+    return flipscreen();
+  }
   EncoderConfig encoder_config() const {
   	return static_cast<EncoderConfig>(flags & CALIBRATION_FLAG_ENCODER_MASK);
   }

@@ -21,9 +21,11 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "OC_apps.h"
+#include "OC_calibration.h"
 #include "OC_ui.h"
 #include "HSApplication.h"
 #include "OC_strings.h"
+#include "src/drivers/display.h"
 
 extern "C" void _reboot_Teensyduino_();
 
@@ -32,6 +34,7 @@ public:
   bool reflash = false;
   bool calibration_mode = false;
   bool calibration_complete = true;
+  bool fliptoggle_flag = false;
   OC::DigitalInputDisplay digital_input_displays[4];
   OC::TickCount tick_count;
 
@@ -183,6 +186,7 @@ public:
       }
 
         gfxHeader("Setup / About");
+        gfxIcon(80, 0, OC::calibration_data.flipscreen() ? DOWN_ICON : UP_ICON);
 
         #if defined(ARDUINO_TEENSY40)
         gfxPrint(100, 0, "T4.0");
@@ -223,6 +227,14 @@ public:
             Calibration();
         }
         if (event.control == OC::CONTROL_BUTTON_R && event.type == UI::EVENT_BUTTON_PRESS) FactoryReset();
+
+        // dual-press UP + DOWN to flip screen
+        if ( event.type == UI::EVENT_BUTTON_DOWN &&
+            (event.mask == (OC::CONTROL_BUTTON_A | OC::CONTROL_BUTTON_B)) ) {
+          display::SetFlipMode( OC::calibration_data.toggle_flip180() );
+          //fliptoggle_flag = true;
+        }
+
         return;
       }
 
@@ -359,6 +371,21 @@ public:
       // special teensy_reboot command
       _reboot_Teensyduino_();
     }
+    void FlipScreen() {
+        noInterrupts();
+        display::Flush();
+        delay(5);
+        //display::Init();
+        display::driver.Reinit();
+        delay(5);
+        interrupts();
+    }
+    void FlipCheck() {
+      if (fliptoggle_flag) {
+        fliptoggle_flag = false;
+        FlipScreen();
+      }
+    }
 
     void FactoryReset() {
         OC::apps::Init(1);
@@ -391,7 +418,9 @@ void Settings_handleAppEvent(OC::AppEvent event) {
     }
 }
 
-void Settings_loop() {} // Deprecated
+void Settings_loop() {
+  Settings_instance.FlipCheck();
+} // Deprecated
 
 void Settings_menu() {
     Settings_instance.BaseView();
