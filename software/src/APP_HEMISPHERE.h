@@ -541,11 +541,6 @@ public:
         if (HS::q_edit)
           PokePopup(QUANTIZER_POPUP);
 
-        if (draw_applets && clock_setup) {
-          ClockSetup_instance.View();
-          draw_applets = false;
-        }
-
         if (draw_applets) {
           if (help_hemisphere > -1) {
             int index = my_applet[help_hemisphere];
@@ -570,6 +565,11 @@ public:
               gfxIcon(56, 1, HS::clock_m.Cycle() ? METRO_L_ICON : METRO_R_ICON);
           } else if (HS::clock_m.IsPaused()) {
               gfxIcon(56, 1, PAUSE_ICON);
+          }
+
+          // clock screen is an overlay
+          if (clock_setup) {
+            ClockSetup_instance.View();
           }
         }
 

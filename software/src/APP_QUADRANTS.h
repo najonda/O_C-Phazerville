@@ -474,10 +474,6 @@ public:
             OC::AudioDSP::DrawAudioSetup();
             draw_applets = false;
           }
-          else if (view_state == CLOCK_SETUP) {
-            ClockSetup_instance.View();
-            draw_applets = false;
-          }
         }
 
         if (draw_applets) {
@@ -510,6 +506,11 @@ public:
               gfxIcon(56, 1, HS::clock_m.Cycle() ? METRO_L_ICON : METRO_R_ICON);
           } else if (HS::clock_m.IsPaused()) {
               gfxIcon(56, 1, PAUSE_ICON);
+          }
+
+          // Clock setup is an overlay
+          if (view_state == CLOCK_SETUP) {
+            ClockSetup_instance.View();
           }
         }
 

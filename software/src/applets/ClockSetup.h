@@ -24,6 +24,8 @@ using HS::clock_m;
 
 class ClockSetup : public HemisphereApplet {
 public:
+    static constexpr int SLIDEOUT_TIME = 100;
+
     enum ClockSetupCursor {
         PLAY_STOP,
         TEMPO,
@@ -37,14 +39,14 @@ public:
         TRIG2,
         TRIG3,
         TRIG4,
-        OUTSKIP1,
-        OUTSKIP2,
-        OUTSKIP3,
-        OUTSKIP4,
         BOOP1,
         BOOP2,
         BOOP3,
         BOOP4,
+        OUTSKIP1,
+        OUTSKIP2,
+        OUTSKIP3,
+        OUTSKIP4,
         LAST_SETTING = OUTSKIP4
     };
 
@@ -88,24 +90,30 @@ public:
         }
 
         // 4 internal clock flashers
+        /*
         for (int i = 0; i < 4; ++i) {
             if (clock_m.Tock(i))
                 flash_ticker[i] = HEMISPHERE_PULSE_ANIMATION_TIME;
             else if (flash_ticker[i])
                 --flash_ticker[i];
         }
+        */
 
         if (button_ticker) --button_ticker;
     }
 
     void View() {
-        DrawInterface();
+      if (OC::CORE::ticks - view_tick > 1000) {
+        slide_anim = SLIDEOUT_TIME;
+      }
+      view_tick = OC::CORE::ticks;
+      DrawInterface();
     }
 
     void OnButtonPress() {
         if (!EditMode()) { // special cases for toggle buttons
             if (cursor == PLAY_STOP) PlayStop();
-            else if (cursor >= BOOP1) {
+            else if (cursor >= BOOP1 && cursor <= BOOP4) {
                 clock_m.Boop(cursor-BOOP1);
                 button_ticker = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
             }
@@ -262,8 +270,10 @@ protected:
 
 private:
     int cursor; // ClockSetupCursor
-    int flash_ticker[4];
+    //int flash_ticker[4];
     int button_ticker;
+    int slide_anim = 0;
+    uint32_t view_tick = 0;
 
     static const int NR_OF_TAPS = 3;
 
@@ -280,22 +290,40 @@ private:
         }
     }
 
+    // This applet is an overlay, drawn on top of the applet view.
+    // Space must be cleared first, depending on the cursor position.
     void DrawInterface() {
-        // Header: This is sort of a faux applet, so its header
-        // needs to extend across the screen
-        graphics.setPrintPos(1, 2);
-        graphics.print("Clocks/Triggers");
-        gfxLine(0, 10, 127, 10);
+      if (slide_anim) {
+        const int x = 23 - (slide_anim * 23 / SLIDEOUT_TIME);
+        graphics.clearRect(0, 0, 128, x+1);
+        gfxDottedLine(0, x, 127, x);
+        gfxLine(0, x+1, 127, x+1);
 
-        int y = 14;
+        --slide_anim;
+        return;
+      }
+
+      if (cursor < OUTSKIP1) {
+        graphics.clearRect(0, 0, 128, 24);
+
+        gfxDottedLine(0, 21, 127, 21);
+        gfxLine(0, 22, 127, 22);
+      } else {
+        graphics.clearRect(0, 51, 128, 13);
+
+        gfxLine(0, 52, 127, 52);
+        gfxDottedLine(0, 53, 127, 53);
+      }
+
+      if (cursor <= MULT4) {
+        int y = 1;
         // Clock State
-        gfxIcon(1, y, CLOCK_ICON);
         if (clock_m.IsRunning()) {
+            gfxIcon(1, y, clock_m.cycle ? METRO_R_ICON : METRO_L_ICON );
             gfxIcon(12, y, PLAY_ICON);
-        } else if (clock_m.IsPaused()) {
-            gfxIcon(12, y, PAUSE_ICON);
         } else {
-            gfxIcon(12, y, STOP_ICON);
+            gfxIcon(1, y, CLOCK_ICON);
+            gfxIcon(12, y, clock_m.IsPaused()? PAUSE_ICON : STOP_ICON);
         }
 
         // Tempo
@@ -323,52 +351,52 @@ private:
                 gfxPrint(1 + x, y, (mult >= 0) ? "x" : "/");
                 gfxPrint( (mult >= 0) ? mult : 1 - mult );
             }
-
-            // Physical trigger input mappings
-            gfxPrint(1 + x, y + 13, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
-
-            if (cursor < BOOP1) {
-                gfxPrint(1 + x, y + 23, HS::frame.clockskip[ch]);
-                gfxPrint("%");
-            } else {
-                // Manual trigger buttons
-                gfxIcon(4 + x, 47, (button_ticker && ch == cursor-BOOP1)?BTN_ON_ICON:BTN_OFF_ICON);
-
-                // Trigger indicators
-                gfxIcon(4 + x, 54, DOWN_BTN_ICON);
-                if (flash_ticker[ch]) gfxInvert(3 + x, 56, 9, 8);
-            }
         }
-
-        y += 10;
-        gfxDottedLine(0, y, 127, y, 3);
+      } else if (cursor <= BOOP4) {
+        int y = 1;
+        for (int ch=0; ch<4; ++ch) {
+            const int x = ch * 32;
+            // Physical trigger input mappings
+            gfxPrint(1 + x, y, OC::Strings::trigger_input_names_none[ HS::trigger_mapping[ch] ] );
+            // Manual trigger buttons
+            gfxIcon(4 + x, y + 10, (button_ticker && ch == cursor-BOOP1)?BTN_ON_ICON:BTN_OFF_ICON);
+        }
+      } else {
+        int y = 55;
+        // output trig-skip
+        for (int ch=0; ch<4; ++ch) {
+            const int x = ch * 32;
+            gfxPrint(1 + x, y, HS::frame.clockskip[ch]);
+            gfxPrint("%");
+        }
+      }
 
         switch ((ClockSetupCursor)cursor) {
         case PLAY_STOP:
-            gfxFrame(11, 13, 10, 10);
+            gfxFrame(11, 0, 10, 10);
             break;
         case TEMPO:
-            gfxCursor(22, 22, 19);
+            gfxCursor(22, 9, 19);
             break;
         case SHUFFLE:
-            gfxCursor(52, 22, 13);
+            gfxCursor(52, 9, 13);
             break;
         case EXT_PPQN:
-            gfxCursor(109,22, 13);
+            gfxCursor(109,9, 13);
             break;
 
         case MULT1:
         case MULT2:
         case MULT3:
         case MULT4:
-            gfxCursor(8 + 32*(cursor-MULT1), 32, 12);
+            gfxCursor(8 + 32*(cursor-MULT1), 19, 12);
             break;
 
         case TRIG1:
         case TRIG2:
         case TRIG3:
         case TRIG4:
-            gfxCursor(1 + 32*(cursor-TRIG1), 45, 19);
+            gfxCursor(1 + 32*(cursor-TRIG1), 9, 19);
             break;
 
         case BOOP1:
@@ -376,14 +404,14 @@ private:
         case BOOP3:
         case BOOP4:
             if (0 == button_ticker)
-                gfxIcon(12 + 32*(cursor-BOOP1), 49, LEFT_ICON);
+                gfxIcon(12 + 32*(cursor-BOOP1), 11, LEFT_ICON);
             break;
 
         case OUTSKIP1:
         case OUTSKIP2:
         case OUTSKIP3:
         case OUTSKIP4:
-            gfxCursor(1 + 32*(cursor-OUTSKIP1), 55, 19);
+            gfxCursor(1 + 32*(cursor-OUTSKIP1), 63, 19);
             break;
         default: break;
         }
