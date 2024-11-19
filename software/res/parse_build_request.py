@@ -16,6 +16,12 @@ for item in flags:
         custom_defines += " -DVOR"
     if f.startswith('BUCHLA') or f.startswith('NLM') or f.startswith('NORTHERN'):
         custom_defines += " -DNORTHERNLIGHT"
+    if f.startswith('NLM_HOC'):
+        custom_defines += " -DNLM_hOC"
+    if f.startswith('NLM_CARDOC'):
+        custom_defines += " -DNLM_cardOC"
+    if f.startswith('NLM_2OC_L'):
+        custom_defines += " -DNORTHERNLIGHT_2OC_LEFTSIDE"
     if f.startswith('CALIBR8'):
         custom_defines += " -DENABLE_APP_CALIBR8OR"
     if f.startswith('SCENE'):
