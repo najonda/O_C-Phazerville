@@ -543,14 +543,15 @@ public:
     }
 
     const HEM_SIDE ButtonToSlot(const UI::Event &event) {
-      if (event.control == OC::CONTROL_BUTTON_A)
-        return LEFT_HEMISPHERE;
       if (event.control == OC::CONTROL_BUTTON_X)
         return LEFT2_HEMISPHERE;
       if (event.control == OC::CONTROL_BUTTON_B)
         return RIGHT_HEMISPHERE;
       if (event.control == OC::CONTROL_BUTTON_Y)
         return RIGHT2_HEMISPHERE;
+
+      //if (event.control == OC::CONTROL_BUTTON_A)
+      return LEFT_HEMISPHERE; // default
     }
 
     // returns true if combo detected and button release should be ignored
@@ -706,8 +707,8 @@ public:
             break;
           }
 
-          switch (event.control) {
-            case OC::CONTROL_BUTTON_Z:
+          if (event.control == OC::CONTROL_BUTTON_Z)
+          {
               // X or Y + Z == go fullscreen
               if (select_mode) {
                 bool h = (event.mask & OC::CONTROL_BUTTON_Y); // left or right
@@ -721,53 +722,44 @@ public:
               // Z-button - Zap the CLOCK!!
               ToggleClockRun();
               OC::ui.SetButtonIgnoreMask();
-              break;
-
-            case OC::CONTROL_BUTTON_L:
-            case OC::CONTROL_BUTTON_R:
+          } else if (
+            event.control == OC::CONTROL_BUTTON_L ||
+            event.control == OC::CONTROL_BUTTON_R)
+          {
               if (event.mask == (OC::CONTROL_BUTTON_L | OC::CONTROL_BUTTON_R)) {
                 // TODO: how to go to app menu?
               }
               DelegateEncoderPush(event);
               // ignore long-press to prevent Main Menu >:)
               //OC::ui.SetButtonIgnoreMask();
-              break;
-
-            case OC::CONTROL_BUTTON_A:
-            case OC::CONTROL_BUTTON_B:
-            case OC::CONTROL_BUTTON_X:
-            case OC::CONTROL_BUTTON_Y:
+          } else if (
+            event.control == OC::CONTROL_BUTTON_A ||
+            event.control == OC::CONTROL_BUTTON_B ||
+            event.control == OC::CONTROL_BUTTON_X ||
+            event.control == OC::CONTROL_BUTTON_Y)
+          {
               if (CheckButtonCombos(event)) {
                 select_mode = false;
                 OC::ui.SetButtonIgnoreMask(); // ignore release and long-press
               }
-              break;
-
-            default:
-              break;
           }
 
           break;
 
         case UI::EVENT_BUTTON_PRESS:
-          switch (event.control) {
-            // A/B/X/Y switch to corresponding applet on release
-            case OC::CONTROL_BUTTON_A:
-            case OC::CONTROL_BUTTON_B:
-            case OC::CONTROL_BUTTON_X:
-            case OC::CONTROL_BUTTON_Y:
-            {
-              HEM_SIDE slot = ButtonToSlot(event);
-              if (view_state == APPLET_FULLSCREEN && slot == zoom_slot)
-                view_state = APPLETS;
+          // A/B/X/Y switch to corresponding applet on release
+          if (event.control == OC::CONTROL_BUTTON_A ||
+              event.control == OC::CONTROL_BUTTON_B ||
+              event.control == OC::CONTROL_BUTTON_X ||
+              event.control == OC::CONTROL_BUTTON_Y)
+          {
+            HEM_SIDE slot = ButtonToSlot(event);
+            if (view_state == APPLET_FULLSCREEN && slot == zoom_slot)
+              view_state = APPLETS;
 
-              SwitchToSlot(slot);
-              break;
-            }
-
-            // ignore all other button release events
-            default: break;
+            SwitchToSlot(slot);
           }
+          // ignore all other button release events
           break;
 
         case UI::EVENT_BUTTON_LONG_PRESS:

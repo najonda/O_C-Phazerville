@@ -145,7 +145,6 @@ void setup() {
   SERIAL_PRINTLN("* %s", OC::Strings::VERSION);
 
   OC::DEBUG::Init();
-  OC::DigitalInputs::Init();
 
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   if (DAC8568_Uses_SPI) {
@@ -169,17 +168,16 @@ void setup() {
 #endif
 
   OC::calibration_load();
+  OC::SetFlipMode(OC::calibration_data.flipcontrols());
 
-  OC::ADC::Init(&OC::calibration_data.adc); // Yes, it's using the calibration_data before it's loaded...
+  OC::DigitalInputs::Init();
+
+  OC::ADC::Init(&OC::calibration_data.adc, OC::calibration_data.flipcontrols());
   OC::ADC::Init_DMA();
-  OC::DAC::Init(&OC::calibration_data.dac);
+  OC::DAC::Init(&OC::calibration_data.dac, OC::calibration_data.flipcontrols());
 
   display::AdjustOffset(OC::calibration_data.display_offset);
-#ifdef FLIP_180
-  display::SetFlipMode( !OC::calibration_data.flipscreen() );
-#else
   display::SetFlipMode( OC::calibration_data.flipscreen() );
-#endif
   display::Init();
 
   GRAPHICS_BEGIN_FRAME(true);

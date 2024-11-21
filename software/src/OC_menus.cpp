@@ -108,29 +108,13 @@ inline uint16_t calc_average(const uint16_t *data) {
 
 template <unsigned rshift, uint16_t bitmask>
 void scope_averaging() {
-    switch (scope_update_channel) {
-    case DAC_CHANNEL_A:
-      DAC::getHistory<DAC_CHANNEL_A>(scope_history);
-      averaged_scope_history[DAC_CHANNEL_A][averaged_scope_tail] = ((65535U - calc_average<DAC::kHistoryDepth>(scope_history)) >> rshift) & bitmask;
-      scope_update_channel = DAC_CHANNEL_B;
-      break;
-    case DAC_CHANNEL_B:
-      DAC::getHistory<DAC_CHANNEL_B>(scope_history);
-      averaged_scope_history[DAC_CHANNEL_B][averaged_scope_tail] = ((65535U - calc_average<DAC::kHistoryDepth>(scope_history)) >> rshift) & bitmask;
-      scope_update_channel = DAC_CHANNEL_C;
-      break;
-    case DAC_CHANNEL_C:
-      DAC::getHistory<DAC_CHANNEL_C>(scope_history);
-      averaged_scope_history[DAC_CHANNEL_C][averaged_scope_tail] = ((65535U - calc_average<DAC::kHistoryDepth>(scope_history)) >> rshift) & bitmask;
-      scope_update_channel = DAC_CHANNEL_D;
-      break;
-    case DAC_CHANNEL_D:
-      DAC::getHistory<DAC_CHANNEL_D>(scope_history);
-      averaged_scope_history[DAC_CHANNEL_D][averaged_scope_tail] = ((65535U - calc_average<DAC::kHistoryDepth>(scope_history)) >> rshift) & bitmask;
-      scope_update_channel = DAC_CHANNEL_A;
-      averaged_scope_tail = (averaged_scope_tail + 1) % kScopeDepth;
-      break;
-    default: break;
+  DAC::getHistory<scope_update_channel>(scope_history);
+  averaged_scope_history[scope_update_channel][averaged_scope_tail] = ((65535U - calc_average<DAC::kHistoryDepth>(scope_history)) >> rshift) & bitmask;
+
+  ++scope_update_channel %= DAC_CHANNEL_LAST;
+
+  if (DAC_CHANNEL_A == scope_update_channel) {
+    averaged_scope_tail = (averaged_scope_tail + 1) % kScopeDepth;
   }
 }
 

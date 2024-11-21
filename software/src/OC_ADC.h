@@ -11,20 +11,15 @@
 // If enabled, use an interrupt to track DMA completion; otherwise use polling
 //#define OC_ADC_ENABLE_DMA_INTERRUPT
 
+typedef int ADC_CHANNEL;
 
-enum ADC_CHANNEL {
-  ADC_CHANNEL_1,
-  ADC_CHANNEL_2,
-  ADC_CHANNEL_3,
-  ADC_CHANNEL_4,
+extern ADC_CHANNEL ADC_CHANNEL_1, ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4;
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
-  ADC_CHANNEL_5,
-  ADC_CHANNEL_6,
-  ADC_CHANNEL_7,
-  ADC_CHANNEL_8,
+extern ADC_CHANNEL ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7, ADC_CHANNEL_8;
+static constexpr int ADC_CHANNEL_LAST = 8;
+#else
+static constexpr int ADC_CHANNEL_LAST = 4;
 #endif
-  ADC_CHANNEL_LAST,
-};
 
 #define DMA_BUF_SIZE 16
 #define DMA_NUM_CH 4
@@ -54,7 +49,7 @@ public:
     int16_t pitch_cv_offset;
   };
 
-  static void Init(CalibrationData *calibration_data);
+  static void Init(CalibrationData *calibration_data, bool flip180 = false);
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void ADC33131D_Vref_calibrate();
   #endif
@@ -62,7 +57,7 @@ public:
   static void DMA_ISR();
   static void Scan_DMA();
 
-  template <ADC_CHANNEL channel>
+  template <ADC_CHANNEL &channel>
   static int32_t value() {
     return calibration_data_->offset[channel] - (smoothed_[channel] >> kAdcValueShift);
   }
@@ -94,7 +89,7 @@ public:
 
 private:
 
-  template <ADC_CHANNEL channel>
+  template <ADC_CHANNEL &channel>
   static void update(uint32_t value) {
     value = (value  >> (kAdcScanResolution - kAdcResolution)) << kAdcSmoothBits;
     raw_[channel] = value;

@@ -24,13 +24,15 @@ static inline void dac8568_set_channel(uint32_t channel, uint32_t data) {
 #endif
 extern void SPI_init();
 
-enum DAC_CHANNEL {
-  DAC_CHANNEL_A, DAC_CHANNEL_B, DAC_CHANNEL_C, DAC_CHANNEL_D,
+typedef int DAC_CHANNEL;
+
+extern DAC_CHANNEL DAC_CHANNEL_A, DAC_CHANNEL_B, DAC_CHANNEL_C, DAC_CHANNEL_D;
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
-  DAC_CHANNEL_E, DAC_CHANNEL_F, DAC_CHANNEL_G, DAC_CHANNEL_H,
+extern DAC_CHANNEL DAC_CHANNEL_E, DAC_CHANNEL_F, DAC_CHANNEL_G, DAC_CHANNEL_H;
+static constexpr int DAC_CHANNEL_LAST = 8;
+#else
+static constexpr int DAC_CHANNEL_LAST = 4;
 #endif
-  DAC_CHANNEL_LAST
-};
 
 enum OutputVoltageScaling {
   VOLTAGE_SCALING_1V_PER_OCT,    // 0
@@ -66,7 +68,7 @@ public:
     uint16_t calibrated_octaves[DAC_CHANNEL_LAST][OCTAVES + 1];
   };
 
-  static void Init(CalibrationData *calibration_data);
+  static void Init(CalibrationData *calibration_data, bool flip180 = false);
   #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
   static void DAC8568_Vref_enable();
   #endif
@@ -90,7 +92,7 @@ public:
       values_[i] = USAT16(value);
   }
 
-  template <DAC_CHANNEL channel>
+  template <DAC_CHANNEL &channel>
   static void set(uint32_t value) {
     values_[channel] = USAT16(value);
   }
@@ -189,13 +191,13 @@ public:
   }
     
   // Set channel to semitone value
-  template <DAC_CHANNEL channel>
+  template <DAC_CHANNEL &channel>
   static void set_semitone(int32_t semitone, int32_t octave_offset) {
     set<channel>(semitone_to_dac(channel, semitone, octave_offset));
   }
 
   // Set channel to semitone value
-  template <DAC_CHANNEL channel>
+  template <DAC_CHANNEL &channel>
   static void set_voltage_scaled_semitone(int32_t semitone, int32_t octave_offset, uint8_t voltage_scaling) {
     set<channel>(semitone_to_scaled_voltage_dac(channel, semitone, octave_offset, voltage_scaling));
   }
@@ -255,7 +257,7 @@ public:
     history_tail_ = (tail + 1) % kHistoryDepth;
   }
 
-  template <DAC_CHANNEL channel>
+  template <DAC_CHANNEL &channel>
   static void getHistory(uint16_t *dst){
     size_t head = (history_tail_ + 1) % kHistoryDepth;
 

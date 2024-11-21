@@ -44,6 +44,12 @@
 #include <SPI.h>
 #endif
 
+
+DAC_CHANNEL DAC_CHANNEL_A=0, DAC_CHANNEL_B=1, DAC_CHANNEL_C=2, DAC_CHANNEL_D=3;
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+DAC_CHANNEL DAC_CHANNEL_E=4, DAC_CHANNEL_F=5, DAC_CHANNEL_G=6, DAC_CHANNEL_H=7;
+#endif
+
 namespace OC {
 
 #ifdef VOR
@@ -51,11 +57,17 @@ int DAC::kOctaveZero = 0;
 #endif
 
 /*static*/
-void DAC::Init(CalibrationData *calibration_data) {
+void DAC::Init(CalibrationData *calibration_data, bool flip180) {
 
   calibration_data_ = calibration_data;
   
   restore_scaling(0x0);
+  if (flip180) {
+    DAC_CHANNEL_A=3, DAC_CHANNEL_B=2, DAC_CHANNEL_C=1, DAC_CHANNEL_D=0;
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+    DAC_CHANNEL_E=7, DAC_CHANNEL_F=6, DAC_CHANNEL_G=5, DAC_CHANNEL_H=4;
+#endif
+  }
 
   // set up DAC pins 
   OC::pinMode(DAC_CS, OUTPUT);
@@ -272,11 +284,7 @@ void set8565_CHA(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #else
   SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #endif
   SPIFIFO.write16(_data);
   SPIFIFO.read();
   SPIFIFO.read();
@@ -288,11 +296,7 @@ void set8565_CHB(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #else
   SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #endif
   SPIFIFO.write16(_data);
   SPIFIFO.read();
   SPIFIFO.read();
@@ -304,11 +308,7 @@ void set8565_CHC(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010010, SPI_CONTINUE);
-  #else
   SPIFIFO.write(0b00010100, SPI_CONTINUE);
-  #endif
   SPIFIFO.write16(_data);
   SPIFIFO.read();
   SPIFIFO.read(); 
@@ -320,11 +320,7 @@ void set8565_CHD(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  SPIFIFO.write(0b00010000, SPI_CONTINUE);
-  #else
   SPIFIFO.write(0b00010110, SPI_CONTINUE);
-  #endif
   SPIFIFO.write16(_data);
   SPIFIFO.read();
   SPIFIFO.read();
@@ -339,11 +335,7 @@ void set8565_CHA(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  _data = (0b00010110 << 16) | (_data & 0xFFFF);
-  #else
   _data = (0b00010000 << 16) | (_data & 0xFFFF);
-  #endif
   LPSPI4_TDR = _data;
 }
 
@@ -353,11 +345,7 @@ void set8565_CHB(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  _data = (0b00010100 << 16) | (_data & 0xFFFF);
-  #else
   _data = (0b00010010 << 16) | (_data & 0xFFFF);
-  #endif
   LPSPI4_TDR = _data;
 }
 void set8565_CHC(uint32_t data) {
@@ -366,11 +354,7 @@ void set8565_CHC(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  _data = (0b00010010 << 16) | (_data & 0xFFFF);
-  #else
   _data = (0b00010100 << 16) | (_data & 0xFFFF);
-  #endif
   LPSPI4_TDR = _data;
 }
 void set8565_CHD(uint32_t data) {
@@ -379,11 +363,7 @@ void set8565_CHD(uint32_t data) {
   #else
   uint32_t _data = OC::DAC::MAX_VALUE - data;
   #endif
-  #ifdef FLIP_180
-  _data = (0b00010000 << 16) | (_data & 0xFFFF);
-  #else
   _data = (0b00010110 << 16) | (_data & 0xFFFF);
-  #endif
   LPSPI4_SR = LPSPI_SR_TCF; //  clear transmit complete flag before last write to FIFO
   LPSPI4_TDR = _data;
 }

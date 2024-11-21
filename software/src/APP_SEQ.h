@@ -1836,14 +1836,14 @@ public:
    num_enabled_settings_ = settings - enabled_settings_;
   }
 
-  template <DAC_CHANNEL dacChannel>
+  template <DAC_CHANNEL &dacChannel>
   void update_main_channel() {
     int32_t _output = OC::DAC::pitch_to_scaled_voltage_dac(dacChannel, get_step_pitch(), 0, OC::DAC::get_voltage_scaling(dacChannel));
     OC::DAC::set<dacChannel>(_output);
 
   }
 
-  template <DAC_CHANNEL dacChannel>
+  template <DAC_CHANNEL &dacChannel>
   void update_aux_channel()
   {
 

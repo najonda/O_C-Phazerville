@@ -92,7 +92,7 @@ struct CalibrationStep {
   int min, max;
 };
 
-constexpr DAC_CHANNEL step_to_channel(int step) {
+static constexpr DAC_CHANNEL &step_to_channel(const int step) {
 #ifdef ARDUINO_TEENSY41
   if (step >= DAC_H_VOLT_3m) return DAC_CHANNEL_H;
   if (step >= DAC_G_VOLT_3m) return DAC_CHANNEL_G;
@@ -132,8 +132,10 @@ enum EncoderConfig : uint32_t {
 };
 
 enum CalibrationFlags : uint32_t {
-  CALIBRATION_FLAG_ENCODER_MASK = 0x3,
-  CALIBRATION_FLAG_FLIP180 = 0x4
+  CALIBRATION_FLAG_ENCODER_MASK = 0x3, // mask for the first two bits
+  CALIBRATION_FLAG_FLIP_MASK = 0xc, // mask
+  CALIBRATION_FLAG_FLIPSCREEN = 2, // bit index
+  CALIBRATION_FLAG_FLIPCONTROLS = 3, // bit index
 };
 
 struct CalibrationData {
@@ -153,11 +155,23 @@ struct CalibrationData {
   uint32_t reserved1;
 #endif
 
-  bool flipscreen() const {
-    return (flags & CALIBRATION_FLAG_FLIP180);
+  bool flipcontrols() const {
+    return (flags >> CALIBRATION_FLAG_FLIPCONTROLS) & 1;
   }
-  bool toggle_flip180() {
-    flags = (flags & ~CALIBRATION_FLAG_FLIP180) | ((1-flipscreen()) * CALIBRATION_FLAG_FLIP180);
+  bool flipscreen() const {
+    return (flags >> CALIBRATION_FLAG_FLIPSCREEN) & 1;
+  }
+  uint32_t flipmode() const {
+    return (flags & CALIBRATION_FLAG_FLIP_MASK) >> CALIBRATION_FLAG_FLIPSCREEN;
+  }
+  void cycle_flipmode() {
+    flags = (flags & ~CALIBRATION_FLAG_FLIP_MASK) |
+      ( ((flags & CALIBRATION_FLAG_FLIP_MASK) + (1 << CALIBRATION_FLAG_FLIPSCREEN))
+       & CALIBRATION_FLAG_FLIP_MASK );
+  }
+  bool toggle_flipscreen() {
+    flags ^= (1 << CALIBRATION_FLAG_FLIPSCREEN);
+
     return flipscreen();
   }
   EncoderConfig encoder_config() const {

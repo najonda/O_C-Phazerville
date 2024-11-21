@@ -35,6 +35,7 @@ public:
   bool calibration_mode = false;
   bool calibration_complete = true;
   bool fliptoggle_flag = false;
+  bool cal_save_q = false;
   OC::DigitalInputDisplay digital_input_displays[4];
   OC::TickCount tick_count;
 
@@ -49,6 +50,12 @@ public:
     if (calibration_mode && !calibration_complete) {
       // restart calibration if you exit and come back
       Calibration();
+    }
+  }
+  void Suspend() {
+    if (cal_save_q) {
+      OC::calibration_save();
+      cal_save_q = false;
     }
   }
 
@@ -187,6 +194,7 @@ public:
 
         gfxHeader("Setup / About");
         gfxIcon(80, 0, OC::calibration_data.flipscreen() ? DOWN_ICON : UP_ICON);
+        gfxIcon(90, 0, OC::calibration_data.flipcontrols() ? LEFT_ICON : RIGHT_ICON);
 
         #if defined(ARDUINO_TEENSY40)
         gfxPrint(100, 0, "T4.0");
@@ -232,8 +240,10 @@ public:
         // dual-press UP + DOWN to flip screen
         if ( event.type == UI::EVENT_BUTTON_DOWN &&
             (event.mask == (OC::CONTROL_BUTTON_A | OC::CONTROL_BUTTON_B)) ) {
-          display::SetFlipMode( OC::calibration_data.toggle_flip180() );
-          //fliptoggle_flag = true;
+          OC::calibration_data.cycle_flipmode();
+          display::SetFlipMode(OC::calibration_data.flipscreen());
+          cal_save_q = true;
+          //fliptoggle_flag = true; // to make the OLED driver reinit
         }
 
         return;
@@ -323,6 +333,7 @@ public:
         if (calibration_state.encoder_value) {
           SERIAL_PRINTLN("Calibration complete");
           OC::calibration_save();
+          cal_save_q = false;
         } else {
           SERIAL_PRINTLN("Calibration complete (but don't save)");
         }
@@ -414,9 +425,12 @@ void Settings_isr() {
 }
 
 void Settings_handleAppEvent(OC::AppEvent event) {
-    if (event ==  OC::APP_EVENT_RESUME) {
-        Settings_instance.Resume();
-    }
+  if (event == OC::APP_EVENT_RESUME) {
+    Settings_instance.Resume();
+  }
+  if (event == OC::APP_EVENT_SUSPEND) {
+    Settings_instance.Suspend();
+  }
 }
 
 void Settings_loop() {

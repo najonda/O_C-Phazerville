@@ -3,6 +3,11 @@
 #include "DMAChannel.h"
 #include <algorithm>
 
+ADC_CHANNEL ADC_CHANNEL_1=0, ADC_CHANNEL_2=1, ADC_CHANNEL_3=2, ADC_CHANNEL_4=3;
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+ADC_CHANNEL ADC_CHANNEL_5=4, ADC_CHANNEL_6=5, ADC_CHANNEL_7=6, ADC_CHANNEL_8=7;
+#endif
+
 namespace OC {
 
 #if defined(__MK20DX256__)
@@ -84,34 +89,38 @@ static PROGMEM const uint8_t adc2_pin_to_channel[] = {
 #endif // __IMXRT1062__
 
 
-#if defined(__MK20DX256__)
-/*static*/ void ADC::Init(CalibrationData *calibration_data) {
+/*static*/ void ADC::Init(CalibrationData *calibration_data, bool flip180)
+{
+  if (flip180) {
+    ADC_CHANNEL_1=3, ADC_CHANNEL_2=2, ADC_CHANNEL_3=1, ADC_CHANNEL_4=0;
+#if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
+    ADC_CHANNEL_5=7, ADC_CHANNEL_6=6, ADC_CHANNEL_7=5, ADC_CHANNEL_8=4;
+#endif
+  }
 
+  calibration_data_ = calibration_data;
+
+#if defined(__MK20DX256__)
   adc_.setReference(ADC_REF_3V3);
   adc_.setResolution(kAdcScanResolution);
   adc_.setConversionSpeed(kAdcConversionSpeed);
   adc_.setSamplingSpeed(kAdcSamplingSpeed);
   adc_.setAveraging(kAdcScanAverages);
 
-  calibration_data_ = calibration_data;
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, 0);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, 0);
   std::fill(adcbuffer_0, adcbuffer_0 + DMA_BUF_SIZE, 0);
-  
-  adc_.enableDMA();
-}
 
+  adc_.enableDMA();
 #elif defined(__IMXRT1062__)
-/*static*/ void ADC::Init(CalibrationData *calibration_data) {
-  calibration_data_ = calibration_data;
   // magic number to yield 0V reading on non-existent inputs
   // (copied from OC_calibration.cpp)
   static constexpr uint16_t _ADC_OFFSET = (uint16_t)((float)pow(2,OC::ADC::kAdcResolution)*0.6666667f); // ADC offset @2.2V
   std::fill(raw_, raw_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
   std::fill(smoothed_, smoothed_ + ADC_CHANNEL_LAST, _ADC_OFFSET << kAdcSmoothBits);
+#endif // __IMXRT1062__
 }
 
-#endif // __IMXRT1062__
 
 #ifdef OC_ADC_ENABLE_DMA_INTERRUPT
 /*static*/ void ADC::DMA_ISR() {
