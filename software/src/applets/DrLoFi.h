@@ -17,6 +17,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+/*
+ * heavily modified from the original LoFi Tape applet by Chysn,
+ * with concepts from armandvedel, implementation by djphazer
+ */
 
 #define HEM_LOFI_PCM_BUFFER_SIZE 2048
 #define HEM_LOFI_PCM_SPEED 4
@@ -67,7 +71,7 @@ public:
                 // mix input into the buffer ahead, respecting feedback
                 int fbmix = PCM_TO_CV(lofi_pcm_buffer[head]) * fdbk_g / 100 + cv;
                 lofi_pcm_buffer[head_w] = CV_TO_PCM(fbmix);
-                
+
                 rate_mod = rate;
                 Modulate(rate_mod, 1, 1, 64);
 
