@@ -1,8 +1,11 @@
 #include <Arduino.h>
 #include "OC_core.h"
 #include "HemisphereApplet.h"
-#include "SD.h"
 #include "HSUtils.h"
+
+#ifdef ARDUINO_TEENSY41
+#include "SD.h"
+#endif
 
 namespace HS {
 
@@ -45,7 +48,9 @@ namespace HS {
     for (int i = 0; i < QUANT_CHANNEL_COUNT; ++i)
       quantizer[i].Init();
 
+#ifdef ARDUINO_TEENSY41
     wavplayer_available = SD.begin(BUILTIN_SDCARD);
+#endif
   }
 
 
