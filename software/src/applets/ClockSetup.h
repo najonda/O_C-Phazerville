@@ -59,7 +59,7 @@ public:
 
     // The ClockSetup controller handles MIDI Clock and Transport Start/Stop
     void Controller() {
-        bool clock_sync = OC::DigitalInputs::clocked<OC::DIGITAL_INPUT_1>();
+        bool clock_sync = HS::frame.clocked[0]; // TODO: configurable ExtClk input
 
         // MIDI Clock is filtered to 2 PPQN
         if (frame.MIDIState.clock_q) {
