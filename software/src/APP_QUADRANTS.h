@@ -473,6 +473,7 @@ public:
         if (draw_applets) {
           if (view_state == AUDIO_SETUP) {
             audio_app.View();
+            ClockSetup_instance.DrawIndicator();
 
             // gfxHeader("Audio DSP Setup");
             // OC::AudioDSP::DrawAudioSetup();
