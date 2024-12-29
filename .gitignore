@@ -21,3 +21,4 @@ Hemisphere\ Suite.cpp
 builds
 .pio
 .vscode
+software/test/gtest
