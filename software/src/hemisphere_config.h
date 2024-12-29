@@ -90,8 +90,11 @@
 #include "applets/VectorMod.h"
 #include "applets/VectorMorph.h"
 #include "applets/Voltage.h"
+#include "applets/Windows.h"
+#include "applets/WindowExp.h"
 #include "applets/hMIDIIn.h"
 #include "applets/hMIDIOut.h"
+
 
 template<class A>
 struct DeclareApplet {
@@ -198,6 +201,8 @@ AppletRegistry reg{
     DeclareApplet<VectorMod>{53, 0x01},
     DeclareApplet<VectorMorph>{54, 0x01},
     DeclareApplet<Voltage>{43, 0x10},
+    DeclareApplet<Windows>{78, 0x40},
+    DeclareApplet<WindowExp>{79, 0x40},
 };
 
 
